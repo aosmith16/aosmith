@@ -3,11 +3,15 @@ languageCode = "en-us"
 title = "Very statisticious"
 theme = "hugo-future-imperfect"
 enableEmoji = true
-# preserveTaxonomyNames = true
+preserveTaxonomyNames = true
 disqusShortname = ""
 googleAnalytics = ""
 pluralizeListTitles = false
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+
+[taxonomies]
+   tag = "tags"
+   category = "categories"
 
 [permalinks]
     post = "/:year/:month/:day/:slug/"

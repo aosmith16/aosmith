@@ -1,0 +1,174 @@
+---
+title: Using DHARMA for simulated residual checks of unsupported models
+author: Ariel Muldoon
+date: '2017-12-21'
+slug: using-dharma-for-simulated-residual-checks-of-unsupported-models
+categories: [r]
+tags: [glmm, dharma, simulation]
+---
+
+# Why use simulated residuals?
+
+One of the difficult things about working with generalized linear and generalized linear mixed models is figuring out how to interpret residual plots.  We don't exactly expect the residuals from model of a discrete response to be the same as a those from continuous response model, but how do we tell when something is "bad"?
+
+This is the situation I was in several years ago, working on an analysis involving counts from a fairly complicated study design.  I was using a negative binomial generalized linear mixed models, and the residual vs fitted values plot just look, well, "funny".  I didn't like that the variation seemed to decrease with the fitted values.  But was something wrong or was this just how the residuals from a complicated model like this should look?
+
+I answered that question for myself by fitting models to data simulated from my model.  The beauty of simulations is that we know that the simulated data come from our exact model.  I could then compare what residuals plots from simulated data models to my real model to help decide if what I was seeing was unusual.  I looked at many simulated residual plots and decided that, yes, something was wrong with my model.  I ended up moving on to a different model that worked better.
+
+# The DHARMa package
+
+My "brute force" simulation approach was useful to me, but I spent a lot of time looking at simulated plots because I didn't have a metric to decide if my real residual plots seemed unusual compared to residual plots from my "true" models.  Lucky for me, the author of the [**DHARMa** package](https://github.com/florianhartig/DHARMa) has since come up with a clever way to use a simulation-based approach for residuals checks.  If you are interested in trying the package out, it has [a very nice vignette](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html) to get you started.
+
+So now I've been happily recommending the **DHARMa** packages to students I work with.  However, while the **DHARMa** package supports quite a few different models from a variety of R packages, I've run into several situations where it didn't support models from a particular package a student was using.  Luckily, **DHARMa** can simulate residuals for any model as long as you can provide simulated values to the `createDHARMa` function.
+
+# Simulations for models that have a `simulate` function
+
+When a function has a `simulate` function, getting the information need for `createDHARMa` can be pretty straightforward.  
+
+## Example using `glmmTMB`
+
+The `glmmTMB` function from package **glmmTMB** is one of those unsupported models.  It does, however, have a `simulate` function, so it's pretty easy to adapt to using with `createDHARMa`)
+
+```{r}
+library(DHARMa) # version 0.1.5
+library(glmmTMB) # version 0.1.1
+```
+
+I'm going to use one of the models from the **glmmTMB** documentation to demonstrate this with.
+
+Below I fit zero-inflated negative binomial model with `glmmTMB`.
+
+```{r}
+fit_nbz = glmmTMB(count ~ spp + mined + (1|site), 
+                  zi = ~spp + mined, 
+                  family = nbinom2, data = Salamanders)
+```
+
+If I try to calculate the scaled residuals via **DHARMa** functions, I get a warning and then an error.  **DHARMa** attempts to make predictions from the model to simulate with, but it fails.
+
+```{r, error = TRUE}
+simulateResiduals(fittedModel = fit_nbz, n = 250)
+```
+
+I can use `createDHARMa` to make the residuals instead.  I need to provide three things for this to work.
+
++ Simulated responses
++ Observed data
++ The predicted response from the model
+
+I can simulate from the model via the `simulate` function (see the documentation for `simulate.glmmTMB` for details).  I usually do at least 1000 simulations if it isn't too time consuming.  I'll do only 10 here as an example.
+
+```{r}
+sim_nbz = simulate(fit_nbz, nsim = 10)
+```
+
+The result is a list of each simulated response vector.  
+
+```{r}
+str(sim_nbz)
+```
+
+
+I need these in a matrix, not a list, where each column contains the simulated response and each row is an observations.  I'll collapse the list into a matrix with `cbind` in `do.call`.
+
+```{r}
+sim_nbz = do.call(cbind, sim_nbz)
+head(sim_nbz)
+```
+
+Now I can give these to `createDHARMa` along with observed values and model predictions.  I set `integerResponse` to `TRUE`, as well, as I'm working with counts.
+
+```{r}
+sim_res_nbz = createDHARMa(simulatedResponse = sim_nbz, 
+                           observedResponse = Salamanders$count,
+                           fittedPredictedResponse = predict(fit_nbz),
+                           integerResponse = TRUE)
+```
+
+These can be used to make residual plots, although I'd need a lot more than 10 to get an idea of how well these fit.
+
+```{r}
+plotSimulatedResiduals(sim_res_nbz)
+```
+
+# Simulations for models without a `simulate` function
+
+The `simulate` function did most of the heavy lifting for in the above example.  Not all models have a `simulate` function, though.  This doesn't mean I can't use **DHARMa**, but it does mean I have to put a little more effort in up front.
+
+I will do the simulations"by hand", following the method shown [in this answer on CrossValidated](https://stats.stackexchange.com/a/189052/29350).
+
+## Example using `zeroinfl`
+
+The `zeroinfl` function from package **pscl** is an example of a model that doesn't have a `simulate` function.  I will use this in my next example.
+
+I will also load package **VGAM**, which has functions for getting random draws for a zero-inflated negative binomial distribution.
+
+```{r, message = FALSE}
+library(pscl) # version 1.5.2
+library(VGAM) # version 1.0-4
+```
+
+I will use a `zeroinfl` documentation example to show this.  The zero-inflated negative binomial model is below.
+
+```{r}
+fit_zinb = zeroinfl(art ~ . | 1, 
+                    data = bioChemists, 
+                    dist = "negbin")
+```
+
+In order to make my own simulations, I'll need the predicted counts as well as the predicted probability of a 0 value from the model.  I'll also need an estimate of the negative binomial dispersion parameter, $\theta$.
+
+The `predict` function for `zeroinfl` models lets the user define the kind of prediction desired.  Since I need both predicted counts and 0 probability, I use `predict` twice.
+
+```{r}
+# Estimated probabilities
+p = predict(fit_zinb, type = "zero")
+# Estimated counts
+mus = predict(fit_zinb, type = "count")
+```
+
+I can pull $\theta$ directly out of the model output.
+
+```{r}
+fit_zinb$theta
+```
+
+Now that I have those, I can make random draws from a zero-inflated negative distribution using `rzinegbin` from package **VGAM**.  It took me awhile to figure out which arguments I needed to use.  It turns out I need to provide the predicted counts to the `"munb"` argument and the predicted probabilities to the `"pstr0"` argument.  The `"size"` argument is the dispersion parameter.
+
+```{r}
+sim1 = rzinegbin(n = nrow(bioChemists),
+                 size = fit_zinb$theta,
+                 pstr0 = p,
+                 munb = mus)
+```
+
+That is what a single simulation looks like, but I need to simulate from the model many times.  I can do this via `replicate`, running through the same function however many times I want.  I'll do 10, as above, for the example.
+
+```{r}
+sim_zinb = replicate(10, rzinegbin(n = nrow(bioChemists),
+                                   size = fit_zinb$theta,
+                                   pstr0 = p,
+                                   munb = mus) )
+```
+
+The output of this is a matrix, with a set of simulations in every column and an observation in every row.  It's ready for use in `createDHARMa`!
+
+```{r}
+head(sim_zinb)
+```
+
+Making the simulations was the hard part.  Now that I have them, `createDHARMa` works exactly the same way.
+
+Now I can use the simulations above in `createDHARMa` to calculate simulated residuals. This takes the simulations, the observed response, and the model predicted response.
+
+```{r}
+sim_res_zinb = createDHARMa(simulatedResponse = sim_zinb,
+                            observedResponse = bioChemists$art,
+                            fittedPredictedResponse = predict(fit_zinb, type = "response"),
+                            integerResponse = TRUE)
+```
+
+```{r}
+plotSimulatedResiduals(sim_res_zinb)
+```
+
