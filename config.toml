@@ -118,7 +118,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 [[menu.main]]
   name = "Contact"
   url = "/contact/"
-  #identifier = "fa fa-envelope-o"
+  identifier = "fa fa-envelope-o"
   weight = 3
 
 # Sets Social Media icons to appear and link to your account. Value should be your
