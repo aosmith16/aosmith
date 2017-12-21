@@ -1,4 +1,4 @@
-baseurl = "http://aosmith.rbind.io/"
+baseurl = "https://aosmith.rbind.io/"
 languageCode = "en-us"
 title = "Very statisticious"
 theme = "hugo-future-imperfect"
@@ -93,7 +93,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 # Identifier prepends a Font Awesome icon to the menu item
 [[menu.main]]
   name = "Home"
-  url = "/"
+  url = ""
   identifier = "fa fa-home"
   weight = 1
 
@@ -158,7 +158,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     qq              = "" # User ID Number
   instagram       = ""
   tumblr          = ""
-  twitter         = ""
+  twitter         = "aosmith16"
   skype           = ""
   snapchat        = ""
   pinterest       = ""
