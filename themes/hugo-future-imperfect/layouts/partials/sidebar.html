@@ -31,6 +31,14 @@
     {{ end }}
   </section>
 
+  <!-- About -->
+  {{ with .Site.Params.intro.about }}
+    <section id="mini-bio">
+      <h3>About Ariel</h1>
+      <p>{{ . | safeHTML }}</p>
+    </section>
+  {{ end }}
+
   <!-- Posts List -->
   <section id="recent-posts">
     <div class="mini-posts">
@@ -108,14 +116,6 @@
     </section>
   {{ end }}
 
-  <!-- About -->
-  {{ with .Site.Params.intro.about }}
-    <section id="mini-bio">
-      <h3>About</h1>
-      <p>{{ . | safeHTML }}</p>
-      <a href="/about/" class="button">Learn More</a>
-    </section>
-  {{ end }}
 
   <!-- Footer -->
   <section id="footer">
