@@ -1,4 +1,4 @@
-baseurl = "/"
+baseurl = "http://aosmith.rbind.io/"
 languageCode = "en-us"
 title = "Very statisticious"
 theme = "hugo-future-imperfect"
