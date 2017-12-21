@@ -1,0 +1,15 @@
+---
+title: How does this work?
+author: Ariel Muldoon
+date: '2017-12-19'
+slug: how-does-this-work
+categories: []
+tags: []
+---
+
+Test?
+
+```{r}
+plot(cars)
+```
+
