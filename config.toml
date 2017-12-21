@@ -115,11 +115,13 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 #  identifier = "fa fa-sitemap"
 #  weight = 4
 
-[[menu.main]]
-  name = "Contact"
-  url = "/contact/"
-  identifier = "fa fa-envelope-o"
-  weight = 3
+# I'm removing the Contact page because I'm having
+     # trouble getting it to show up right
+# [[menu.main]]
+#  name = "Contact"
+#  url = "/contact/"
+#  identifier = "fa fa-envelope-o"
+#  weight = 3
 
 # Sets Social Media icons to appear and link to your account. Value should be your
 # username unless otherwise noted. These are the icons affected by socialAppearAtTop
