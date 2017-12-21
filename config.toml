@@ -72,7 +72,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
   paragraph = "I discuss issues I've found come up regularly during statistical analysis and how to solve them using R"
 
-  # about     = "Ariel Muldoon"
+  about     = "I currently work as a consulting statistician, advising natural and social science researchers on statistics, statistical programming, study design, etc.  I also create and teach R workshops for applied science graduate students who are just getting started in R.  My goal is to make their transition to a programming language as smooth as possible."
 
   # This appears at the top of the sidebar above params.intro.header.
   # A width of less than 100px is recommended from a design perspective.
@@ -97,17 +97,17 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
   identifier = "fa fa-home"
   weight = 1
 
-[[menu.main]]
-  name = "About"
-  url = "/about/"
-  identifier = "fa fa-id-card-o"
-  weight = 2
+# [[menu.main]]
+#  name = "About"
+#  url = "/about/"
+#  identifier = "fa fa-id-card-o"
+#  weight = 2
 
 [[menu.main]]
   name = "Posts"
   url = "/post/"
   identifier = "fa fa-newspaper-o"
-  weight = 3
+  weight = 2
 
 # [[menu.main]]
 #  name = "Categories"
@@ -119,7 +119,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
   name = "Contact"
   url = "/contact/"
   identifier = "fa fa-envelope-o"
-  weight = 4
+  weight = 3
 
 # Sets Social Media icons to appear and link to your account. Value should be your
 # username unless otherwise noted. These are the icons affected by socialAppearAtTop
