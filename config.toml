@@ -3,7 +3,7 @@ languageCode = "en-us"
 title = "Very statisticious"
 theme = "hugo-future-imperfect"
 enableEmoji = true
-preserveTaxonomyNames = true
+# preserveTaxonomyNames = true
 disqusShortname = ""
 googleAnalytics = ""
 pluralizeListTitles = false
@@ -23,7 +23,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 # Optional Params
   # Sets navbarTitle to match the section of the website
-  dynamicTitles        = true
+  dynamicTitles        = false
   # Sets RSS icons to appear on the sidebar with the social media buttons
   rssAppearAtTop       = false
   rssAppearAtBottom    = false
@@ -113,13 +113,13 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
   name = "Categories"
   url = "/categories/"
   identifier = "fa fa-sitemap"
-  weight = 5
+  weight = 4
 
 [[menu.main]]
   name = "Contact"
   url = "/contact/"
   identifier = "fa fa-envelope-o"
-  weight = 6
+  weight = 5
 
 # Sets Social Media icons to appear and link to your account. Value should be your
 # username unless otherwise noted. These are the icons affected by socialAppearAtTop
