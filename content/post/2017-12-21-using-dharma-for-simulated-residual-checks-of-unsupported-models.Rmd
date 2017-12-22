@@ -27,9 +27,9 @@ When a function has a `simulate` function, getting the information need for `cre
 
 ## Example using `glmmTMB`
 
-The `glmmTMB` function from package **glmmTMB** is one of those unsupported models.  It does, however, have a `simulate` function, so it's pretty easy to adapt to using with `createDHARMa`)
+The `glmmTMB` function from package **glmmTMB** is one of those unsupported models.  It does, however, have a `simulate` function, so it's pretty easy to adapt to using with `createDHARMa`.
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 library(DHARMa) # version 0.1.5
 library(glmmTMB) # version 0.1.1
 ```
