@@ -54,7 +54,7 @@ paginate = 7
   # You must use date format used by Go Time package https://golang.org/pkg/time/
   # Months (not work with short month like "jan", "feb", etc) are translated if translation exists on i18n folders
   # Default format is: January 2, 2006
-  dateFormat = "Mon, January 2, 2006"
+  dateFormat = "January 2, 2006"
 
   # Global keywords configuration. Following keywords will be add to every pages
   # keywords = ["development", "next-gen"]
@@ -241,49 +241,3 @@ paginate = 7
 #  name = "RSS"
 #  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-rss\"></i>"
 #  url = "/index.xml"
-# Sets Social Media icons to appear and link to your account. Value should be your
-# username unless otherwise noted. These are the icons affected by socialAppearAtTop
-# and socialAppearAtBottom.
-[social]
-  # Coding Communities
-  github          = "aosmith16"
-  gitlab          = ""
-  stackoverflow   = "2461552" # User Number
-  bitbucket       = ""
-  jsfiddle        = ""
-  codepen         = ""
-  # Visual Art Communities
-  deviantart      = ""
-  flickr          = ""
-  behance         = ""
-  dribbble        = ""
-  # Publishing Communities
-  wordpress       = ""
-  medium          = ""
-  # Professional/Business Oriented Communities
-  linkedin        = ""
-  foursquare      = ""
-  xing            = ""
-  slideshare      = ""
-  # Social Networks
-  facebook        = ""
-  googleplus      = ""
-  reddit          = ""
-  quora           = ""
-  youtube         = ""
-  vimeo           = ""
-  whatsapp        = "" # WhatsApp Number
-    # WeChat and QQ need testing.
-    wechat          = ""
-    qq              = "" # User ID Number
-  instagram       = ""
-  tumblr          = ""
-  twitter         = "aosmith16"
-  skype           = ""
-  snapchat        = ""
-  pinterest       = ""
-  telegram        = ""
-  vine            = ""
-  # Email
-  email           = "ariel.muldoon@gmail.com"
-

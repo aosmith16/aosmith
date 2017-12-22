@@ -1,6 +1,7 @@
+<!--
 {{ if $.Site.Params.dateFormat }}
   {{ $date := (.Date.Format $.Site.Params.dateFormat) }}
-  {{ $regex := "(?i)(january|february|march|april|may|june|july|august|september|october|november|december)" }}
+  {{ $regex := "(?i)(January|February|march|april|may|june|july|august|september|october|november|December)" }}
   {{ $month := findRE $regex $date }}
   {{ if eq (len $month) 1 }}
     {{ replaceRE $regex (i18n (lower (printf "date.month.%s" (index $month 0)))) $date }}
@@ -10,3 +11,6 @@
 {{ else }}
   {{ i18n (lower (printf "date.month.%s" .Date.Month)) }} {{ .Date.Day }}, {{ .Date.Year }}
 {{ end }}
+-->
+
+{{ .Date.Format $.Site.Params.dateFormat }}
