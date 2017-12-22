@@ -12,49 +12,97 @@
 # For developpers, if you modify this theme, put your images in `source/images` folder and
 # use grunt task `build` to synchronize assets
 
-baseurl = "https://aosmith.rbind.io/"
+baseURL = "https://example.org/"
 languageCode = "en-us"
-title = "Very statisticious"
-theme = "hugo-tranquilpeak-theme-master"
-enableEmoji = true
-preserveTaxonomyNames = true
-disqusShortname = "aosmith-rbind-io"
-googleAnalytics = ""
-pluralizeListTitles = false
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+defaultContentLanguage = "en-us"
+title = "Hugo tranquilpeak theme"
+theme = "hugo-tranquilpeak-theme"
+disqusShortname = "hugo-tranquilpeak-theme"
+# googleAnalytics = "UA-123-45"
 paginate = 7
-
-[taxonomies]
-   tag = "tags"
-   category = "categories"
+canonifyurls = true
 
 [permalinks]
-    post = "/:year/:month/:day/:slug/"
+  post = "/:year/:month/:slug/"
+
+[taxonomies]
+  tag = "tags"
+  category = "categories"
+  archive = "archives"
 
 [author]
-  name = "Ariel Muldoon"
-  bio = "I currently work as a consulting statistician, advising natural and social science researchers on statistics, statistical programming, study design, etc.  I also create and teach R workshops for applied science graduate students who are just getting started in R.  My goal is to make their transition to a programming language as smooth as possible."
-
-  # job = "Your job title"
-  # location = "France"
+  name = "Firstname Lastname"
+  bio = "Super bio with markdown support **COOL**"
+  job = "Your job title"
+  location = "France"
   # Your Gravatar email. Overwrite `author.picture` everywhere in the blog
-  # gravatarEmail = "thibaud.lepretre@gmail.com"
+  gravatarEmail = "thibaud.lepretre@gmail.com"
   # Your profile picture
   # Overwritten by your gravatar image if `author.gravatarEmail` is filled
-  picture = "/img/main/ao_ppg2.jpg"
+  picture = "https://cdn1.iconfinder.com/data/icons/ninja-things-1/1772/ninja-simple-512.png"
   # Your Twitter username without the @. E.g : thibaudlepretre
-  twitter = "aosmith16"
+  # twitter = "thibaudlepretre"
   # Your google plus profile id. E.g : +ThibaudLepretre or 114625208755123718311
   # googlePlus = "+ThibaudLepretre"
 
-[params]
+# Menu Configuration
+[[menu.main]]
+  weight = 1
+  identifier = "home"
+  name = "Home"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-home\"></i>"
+  url = "/"
+[[menu.main]]
+  weight = 2
+  identifier = "categories"
+  name = "Categories"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-bookmark\"></i>"
+  url = "/categories"
+[[menu.main]]
+  weight = 3
+  identifier = "tags"
+  name = "Tags"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-tags\"></i>"
+  url = "/tags"
+[[menu.main]]
+  weight = 4
+  identifier = "archives"
+  name = "Archives"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-archive\"></i>"
+  url = "/archives"
+[[menu.main]]
+  weight = 5
+  identifier = "about"
+  name = "About"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-question\"></i>"
+  url = "/#about"
 
-  navbarTitle          = "Very statisticious"
+[[menu.links]]
+  weight = 1
+  identifier = "github"
+  name = "GitHub"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-github\"></i>"
+  url = "https://github.com/kakawait"
+[[menu.links]]
+  weight = 2
+  identifier = "stackoverflow"
+  name = "Stack Overflow"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-stack-overflow\"></i>"
+  url = "https://stackoverflow.com/users/636472/kakawait"
+
+[[menu.misc]]
+  weight = 1
+  identifier = "rss"
+  name = "RSS"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-rss\"></i>"
+  url = "/index.xml"
+
+[params]
   # Customize date format use to render blog post date, categories and other
   # You must use date format used by Go Time package https://golang.org/pkg/time/
   # Months (not work with short month like "jan", "feb", etc) are translated if translation exists on i18n folders
-  # Default format is: January 2, 2006
-  date_format = "Mon, Jan 2, 2006"
+  # Default format is: January 2, 2006 
+  # dateFormat = "2 January 2006"
 
   # Global keywords configuration. Following keywords will be add to every pages
   # keywords = ["development", "next-gen"]
@@ -66,11 +114,11 @@ paginate = 7
   # Hide sidebar on all article page to let article take full width to improve reading, and enjoy wide images and cover images. (true: enable, false: disable)
   clearReading = true
 
-  # Define categories will create hierarchy between parents: `categories = ["foo", "bar"]` will consider "bar" a sub-category of "foo".
+  # Define categories will create hierarchy between parents: `categories = ["foo", "bar"]` will consider "bar" a sub-category of "foo". 
   # If false it will flat categories.
   hierarchicalCategories = true
 
-  # description = "Hugo tranquilpeak theme demo"
+  description = "Hugo tranquilpeak theme demo"
 
   # Customization
   # Define the behavior of the sidebar
@@ -93,7 +141,7 @@ paginate = 7
   # Current image is on AWS S3 and delivered by AWS CloudFront.
   # Otherwise put your image in folder `static/_images/` (development)  or in `source/assets/images/` if you can't or don't want to build the theme,
   # and use relative url : `your-image.png`
-  coverImage = "eclipse3.jpg"
+  coverImage = "cover.jpg"
 
   # Display an image gallery at the end of a post which have photos variables (false: disabled, true: enabled)
   imageGallery = true
@@ -138,11 +186,6 @@ paginate = 7
   # Comment and uncomment to enable or disable sharing options
   # If you wanna add a sharing option, read user documentation :
   # Tranquilpeak configuration > Theme configuration > sharing-options
-
- # Sharing options
-  # Comment and uncomment to enable or disable sharing options
-  # If you wanna add a sharing option, read user documentation :
-  # Tranquilpeak configuration > Theme configuration > sharing-options
   [[params.sharingOptions]]
     name = "Facebook"
     icon = "fa-facebook-official"
@@ -153,137 +196,20 @@ paginate = 7
     icon = "fa-twitter"
     url = "https://twitter.com/intent/tweet?text=%s"
 
+  [[params.sharingOptions]]
+    name = "Google+"
+    icon = "fa-google-plus"
+    url = "https://plus.google.com/share?url=%s"
 
-  # These are optional params related to the sidebar. They are recommended, but not
-  # required for proper functionality. HTML is supported within the params.
-#[params.intro]
-#  header    = "Very Statisticious"
+  [params.header.rightLink]
+    class = ""
+    icon = ""
+    url = "/#about"
 
-#  paragraph = "I discuss issues I've found come up regularly during statistical analysis and how to solve them using R"
+  # Customize link of author avatar in sidebar
+  # [params.sidebar.profile]
+  #   url = "/#about"
 
-#  about     = "I currently work as a consulting statistician, advising natural and social science researchers on statistics, statistical programming, study design, etc.  I also create and teach R workshops for applied science graduate students who are just getting started in R.  My goal is to make their transition to a programming language as smooth as possible."
-
-  # This appears at the top of the sidebar above params.intro.header.
-  # A width of less than 100px is recommended from a design perspective.
-#  [params.intro.pic]
-#    src       = "/img/main/ao_ppg2.jpg"
-    # Sets Image to be a cirlce
-#    circle    = false
-    # Sets Image to be Future Imperfect's hexagon
-#    imperfect = true
-#    width     = ""
-#    alt       = ""
-
-[params.postAmount]
-# Sets the number of recent posts to show in the sidebar. The default value is 5.
-    sidebar = 5
-
-# Menu Configuration
-[[menu.main]]
-  weight = 1
-  identifier = "home"
-  name = "Home"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-home\"></i>"
-  url = "/"
-[[menu.main]]
-  weight = 2
-  identifier = "categories"
-  name = "Categories"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-bookmark\"></i>"
-  url = "/categories"
-[[menu.main]]
-  weight = 3
-  identifier = "tags"
-  name = "Tags"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-tags\"></i>"
-  url = "/tags"
-#[[menu.main]]
-#  weight = 4
-#  identifier = "archives"
-#  name = "Archives"
-#  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-archive\"></i>"
-#  url = "/archives"
-[[menu.main]]
-  weight = 4
-  identifier = "about"
-  name = "About"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-question\"></i>"
-  url = "/#about"
-
-[[menu.misc]]
-  weight = 1
-  identifier = "email"
-  name = "Email"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-envelope\"></i>"
-  url = "mailto:ariel.muldoon@gmail.com"
-[[menu.misc]]
-  weight = 2
-  identifier = "twitter"
-  name = "Twitter"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-twitter\"></i>"
-  url = "https://twitter.com/aosmith16"
-[[menu.misc]]
-  weight = 3
-  identifier = "github"
-  name = "GitHub"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-github\"></i>"
-  url = "https://github.com/aosmith16"
-[[menu.misc]]
-  weight = 4
-  identifier = "stackoverflow"
-  name = "Stack Overflow"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-stack-overflow\"></i>"
-  url = "https://stackoverflow.com/users/2461552"
-
-#[[menu.misc]]
-#  weight = 1
-#  identifier = "rss"
-#  name = "RSS"
-#  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-rss\"></i>"
-#  url = "/index.xml"
-# Sets Social Media icons to appear and link to your account. Value should be your
-# username unless otherwise noted. These are the icons affected by socialAppearAtTop
-# and socialAppearAtBottom.
-[social]
-  # Coding Communities
-  github          = "aosmith16"
-  gitlab          = ""
-  stackoverflow   = "2461552" # User Number
-  bitbucket       = ""
-  jsfiddle        = ""
-  codepen         = ""
-  # Visual Art Communities
-  deviantart      = ""
-  flickr          = ""
-  behance         = ""
-  dribbble        = ""
-  # Publishing Communities
-  wordpress       = ""
-  medium          = ""
-  # Professional/Business Oriented Communities
-  linkedin        = ""
-  foursquare      = ""
-  xing            = ""
-  slideshare      = ""
-  # Social Networks
-  facebook        = ""
-  googleplus      = ""
-  reddit          = ""
-  quora           = ""
-  youtube         = ""
-  vimeo           = ""
-  whatsapp        = "" # WhatsApp Number
-    # WeChat and QQ need testing.
-    wechat          = ""
-    qq              = "" # User ID Number
-  instagram       = ""
-  tumblr          = ""
-  twitter         = "aosmith16"
-  skype           = ""
-  snapchat        = ""
-  pinterest       = ""
-  telegram        = ""
-  vine            = ""
-  # Email
-  email           = "ariel.muldoon@gmail.com"
-
+  # Customize copyright value "© 2017 <CUSTOMIZATION>. All Rights Reserved"
+  # [params.footer]
+  #   copyright = "<a href=\"https://github.com/kakawait\">kakawait</a>"
