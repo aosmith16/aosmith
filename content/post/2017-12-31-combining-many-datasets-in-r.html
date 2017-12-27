@@ -1,0 +1,42 @@
+---
+title: Combining many datasets in R
+author: Ariel Muldoon
+date: '2017-12-31'
+slug: many-datasets
+draft: TRUE
+categories:
+  - r
+tags:
+  - data
+  - teaching
+---
+
+
+
+<p>At least once a year I meet with a graduate student who has many datasets that need to be combined prior to any data exploration or analysis. The data are usually from some sort of data logger (e.g, iButtons or RFID readers) that records data remotely over some time period, which the researcher then downloads. As data loggers become less expensive and have more memory and/or better batteries, I believe such scenarios will only be getting more common.</p>
+<p>Today I wanted to go through some code on how to do this sort of task in R. I’m first going to set up the background for my particular use case. <strong>Skip straight to “List all files” if you want to jump right into code.</strong></p>
+<div id="whats-so-hard-about-reading-in-many-datasets" class="section level1">
+<h1>What’s so hard about reading in many datasets?</h1>
+<p>For someone who is at least somewhat familiar with a programming language (e.g., SAS, Python, R), reading many datasets in and combining them into a single file might not seem like a big deal. For example, if I do a quick web search on something like <code>&quot;r read many datasets&quot;</code> I get at least 5 Stack Overflow posts as well as a few blog entries. These links show code for relatively simple situations of reading many identical dataset in to R with <code>lapply</code> or a loop (a couple SO examples <a href="https://stackoverflow.com/questions/17271833/how-do-i-read-in-multiple-data-sets">here</a> and <a href="https://stackoverflow.com/questions/32888757/reading-multiple-files-into-r-best-practice">here</a>).</p>
+<p>But, frankly, in my experience this doesn’t feel very simple to beginner programmers. Most of the graduate students I meet with have never worked with any sort of programming language prior to entering their degree program. By the time I meet with them they usually have had a very basic introduction to R in their basic statistics courses. They may have read in a dataset into R only a couple of times, and now they have hundreds of them to manage.</p>
+<p><em>(Aside: I am couching this around R because that’s what taught in the intro courses in the Statisics Department at my university; I still get a few requests every year for help with SAS programming from faculty and post-docs and so far over six years I’ve had exactly one student client who worked primarily with Python)</em></p>
+</div>
+<div id="why-would-i-want-to-have-to-do-this-in-r-or-sas-or-python-or" class="section level1">
+<h1>Why would I want to have to do this in R (or SAS or Python or …)?</h1>
+<p>That is the question I got from the first student I ever advised on this process. She was collecting data using many data loggers in a field experiment set up as randomized complete block design with repeated measures. She had 300 comma-delimited files that needed to be concatenated together from her first field season. She would be doing a second season, which would have at least twice as many files.</p>
+<p>Her research collaborators had used these loggers previously, and had given her the following algorithm to follow:</p>
+<ol style="list-style-type: decimal">
+<li>Open each file in Excel</li>
+<li>Manually delete the first 15 rows, which contained information about the data logger that wasn’t related to the study</li>
+<li>Add columns to indicate the physical units the data was collected from (Block, Site, Plot)</li>
+<li>Copy and paste into a new file</li>
+<li>Repeat with all datasets</li>
+<li>Name columns</li>
+</ol>
+<p>Me: <img src="/img/2017-12-31_cat_disgusted.png" /><!-- --></p>
+<p>But really this gave me a chance to discuss reproducibility and the convenience of using computers to do repetitive tasks. Some effort in the short term can be very valuable in the long term.</p>
+<p>To be honest, she was pretty skeptical that it made sense to use a programming language to do the work. It helped that we found mistakes in the files she’d already edited when when we were setting up the R code (it’s sooo easy to make mistakes when copying and pasting 300 times!). Her skeptism continues to be a good reminder to me of what it feels like to be a beginner in a programming language, where you never quite trust that the program is doing what you want it to and so the manual approach you already know how to do looks pretty darn attractive.</p>
+</div>
+<div id="list-all-files" class="section level1">
+<h1>List all files</h1>
+</div>
