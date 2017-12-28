@@ -1,2 +1,2 @@
 # aosmith
-Blog for Ariel Muldoon
+Blog for Ariel Muldoon, writing at "Very statisticious"
