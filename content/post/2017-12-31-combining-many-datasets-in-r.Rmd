@@ -54,7 +54,7 @@ When reading in many files, my first two tasks are:
 + Getting a list of files to read  
 + Figuring out the steps needed to read and manipulate a single file  
 
-Here I'll start by getting a list of the files.  I'm using some toy files I made to mirror what the real files looked like. These CSV files are available on the [blog GitHub repository](https://github.com/aosmith16/aosmith/tree/master/content/data).
+Here I'll start by getting a list of the files.  I'm using some toy files I made to mirror what the real files looked like. These CSV files are available on the [blog GitHub repository](https://github.com/aosmith16/aosmith/tree/master/static/data).
 
 Listing all files can be done in R via `list.files` or `dir`.  I'll use `list.files` here (no reason, just habit most likely based on what I learned first).  
 
@@ -75,7 +75,7 @@ library(here) # v. 0.1
 The `list.files` function returns a vector of file paths.
 
 ```{r}
-( allfiles = list.files(path = here("content", "data"),
+( allfiles = list.files(path = here("static", "data"),
                         pattern = "AB.csv|ab.csv",
                         full.names = TRUE,
                         recursive = TRUE) )

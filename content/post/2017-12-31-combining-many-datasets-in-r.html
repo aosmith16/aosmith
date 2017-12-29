@@ -46,7 +46,7 @@ tags:
 </li>
 <li>Figuring out the steps needed to read and manipulate a single file</li>
 </ul>
-<p>Here I’ll start by getting a list of the files. I’m using some toy files I made to mirror what the real files looked like. These CSV files are available on the <a href="https://github.com/aosmith16/aosmith/tree/master/content/data">blog GitHub repository</a>.</p>
+<p>Here I’ll start by getting a list of the files. I’m using some toy files I made to mirror what the real files looked like. These CSV files are available on the <a href="https://github.com/aosmith16/aosmith/tree/master/static/data">blog GitHub repository</a>.</p>
 <p>Listing all files can be done in R via <code>list.files</code> or <code>dir</code>. I’ll use <code>list.files</code> here (no reason, just habit most likely based on what I learned first).</p>
 <p>For this particular case I will use four of the arguments in <code>list.files</code>:</p>
 <ol style="list-style-type: decimal">
@@ -57,16 +57,16 @@ tags:
 </ol>
 <pre class="r"><code>library(here) # v. 0.1</code></pre>
 <p>The <code>list.files</code> function returns a vector of file paths.</p>
-<pre class="r"><code>( allfiles = list.files(path = here(&quot;content&quot;, &quot;data&quot;),
+<pre class="r"><code>( allfiles = list.files(path = here(&quot;static&quot;, &quot;data&quot;),
                         pattern = &quot;AB.csv|ab.csv&quot;,
                         full.names = TRUE,
                         recursive = TRUE) )</code></pre>
-<pre><code>## [1] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block1/Siteone/SIT1_17_12_21_5.2_AB.csv&quot;
-## [2] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block1/Siteone/sit1_17_12_31_2.2_ab.csv&quot;
-## [3] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block1/Siteone/SIT1_17_12_9_5.2_AB.csv&quot; 
-## [4] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block2/Sitenew/SIT1_17_12_10_3.2_AB.csv&quot;
-## [5] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block2/Sitenew/SIT1_17_12_21_3.2_AB.csv&quot;
-## [6] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block2/Sitenew/SIT1_17_12_31_5.2_AB.csv&quot;</code></pre>
+<pre><code>## [1] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block1/Siteone/SIT1_17_12_21_5.2_AB.csv&quot;
+## [2] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block1/Siteone/sit1_17_12_31_2.2_ab.csv&quot;
+## [3] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block1/Siteone/SIT1_17_12_9_5.2_AB.csv&quot; 
+## [4] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_10_3.2_AB.csv&quot;
+## [5] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_21_3.2_AB.csv&quot;
+## [6] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_31_5.2_AB.csv&quot;</code></pre>
 </div>
 <div id="practice-reading-in-one-file" class="section level1">
 <h1>Practice reading in one file</h1>
@@ -91,8 +91,8 @@ tags:
 <p>Since some information is located within the file path string, splitting the file path up into separate pieces seems like a reasonable first step. This can be done via <code>str_split</code> using <code>&quot;/&quot;</code> as the symbol to split on. As there is only a single character string to split for each dataset, it is convenient to return a matrix instead of a list via <code>simplify = TRUE</code>.</p>
 <p>The result is a matrix containing strings in each column.</p>
 <pre class="r"><code>( allnames = str_split( allfiles[1], pattern = &quot;/&quot;, simplify = TRUE) )</code></pre>
-<pre><code>##      [,1] [,2]    [,3]    [,4]        [,5]      [,6]   [,7]      [,8]     
-## [1,] &quot;C:&quot; &quot;Users&quot; &quot;Owner&quot; &quot;Documents&quot; &quot;Aosmith&quot; &quot;Blog&quot; &quot;aosmith&quot; &quot;content&quot;
+<pre><code>##      [,1] [,2]    [,3]    [,4]        [,5]      [,6]   [,7]      [,8]    
+## [1,] &quot;C:&quot; &quot;Users&quot; &quot;Owner&quot; &quot;Documents&quot; &quot;Aosmith&quot; &quot;Blog&quot; &quot;aosmith&quot; &quot;static&quot;
 ##      [,9]   [,10]    [,11]     [,12]                     
 ## [1,] &quot;data&quot; &quot;Block1&quot; &quot;Siteone&quot; &quot;SIT1_17_12_21_5.2_AB.csv&quot;</code></pre>
 <p>The “Block” information is always the third column if counting from the end (it’s the 10th in this case if counting from the beginning). It’s “safer” (i.e., less likely to fail on a different computer) to count from the last column and work backwards here; on a different computer the full file paths may change length but the directory containing the files to read will be the same.</p>
