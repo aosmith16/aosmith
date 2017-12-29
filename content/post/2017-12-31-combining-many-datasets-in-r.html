@@ -3,7 +3,7 @@ title: Combining many datasets in R
 author: Ariel Muldoon
 date: '2017-12-31'
 slug: many-datasets
-draft: TRUE
+draft: FALSE
 categories:
   - r
 tags:
@@ -13,43 +13,50 @@ tags:
 
 
 
-<p>At least once a year I meet with a graduate student who has many datasets that need to be combined prior to any data exploration or analysis. The data are usually from some sort of data logger (e.g, iButtons or RFID readers) that records data remotely over some time period, which the researcher then downloads. As data loggers become less expensive and have more memory and/or better batteries, I believe such scenarios will only be getting more common.</p>
-<p>Today I wanted to go through some code on how to do this sort of task in R. I’m first going to set up the background for my particular use case. <strong>Skip straight to “List all files” if you want to jump right into code.</strong></p>
+<p>At least once a year I meet with a graduate student who has many separate datasets that need to be combined into a single file. The data are usually from a series of data loggers (e.g., iButtons or RFID readers) that record data remotely over a specified time period. The researcher periodically downloads the data from each data logger and then redeploys it for further data collection.</p>
+<p>I’m going to set up the background for my particular use case before jumping into the R code to perform this sort of task. <strong>Go straight to “List all files to read in” if you want to get right into R code.</strong></p>
 <div id="whats-so-hard-about-reading-in-many-datasets" class="section level1">
 <h1>What’s so hard about reading in many datasets?</h1>
-<p>For someone who is at least somewhat familiar with a programming language (e.g., SAS, Python, R), reading many datasets in and combining them into a single file might not seem like a big deal. For example, if I do a quick web search on something like <code>&quot;r read many datasets&quot;</code> I get at least 5 Stack Overflow posts as well as a few blog entries. These links show code for relatively simple situations of reading many identical dataset in to R with <code>lapply</code> or a loop (a couple SO examples <a href="https://stackoverflow.com/questions/17271833/how-do-i-read-in-multiple-data-sets">here</a> and <a href="https://stackoverflow.com/questions/32888757/reading-multiple-files-into-r-best-practice">here</a>).</p>
-<p>But, frankly, in my experience this doesn’t feel very simple to beginner programmers. Most of the graduate students I meet with have never worked with any sort of programming language prior to entering their degree program. By the time I meet with them they usually have had a very basic introduction to R in their basic statistics courses. They may have read in a dataset into R only a couple of times, and now they have hundreds of them to manage.</p>
-<p><em>(Aside: I am couching this around R because that’s what taught in the intro courses in the Statisics Department at my university; I still get a few requests every year for help with SAS programming from faculty and post-docs and so far over six years I’ve had exactly one student client who worked primarily with Python)</em></p>
+<p>For someone who is at least somewhat familiar with a programming language (e.g., SAS, Python, R), reading many datasets in and combining them into a single file might not seem like a big deal. For example, if I do a quick web search on “r read many datasets” I get at least 5 Stack Overflow posts (with answers) as well as several blog entries. These links show code for relatively simple situations of reading many identical dataset in to R (a couple SO examples can be found <a href="https://stackoverflow.com/questions/17271833/how-do-i-read-in-multiple-data-sets">here</a> and <a href="https://stackoverflow.com/questions/32888757/reading-multiple-files-into-r-best-practice">here</a>).</p>
+<p>However, in my experience this work doesn’t feel very simple to beginner programmers. Most of the graduate students I meet with have never worked with any sort of programming language prior to entering their degree program. By the time I meet with them they usually have had a very basic introduction to R in their intro statistics courses. They may have read in a dataset into R only a couple of times at most, and now they have hundreds of them to manage. To further complicate things, there is usually more work that needs to be done beyond reading the datasets in, such as adding important identifying information to each dataset.</p>
+<p><em>Aside: I am couching this around R because that’s what taught in the intro courses in the Statisics Department at my university. I still get a few requests every year for help with SAS programming from faculty and post-docs and so far over six years I’ve had exactly one student client who worked primarily with Python</em></p>
 </div>
 <div id="why-would-i-want-to-have-to-do-this-in-r-or-sas-or-python-or" class="section level1">
 <h1>Why would I want to have to do this in R (or SAS or Python or …)?</h1>
-<p>That is the question I got from the first student I ever advised on this process. She was collecting data using many data loggers in a field experiment set up as randomized complete block design with repeated measures. She had 300 comma-delimited files that needed to be concatenated together from her first field season. She would be doing a second season, which would have at least twice as many files.</p>
+<p>That is the question I got from the first student I ever advised on this topic. She was collecting data using many data loggers in a field experiment set up as randomized complete block design with repeated measures. She had 300 comma-delimited files that needed to be concatenated together from her first field season and was planning on a second season that was at least twice as long (so would have at least twice as many files).</p>
 <p>Her research collaborators had used these loggers previously, and had given her the following algorithm to follow:</p>
 <ol style="list-style-type: decimal">
 <li>Open each file in Excel</li>
 <li>Manually delete the first 15 rows, which contained information about the data logger that wasn’t related to the study</li>
-<li>Add columns to indicate the physical units the data was collected from (Block, Site, Plot)</li>
-<li>Copy and paste into a new file</li>
+<li>Add columns to indicate the physical study units the data was collected in (“Block”, “Site”, “Plot”)</li>
+<li>Copy and paste into a new, combined file</li>
 <li>Repeat with all datasets</li>
 <li>Name columns</li>
 </ol>
 <p>Me: <img src="/img/2017-12-31_cat_disgusted.png" /><!-- --></p>
-<p>But really this gave me a chance to discuss reproducibility and the convenience of using computers to do repetitive tasks. Some effort in the short term can be very valuable in the long term.</p>
-<p>To be honest, she was pretty skeptical that it made sense to use a programming language to do the work. It helped that we found mistakes in the files she’d already edited when when we were setting up the R code (it’s sooo easy to make mistakes when copying and pasting 300 times!). Her skepticism continues to be a good reminder to me of what it feels like to be a beginner in a programming language, where you never quite trust that the program is doing what you want it to and so the manual approach you already know how to do looks pretty darn attractive.</p>
+<p>But really this gave me a chance to discuss reproducibility and the convenience of using computers to do repetitive tasks with the next generation of researchers. While she would need to expend effort understanding R code, the effort in the short term would be valuable in the long term given she was going to do a second field season.</p>
+<p>To be honest, she was pretty skeptical that it made sense to use a programming language to do the work. From her perspective, doing the work via R looked more difficult and more “black-box” than manually copying and pasting in Excel. It helped that we found mistakes in the files she’d already edited when when we were setting up the R code (it’s so easy to make mistakes when copying and pasting 300 times!).</p>
+<p>Her skepticism continues to be a good reminder to me of what it feels like to be a beginner in a programming language, where you don’t quite trust that the program is doing what you want it to and you don’t exactly fully understand the code. The manual approach you already know how to do can look pretty darn attractive by comparison.</p>
 </div>
 <div id="list-all-files-to-read-in" class="section level1">
 <h1>List all files to read in</h1>
-<p>When reading in many files, the first two tasks are to: + Getting a list of files to read + Figuring out the steps needed to read and manipulate a single file</p>
-<p>Here I’ll start by getting a list of files. I’m using some toy files I made, which are CSV files. These are available on the <a href="https://github.com/aosmith16/aosmith">blog GitHub repository</a>.</p>
-<p>This can be done in R via <code>list.files</code> or <code>dir</code>. I’ll use <code>list.files</code> here out of habit. In this particular case I will need four of the arguments.</p>
+<p>When reading in many files, my first two tasks are:</p>
+<ul>
+<li>Getting a list of files to read<br />
+</li>
+<li>Figuring out the steps needed to read and manipulate a single file</li>
+</ul>
+<p>Here I’ll start by getting a list of the files. I’m using some toy files I made to mirror what the real files looked like. These CSV files are available on the <a href="https://github.com/aosmith16/aosmith/tree/master/content/data">blog GitHub repository</a>.</p>
+<p>Listing all files can be done in R via <code>list.files</code> or <code>dir</code>. I’ll use <code>list.files</code> here (no reason, just habit most likely based on what I learned first).</p>
+<p>For this particular case I will use four of the arguments in <code>list.files</code>:</p>
 <ol style="list-style-type: decimal">
-<li><p>The directory containing the files needs to be defined in the <code>&quot;path&quot;</code> argument of <code>list.files</code>. I’m working within an RStudio Project, and will use the <code>here</code> package to indicate the directory the files are in. See <a href="https://www.tidyverse.org/articles/1/01/">Jenny Bryan’s post here</a> on the merits of <code>here</code> and self-contained projects.</p></li>
-<li><p>The <code>&quot;pattern&quot;</code> argument is where we can indicate which files we want to read in. If you want to read in all CSV files in a directory, the pattern to match might by <code>&quot;.csv&quot;</code>. In the real scenario, there were additional CSV files in the directory that shouldn’t be read, so we first defined the the pattern as <code>&quot;AB.csv&quot;</code> and then, after realizing that some file names were all lowercase, as <code>&quot;AB.csv|ab.csv&quot;</code>. (The vertical pipe, <code>|</code>, stands for “or”).</p></li>
-<li><p>The <code>&quot;recursive&quot;</code> argument is used to indicate that files within child folders of the defined directory should also be read. The files in this particular case are not stored in a single folder. Instead they are in folders within the overall directory. The child folders indicate the study units (Blocks and Sites nested in Blocks) the data were collected in.</p></li>
-<li><p>The <code>&quot;full.names&quot;</code> argument is if the full file names should be returned or only the relative file path. In this case, the only place in the information about the physical units of the study (“Blocks” and “Sites”) are in the directory path. We needed the full path names in order to extract that information and add it to the dataset in R.</p></li>
+<li><p>The directory containing the files needs to be defined in the <code>&quot;path&quot;</code> argument of <code>list.files</code>. I’m working within an RStudio Project, and will use the <code>here</code> package to indicate the directory the files are in relative to the root directory. See <a href="https://www.tidyverse.org/articles/1/01/">Jenny Bryan’s post here</a> on the merits of <code>here</code> and self-contained projects.</p></li>
+<li><p>The <code>&quot;pattern&quot;</code> argument is used to tell R which file paths should be listed. If you want to read in all CSV files in a directory, for example, the pattern to match might by <code>&quot;.csv&quot;</code>. In the real scenario, there were additional CSV files in the directory that we didn’t want to read. All the files we wanted to read ended in “AB.csv”, so we first defined the pattern as <code>&quot;AB.csv&quot;</code>. Later we realized that some file names were all lowercase, so used <code>&quot;AB.csv|ab.csv&quot;</code>. The vertical pipe, <code>|</code>, stands for “or”.</p></li>
+<li><p>The <code>&quot;recursive&quot;</code> argument is used to indicate whether or not child folders in the parent directory should be searched for files to list or not. It defaults to <code>FALSE</code>. The files in this particular case are not stored in a single folder. Instead they are in child folders within an overall “data” directory. The names of the child folders actually indicate the study units (“Blocks” and “Sites”) the data were collected in.</p></li>
+<li><p>The <code>&quot;full.names&quot;</code> argument is used to indicate if the complete file paths should be returned or only the relative file paths. In this case, the only place in the information about some of the physical units of the study (“Blocks” and “Sites”) are in the directory path. We needed the full path names in order to extract that information and add it to the dataset.</p></li>
 </ol>
 <pre class="r"><code>library(here) # v. 0.1</code></pre>
-<p>Here are the files for this example. The result is a vector of files to read in.</p>
+<p>The <code>list.files</code> function returns a vector of file paths.</p>
 <pre class="r"><code>( allfiles = list.files(path = here(&quot;content&quot;, &quot;data&quot;),
                         pattern = &quot;AB.csv|ab.csv&quot;,
                         full.names = TRUE,
@@ -63,8 +70,8 @@ tags:
 </div>
 <div id="practice-reading-in-one-file" class="section level1">
 <h1>Practice reading in one file</h1>
-<p>I find things tend to go more smoothly if I work out the file-reading process with a single file before I try to read a bunch of files in. It’s an easy step to want to skip because it feels more efficient to do “everything at once”. I’ve never found that to actually be the case.</p>
-<p>Here I’ll read in the first file in the files list. The top 6 lines is all extraneous header information, which should be skipped. There are no column headers in the file, so those need to be added.</p>
+<p>I find things go more smoothly if I work out the file-reading process with a single file before I try to read a bunch of files. It’s an easy step to want to skip because it feels more efficient to do “everything at once”. I’ve never found that to actually be the case. 👅</p>
+<p>I’ll practice with the first file listed in <code>allfiles</code>. The top 6 lines of the raw data file is all extraneous header information, which will be skipped via <code>&quot;skip&quot;</code>. There are no column headers (<code>&quot;header&quot;</code>) in the file, so those need to be added (<code>&quot;col.names&quot;</code>).</p>
 <pre class="r"><code>( test = read.csv(allfiles[1], 
                 skip = 6,
                 header = FALSE,
@@ -76,23 +83,23 @@ tags:
 ## 4   18           9
 ## 5   19          10</code></pre>
 <p>That went pretty smoothly, but things get a little hairy from here. The information on the physical units of the study, “Blocks” and “Sites”, are contained only in the file directory path. These need to be extracted from the file path and added to the dataset.</p>
-<p>In addition, the “Plot” information is contained in the file name. Plot names are single numbers that are found directly before the period in the file name. In <code>allfiles[1]</code>, C:/Users/Owner/Documents/Aosmith/Blog/aosmith/content/data/Block1/Siteone/SIT1_17_12_21_5.2_AB.csv, that number is 5.</p>
-<p>Last, the last two digits of the file name is code to indicate where the data logger was located, which also needs to be added to the dataset. In this case these values are all “AB”, but in the larger set of files this wasn’t true.</p>
+<p>In addition, the “Plot” information is contained in the file name. Plot names are single numbers that are found directly before the period in the file name. In <code>allfiles[1]</code> that number is 5 (the file name is “SIT1_17_12_21_5.2_AB.csv”).</p>
+<p>Last, the final two digits of the file name is a code to indicate where the data logger was located. This also needs to be added to the dataset. In the toy example these values are all “AB”, but in the larger set of files this wasn’t true.</p>
 <p>All the tasks above are string manipulation tasks. I will tackle these with the functions from the <strong>stringr</strong> package.</p>
 <pre class="r"><code>library(stringr) # v. 1.2.0</code></pre>
 <p><strong>Extract “Block” names from the file path</strong></p>
-<p>Splitting the file path into pieces is a reasonable first step. This can be done via <code>str_split</code> using <code>&quot;/&quot;</code> as the symbol to split on. Because there is only a single character string we want to split for each dataset, it is convenient to return a matrix instead of a list via <code>simplify = TRUE</code>.</p>
+<p>Since some information is located within the file path string, splitting the file path up into separate pieces seems like a reasonable first step. This can be done via <code>str_split</code> using <code>&quot;/&quot;</code> as the symbol to split on. As there is only a single character string to split for each dataset, it is convenient to return a matrix instead of a list via <code>simplify = TRUE</code>.</p>
 <p>The result is a matrix containing strings in each column.</p>
 <pre class="r"><code>( allnames = str_split( allfiles[1], pattern = &quot;/&quot;, simplify = TRUE) )</code></pre>
 <pre><code>##      [,1] [,2]    [,3]    [,4]        [,5]      [,6]   [,7]      [,8]     
 ## [1,] &quot;C:&quot; &quot;Users&quot; &quot;Owner&quot; &quot;Documents&quot; &quot;Aosmith&quot; &quot;Blog&quot; &quot;aosmith&quot; &quot;content&quot;
 ##      [,9]   [,10]    [,11]     [,12]                     
 ## [1,] &quot;data&quot; &quot;Block1&quot; &quot;Siteone&quot; &quot;SIT1_17_12_21_5.2_AB.csv&quot;</code></pre>
-<p>The information on blocks is always the third column if counting from the end instead of the beginning. It’s “safer” to go from the last column backwards here, as on a different computer the full file paths may be different.</p>
-<p>To get the third from the end I take the total number of columns and subtract 2.</p>
+<p>The “Block” information is always the third column if counting from the end (it’s the 10th in this case if counting from the beginning). It’s “safer” (i.e., less likely to fail on a different computer) to count from the last column and work backwards here; on a different computer the full file paths may change length but the directory containing the files to read will be the same.</p>
+<p>To extract the third column from the end I take the total number of columns and subtract 2.</p>
 <pre class="r"><code>allnames[, ncol(allnames) - 2]</code></pre>
 <pre><code>## [1] &quot;Block1&quot;</code></pre>
-<p>So this could be added to the dataset as a “block” variable.</p>
+<p>This can be added to the dataset as a “block” variable.</p>
 <pre class="r"><code>test$block = allnames[, ncol(allnames) - 2]
 test</code></pre>
 <pre><code>##   date temperature  block
@@ -108,24 +115,24 @@ test</code></pre>
 <p>The last character string in our matrix is the file name, which contains the plot name and logger location. In the test case the plot name is “5” and the logger location is “AB”.</p>
 <pre class="r"><code>allnames[, ncol(allnames)]</code></pre>
 <pre><code>## [1] &quot;SIT1_17_12_21_5.2_AB.csv&quot;</code></pre>
-<p>This can be split on the underscores and periods and the plot information extracted in much the same was as the “Block” information. I think this option can feel more approachable to beginners and is a reasonable way to approach the problem.</p>
-<p>Another option is to use “regular expressions” to define which part of the file name we want to pull out. I continually find regular expressions difficult, but I will use them here to give a wider breadth of examples.</p>
-<p>A basic introduction to regular expressions is on the second page of the “Work with Strings” <a href="https://www.rstudio.com/resources/cheatsheets/">cheatsheet from RStudio</a>. More in depth examples are on the <a href="http://stat545.com/block022_regular-expression.html">UBC ST 545 page</a>.</p>
-<p>We can extract the desired number from the file name via <code>str_extract</code> from <strong>stringr</strong>, using regular expressions for the <code>&quot;pattern&quot;</code>. In this case I used a <a href="http://www.regular-expressions.info/lookaround.html">lookaround</a> following this <a href="https://stackoverflow.com/a/35404422/2461552">Stack Overflow answer</a>. These can be apparently be costly in terms of performance, which I did not find to be a deterrent in my case.</p>
-<p>The regular expression I use extracts a digit (<code>[0-9]</code>) that comes just before a period. The <code>(?=\\.)</code> is a <em>positive lookahead</em>, telling R to look for a period following the digit we want to extract. The plot names are always just in front of a period, which is why this works.</p>
+<p>This can be split on the underscores and periods and the “Plot” information extracted in much the same was as the “Block” information. I think this option can feel more approachable to beginners and is a reasonable way to solve the problem.</p>
+<p>Another option is to define which part of the file name we want to pull out. This involves using <em>regular expressions</em>. I personally find regular expressions quite difficult and invariably turn to Stack Overflow to find the answers. I will use them here to demonstrate a wider breadth of options</p>
+<p>A basic introduction to regular expressions is on the second page of the “Work with Strings” <a href="https://www.rstudio.com/resources/cheatsheets/">cheatsheet from RStudio</a>. A more in depth set of examples can be found on the <a href="http://stat545.com/block022_regular-expression.html">UBC ST 545 page here</a>.</p>
+<p>I used <code>str_extract</code> from <strong>stringr</strong> with a regular expression for the <code>&quot;pattern&quot;</code> to extract the plot number. In this case I used a <a href="http://www.regular-expressions.info/lookaround.html">lookaround</a> following this <a href="https://stackoverflow.com/a/35404422/2461552">Stack Overflow answer</a>. These can be apparently be costly in terms of performance, which I did not find that to be a deterrent in my case. 😄</p>
+<p>The regular expression I use indicates I want to extract a digit (<code>[0-9]</code>) that comes immediately before a period. The <code>(?=\\.)</code> is a <em>positive lookahead</em>, telling R that the digit to match will be followed by a period. The plot names are always just in front of a period, which is why this works.</p>
 <pre class="r"><code>str_extract(allnames[, ncol(allnames)], pattern = &quot;[0-9](?=\\.)&quot;)</code></pre>
 <pre><code>## [1] &quot;5&quot;</code></pre>
 <p>This can then be added to the dataset.</p>
 <pre class="r"><code>test$plot = str_extract(allnames[, ncol(allnames)], pattern = &quot;[0-9](?=\\.)&quot;)</code></pre>
 <p><strong>Extract data logger location from the file name</strong></p>
-<p>The last thing to do is extract the data logger location code from the file names. These are the last two digits of the file name, immediately in front of “.csv”.</p>
-<p>The <code>str_sub</code> function from <strong>stringr</strong> is useful for extracting characters from fixed locations in a string. The logger location information is in the same position in every file name if counting from the end of the string. The <code>str_sub</code> function allows us to pull information counting from the end of the string instead of only the beginning. Because our file names differ in length (due to the way that dates are stored), the location data is <em>not</em> does not always have the same indices if counting characters from the front of the string.</p>
-<p>Negative indices are used to extract from the end of the string. The information is in positions 5 and 6.</p>
+<p>The last thing to do is extract the data logger location code from the file names. These are the last two digits of the file name, immediately before “.csv”.</p>
+<p>The <code>str_sub</code> function from <strong>stringr</strong> is useful for extracting characters from fixed locations in a string. The logger location information is in the same position in every file name if counting from the end of the string. The <code>str_sub</code> function allows the user to pull information counting from the end of the string as well as from the beginning. Because our file names differ in length due to the way that dates are stored, the location data does <em>not</em> always have the same indices if counting characters from the beginning of the string.</p>
+<p>Negative indices are used to extract from the end of the string. The location information is stored in the 5th and 6th positions from the end. The negative number largest in absolute value is passed to <code>start</code> and the smallest in absolute value to <code>end</code>. (I forget this pretty much every time I subset strings from the end.)</p>
 <pre class="r"><code>str_sub(allnames[, ncol(allnames)], start = -6, end = -5)</code></pre>
 <pre><code>## [1] &quot;AB&quot;</code></pre>
-<p>This also should be added to the dataset as it is read in. Remember that at least one of the file names is all lowercase, so we can make sure the data logger location information is in all caps via <code>toupper</code>.</p>
+<p>The location data can then be added to the dataset. Since at least one of the file names is all lowercase, I make sure the data logger location information is converted to all caps via <code>toupper</code>.</p>
 <pre class="r"><code>test$logloc = toupper( str_sub(allnames[, ncol(allnames)], start = -6, end = -5) )</code></pre>
-<p>Here’s what our test dataset looks like now.</p>
+<p>Here’s what the test dataset looks like now.</p>
 <pre class="r"><code>test</code></pre>
 <pre><code>##   date temperature  block    site plot logloc
 ## 1   15           9 Block1 Siteone    5     AB
@@ -136,8 +143,8 @@ test</code></pre>
 </div>
 <div id="make-a-function-to-read-all-the-files" class="section level1">
 <h1>Make a function to read all the files</h1>
-<p>Once the process is worked out, we can “functionize” it (aka, make a function) so we can do the same procedure to every dataset that needs to be read in and combined.</p>
-<p>This function takes a single argument, which is the file path of the dataset. This takes all the work we did on a single file and generalizes it to work with all the file paths we have, returning the modified dataset.</p>
+<p>Once the process is worked out for one file, I can “functionize” it (i.e., make a function). This allows me to apply the exact same procedure to every dataset as it is read in.</p>
+<p>The function I create below takes a single argument: the file path of the dataset. The function reads the file and then adds all the desired columns. It returns the modified dataset.</p>
 <pre class="r"><code>read_fun = function(path) {
      test = read.csv(path, 
                 skip = 6,
@@ -150,7 +157,7 @@ test</code></pre>
      test$logloc = toupper( str_sub(allnames[, ncol(allnames)], start = -6, end = -5) )
      test
 }</code></pre>
-<p>I’ll test the function on that first file path again to make sure it works as I expect it to.</p>
+<p>I’ll test the function with that first file path again to make sure it works like I expect it to.</p>
 <pre class="r"><code>read_fun(allfiles[1])</code></pre>
 <pre><code>##   date temperature  block    site plot logloc
 ## 1   15           9 Block1 Siteone    5     AB
@@ -162,10 +169,10 @@ test</code></pre>
 </div>
 <div id="read-all-the-files" class="section level1">
 <h1>Read all the files</h1>
-<p>All that’s left to do is to loop through all the file paths in <code>allfiles</code>, read and modify each one, and combine them into a single dataset. This can be done in base R with a <code>for</code> loop or an <code>lapply</code> loop. If using those options, the final concatenation step would be to use <code>rbind</code> in <code>do.call</code>.</p>
-<p>These days I’ve been using the <code>map</code> functions from package **purrr* for this, mostly because the <code>map_dfr</code> variant conveniently bind everything together by rows.</p>
+<p>All that’s left to do now is to loop through all the file paths in <code>allfiles</code>, read and modify each one with my function, and stack them together into a single dataset. This can be done in base R with a <code>for</code> or <code>lapply</code> loop. If using either of those options, the final concatenation step can be done via <code>rbind</code> in <code>do.call</code>.</p>
+<p>These days I’ve been using the <code>map</code> functions from package <strong>purrr</strong> for this, mostly because the <code>map_dfr</code> variant conveniently binds everything together by rows for me.</p>
 <pre class="r"><code>library(purrr) # v. 0.2.3</code></pre>
-<p>Here’s what using <code>map_dfr</code>, looping through each element of <code>allfiles</code> to read and modify the datasets with the <code>read_fun</code> function and then binding everything together into a final combined dataset.</p>
+<p>Here’s what using <code>map_dfr</code> looks like, looping through each element of <code>allfiles</code> to read and modify the datasets with the <code>read_fun</code> function and then stacking everything together into a final combined dataset.</p>
 <pre class="r"><code>( combined_dat = map_dfr(allfiles, read_fun) )</code></pre>
 <pre><code>##    date temperature  block    site plot logloc
 ## 1    15           9 Block1 Siteone    5     AB
@@ -208,8 +215,8 @@ test</code></pre>
 </div>
 <div id="are-we-finally-done" class="section level1">
 <h1>Are we finally done?</h1>
-<p>Hopefully! 😂</p>
+<p>Hopefully! 😆</p>
 <p>In working with real data, the final “combining” step can lead to errors due to unanticipated complexities. In my experience, this most often happens because some of the datasets are physically different than the rest. I’ve worked on problems where, for example, it turned out some datasets were present in the directory but were empty.</p>
-<p>In the real files for this particular example, it turned out some of the files had been previously modified manually to remove the header information. We ended up adding an <code>if</code> statement to the function to test the file as we read it in. If it had the header information we’d use <code>skip</code> and if it didn’t we wouldn’t. I did something similar (i.e., used an <code>if</code> statement) in the case where some of the datasets were blank.</p>
-<p>Once everything is worked out and the combined dataset has been created, you might want to save it for further data exploration and/or analysis. For students who are working on an interim set of datasets (before the end of their field season), saving the R object with <code>saveRDS</code> can be pretty convenient. Saving a final dataset as a CSV may be useful for sharing with collaborators once all datasets have been downloaded and combined, though, which can be done with, e.g., <code>write.csv</code>.</p>
+<p>In the real files for this particular example, it turned out some of the files had been previously modified manually to remove the header information. We ended up adding an <code>if</code> statement to the function to test each file as we read it in. If it had the header information we’d use <code>skip</code> while reading in the dataset and if it didn’t we wouldn’t. I did something similar in the case where some of the datasets were blank.</p>
+<p>After the combined dataset has been created, you might want to save it for further data exploration and/or analysis. If working on an interim set of datasets (such as before a field season is over), saving the R object with <code>saveRDS</code> can be pretty convenient. Saving a final dataset as a CSV may be useful for sharing with collaborators once all datasets have been downloaded and combined, which can be done with, e.g., <code>write.csv</code>.</p>
 </div>
