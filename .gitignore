@@ -6,3 +6,4 @@ blogdown
 Thumbs.db
 public/
 aosmith.Rproj
+.httr-oauth

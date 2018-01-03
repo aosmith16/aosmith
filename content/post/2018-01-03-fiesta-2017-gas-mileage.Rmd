@@ -1,0 +1,134 @@
+---
+title: Fiesta 2017 gas mileage
+author: Ariel Muldoon
+date: '2018-01-03'
+slug: fiesta-2017-gas-mileage
+categories:
+  - r
+tags:
+  - misc
+  - googlesheets
+draft: FALSE
+---
+
+We purchased a used 2011 Ford Fiesta in 2016.  It replaced a 1991 Honda CRX, which was running like a champ but was starting to look a little, well, limited in its safety features. `r emo::ji("tongue")`
+
+I drive ~70 commuting miles each day, and we wanted a car we could afford that was competitive with the CRX on gas mileage.  The CRX got solidly just over 40 mpg.
+
+```{r, echo = FALSE, fig.cap = "The dog wonders how the gas mileage will compare"}
+knitr::include_graphics("/img/fiesta.jpg")
+```
+
+# The gas mileage data
+
+We record gas mileage for all our vehicles on Google Sheets, so I can read the data in directly from there.
+
+```{r, message = FALSE}
+library(googlesheets) # v 0.2.2
+library(skimr) # v. 1.0
+library(dplyr) # v. 0.7.4
+```
+
+The workbook has a sheet for every year driven (into the future! `r emo::ji("laugh")`) plus service records.
+
+```{r}
+gs_title("Fiesta mpg")
+```
+
+```{r}
+fiesta2017 = gs_title("Fiesta mpg") %>%
+     gs_read("2017")
+```
+
+We calculate gas mileage (`mpgcalc`) based on recorded gallons and mileage driven.  We also record what the car estimated the gas mileage would be (`mpggage`).  
+
+```{r}
+head(fiesta2017)
+```
+
+Here's my first chance to use functions from package **skimr** to get a quick look at the variables in the dataset. (The locale change is to try to get [histograms to display correctly](https://github.com/ropenscilabs/skimr/issues/136), which works in the RMD but not in HTML.)
+
+```{r}
+Sys.setlocale("LC_CTYPE", "Chinese")
+skim(fiesta2017)
+```
+
+I'll need to convert `date` to a date and remove a missing value before proceeding (looks like we forget to enter the mileage on one gas stop).
+
+```{r}
+fiesta2017 = fiesta2017 %>%
+     mutate(date = as.Date(date, format = "%m/%d/%Y") ) %>%
+     filter( !is.na(mileage) )
+```
+
+The `skim` output shows an odd `mpgcalc` value as the max, with a mpg over 90.  
+
+```{r}
+filter(fiesta2017, mpgcalc > 50)
+```
+
+Turns out something weird happened on June 5th.  There are two data points, one that looks pretty standard and the other that is impossibly high for `mpgcalc`.  
+
+```{r}
+filter(fiesta2017, date == as.Date("2017-06-05") )
+```
+
+I'll have to remove the odd data point as I'm not sure what the mistake is (changing the mileage to `3` instead of `6` seems a reasonable guess but that still led to something unreasonable large).
+
+```{r}
+fiesta2017 = filter(fiesta2017, mpgcalc <= 50)
+```
+
+# Plot gas mileage through time
+
+I'll use **ggplot2** for plotting.
+
+```{r}
+library(ggplot2) # v. 2.2.1
+```
+
+**Observed gas mileage over the year**
+
+Here's a plot of calculated gas mileage over the year, plotted via **ggplot2**.  I put a horizontal line at 40 mpg and one at the annual average observed mpg.
+
+```{r,dpi = 300}
+ggplot(fiesta2017, aes(date, mpgcalc) ) +
+     geom_line() +
+     theme_bw() +
+     geom_hline(aes(yintercept = 40, color = "40 mpg") ) +
+     geom_hline(aes(yintercept = mean(fiesta2017$mpgcalc), colour = "Average observed mpg") ) +
+     labs(y = "Miles per gallon", x = NULL) +
+     scale_x_date(date_breaks = "1 month",
+                  date_labels = "%b",
+                  limits = c( as.Date("2017-01-01"), as.Date("2017-12-31") ),
+                  expand = c(0, 0) ) +
+     scale_color_manual(name = NULL, values = c("black", "#009E73") ) +
+     theme(legend.position = "bottom",
+           legend.direction = "horizontal")
+```
+
+That high point is a high value for both the observed and estimated mpg, so I'm guessing the driving conditions were good for that tank. `r emo::ji("smile")`
+
+```{r}
+filter(fiesta2017, mpgcalc > 45)
+```
+
+**Compare observed mpg vs car-estimated mpg**
+
+It's fun to watch how the estimated mpg is affected by conditions while I'm driving (e.g., AC, tail-wind, defrost), but it looks like whatever that algorithm is tends to overestimate the gas mileage.  But not always!
+
+```{r, dpi = 300}
+ggplot(fiesta2017, aes(date, mpgcalc) ) +
+     geom_line( aes(color = "Calculated mpg") ) +
+     geom_line( aes(y = mpggage, color = "Estimated mpg") ) +
+     theme_bw() +
+     labs(y = "Miles per gallon", x = NULL) +
+     scale_x_date(date_breaks = "1 month",
+                  date_labels = "%b",
+                  limits = c( as.Date("2017-01-01"), as.Date("2017-12-31") ),
+                  expand = c(0, 0) ) +
+     scale_color_manual(name = NULL, values = c("black", "#009E73") ) +
+     theme(legend.position = "bottom",
+           legend.direction = "horizontal")
+```
+
