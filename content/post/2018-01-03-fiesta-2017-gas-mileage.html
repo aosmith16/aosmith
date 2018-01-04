@@ -13,12 +13,13 @@ draft: FALSE
 
 
 
+<p>It’s January - time to see how we did on car gas mileage last year!</p>
 <p>We purchased a used 2011 Ford Fiesta in 2016. It replaced a 1991 Honda CRX, which was running like a champ but was starting to look a little, well, limited in its safety features. 👅</p>
-<p>I drive ~70 commuting miles each day, and we wanted a car we could afford that was competitive with the CRX on gas mileage. The CRX got solidly just over 40 mpg.</p>
+<p>I drive ~70 commuting miles each day, and we wanted a car we could afford that was competitive with the CRX on gas mileage. The CRX averaged solidly just over 40 mpg.</p>
 <div class="figure"><span id="fig:unnamed-chunk-1"></span>
-<img src="/img/fiesta.jpg" alt="The dog wonders how the gas mileage will compare"  />
+<img src="/img/fiesta.jpg" alt="The dog wonders if the gas mileage will be good enough"  />
 <p class="caption">
-Figure 1: The dog wonders how the gas mileage will compare
+Figure 1: The dog wonders if the gas mileage will be good enough
 </p>
 </div>
 <div id="the-gas-mileage-data" class="section level1">
@@ -27,13 +28,13 @@ Figure 1: The dog wonders how the gas mileage will compare
 <pre class="r"><code>library(googlesheets) # v 0.2.2
 library(skimr) # v. 1.0
 library(dplyr) # v. 0.7.4</code></pre>
-<p>The workbook has a sheet for every year driven (into the future! 😅) plus service records.</p>
+<p>The workbook has a sheet for every year of ownership (into the future! 😅) plus service records.</p>
 <pre class="r"><code>gs_title(&quot;Fiesta mpg&quot;)</code></pre>
 <pre><code>## Sheet successfully identified: &quot;Fiesta mpg&quot;</code></pre>
 <pre><code>##                   Spreadsheet title: Fiesta mpg
 ##                  Spreadsheet author: skylarkguy
-##   Date of googlesheets registration: 2018-01-03 22:42:09 GMT
-##     Date of last spreadsheet update: 2018-01-03 21:19:31 GMT
+##   Date of googlesheets registration: 2018-01-04 17:27:28 GMT
+##     Date of last spreadsheet update: 2018-01-04 16:57:22 GMT
 ##                          visibility: private
 ##                         permissions: rw
 ##                             version: new
@@ -62,7 +63,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 ##   mpggage = col_double(),
 ##   mpgcalc = col_double()
 ## )</code></pre>
-<p>We calculate gas mileage (<code>mpgcalc</code>) based on recorded gallons and mileage driven. We also record what the car estimated the gas mileage would be (<code>mpggage</code>).</p>
+<p>We calculate gas mileage (<code>mpgcalc</code>) based on recorded gallons and mileage driven every time we get gas. We also record what the car estimated the gas mileage would be (<code>mpggage</code>).</p>
 <pre class="r"><code>head(fiesta2017)</code></pre>
 <pre><code>## # A tibble: 6 x 6
 ##        date gallons  cost mileage mpggage mpgcalc
@@ -73,7 +74,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 ## 4 1/20/2017   7.146 17.71   297.4    40.6    41.6
 ## 5 1/24/2017   7.959 19.73   311.1    40.4    39.1
 ## 6 1/30/2017   9.603 23.61   385.8    41.1    40.2</code></pre>
-<p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick look at the variables in the dataset. (The locale change is to try to get <a href="https://github.com/ropenscilabs/skimr/issues/136">histograms to display correctly</a>, which works in the RMD but not in HTML.)</p>
+<p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick summary of the variables in the dataset. (The locale change is to try to get <a href="https://github.com/ropenscilabs/skimr/issues/136">histograms to display correctly</a>, which works in the RMD but not in HTML.)</p>
 <pre class="r"><code>Sys.setlocale(&quot;LC_CTYPE&quot;, &quot;Chinese&quot;)</code></pre>
 <pre><code>## [1] &quot;Chinese (Simplified)_People&#39;s Republic of China.936&quot;</code></pre>
 <pre class="r"><code>skim(fiesta2017)</code></pre>
@@ -98,7 +99,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 ## 3 653.7  ¨y¨y¨|¨~¨x¨x¨x¨x
 ## 4  96.2  ¨x¨x¨x¨~¨x¨x¨x¨x
 ## 5  46.8  ¨y¨z¨~¨~¨z¨x¨x¨x</code></pre>
-<p>I’ll need to convert <code>date</code> to a date and remove a missing value before proceeding (looks like we forget to enter the mileage on one gas stop).</p>
+<p>I’ll need to convert <code>date</code> to a date and remove that missing value from <code>mileage</code> before proceeding (looks like we forget to enter the mileage on one gas stop).</p>
 <pre class="r"><code>fiesta2017 = fiesta2017 %&gt;%
      mutate(date = as.Date(date, format = &quot;%m/%d/%Y&quot;) ) %&gt;%
      filter( !is.na(mileage) )</code></pre>
@@ -115,7 +116,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 ##       &lt;date&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
 ## 1 2017-06-05   8.122 23.55   327.0    41.9    40.3
 ## 2 2017-06-05   6.796 22.42   653.7    43.3    96.2</code></pre>
-<p>I’ll have to remove the odd data point as I’m not sure what the mistake is (changing the mileage to <code>3</code> instead of <code>6</code> seems a reasonable guess but that still led to something unreasonable large).</p>
+<p>I’ll have to remove the odd data point as I’m not sure what the mistake is (changing the mileage to <code>3</code> instead of <code>6</code> seems a reasonable guess but that still led to something impossibly large).</p>
 <pre class="r"><code>fiesta2017 = filter(fiesta2017, mpgcalc &lt;= 50)</code></pre>
 </div>
 <div id="plot-gas-mileage-through-time" class="section level1">
@@ -123,7 +124,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 <p>I’ll use <strong>ggplot2</strong> for plotting.</p>
 <pre class="r"><code>library(ggplot2) # v. 2.2.1</code></pre>
 <p><strong>Observed gas mileage over the year</strong></p>
-<p>Here’s a plot of calculated gas mileage over the year, plotted via <strong>ggplot2</strong>. I put a horizontal line at 40 mpg and one at the annual average observed mpg.</p>
+<p>Here’s a plot of calculated gas mileage over the year, plotted via <strong>ggplot2</strong>. I put a horizontal line at 40 mpg and one at the annual average observed mpg to get an idea of how we’re meeting the “40 mpg” goal.</p>
 <pre class="r"><code>ggplot(fiesta2017, aes(date, mpgcalc) ) +
      geom_line() +
      theme_bw() +
@@ -145,7 +146,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 ##       &lt;date&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
 ## 1 2017-10-03   8.369  25.6   401.4    46.8      48</code></pre>
 <p><strong>Compare observed mpg vs car-estimated mpg</strong></p>
-<p>It’s fun to watch how the estimated mpg is affected by conditions while I’m driving (e.g., AC, tail-wind, defrost), but it looks like whatever that algorithm is tends to overestimate the gas mileage. But not always!</p>
+<p>It’s fun to watch how the estimated mpg is affected by conditions while I’m driving (e.g., AC, defrost, wind), but it looks like whatever that algorithm is tends to overestimate the gas mileage. But not always!</p>
 <pre class="r"><code>ggplot(fiesta2017, aes(date, mpgcalc) ) +
      geom_line( aes(color = &quot;Calculated mpg&quot;) ) +
      geom_line( aes(y = mpggage, color = &quot;Estimated mpg&quot;) ) +
