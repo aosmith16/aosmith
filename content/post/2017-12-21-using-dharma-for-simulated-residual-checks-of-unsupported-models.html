@@ -5,6 +5,7 @@ date: '2017-12-21'
 slug: using-dharma-for-residual-checks-of-unsupported-models
 categories: [r, statistics]
 tags: [glmm, dharma, simulation]
+description: "Checking for model fit from generalized linear mixed models (GLMM) can be challenging.  The DHARMa package helps with this by giving simulated residuals but doesn't work with all model types.  I show how to use tools in DHARMa to extend it for use with unsupported models fit with glmmTMB() and zeroinfl()."
 ---
 
 
@@ -59,26 +60,26 @@ library(glmmTMB) # version 0.1.1</code></pre>
 <p>The result is a list of simulated response vectors.</p>
 <pre class="r"><code>str(sim_nbz)</code></pre>
 <pre><code>## List of 10
-##  $ : num [1:644] 0 0 0 0 0 1 2 1 1 0 ...
-##  $ : num [1:644] 0 0 0 2 2 2 2 0 1 2 ...
-##  $ : num [1:644] 0 0 0 4 0 0 0 0 3 0 ...
-##  $ : num [1:644] 0 0 0 10 8 2 0 0 0 7 ...
-##  $ : num [1:644] 0 0 0 1 0 6 1 4 0 0 ...
-##  $ : num [1:644] 0 0 0 1 0 1 1 1 6 0 ...
-##  $ : num [1:644] 0 0 0 1 2 2 1 0 1 4 ...
-##  $ : num [1:644] 0 0 0 3 3 3 3 5 0 4 ...
-##  $ : num [1:644] 0 0 0 7 0 1 0 4 0 3 ...
-##  $ : num [1:644] 0 0 0 0 6 2 1 2 13 0 ...</code></pre>
+##  $ : num [1:644] 0 0 0 0 1 5 6 0 4 0 ...
+##  $ : num [1:644] 0 0 0 0 4 2 5 1 4 0 ...
+##  $ : num [1:644] 0 0 0 6 0 0 3 0 2 1 ...
+##  $ : num [1:644] 0 6 0 4 3 2 0 1 0 0 ...
+##  $ : num [1:644] 0 0 0 1 0 1 3 1 1 2 ...
+##  $ : num [1:644] 0 1 0 7 5 0 3 11 5 0 ...
+##  $ : num [1:644] 0 0 0 2 5 1 0 3 1 4 ...
+##  $ : num [1:644] 0 0 0 4 4 3 0 0 0 0 ...
+##  $ : num [1:644] 0 0 0 6 0 2 2 0 5 0 ...
+##  $ : num [1:644] 0 0 0 2 0 1 3 1 2 2 ...</code></pre>
 <p>I need these in a matrix, not a list, where each column contains a simulated response vector and each row is an observation. I’ll collapse the list into a matrix by using <code>cbind</code> in <code>do.call</code>.</p>
 <pre class="r"><code>sim_nbz = do.call(cbind, sim_nbz)
 head(sim_nbz)</code></pre>
 <pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
 ## [1,]    0    0    0    0    0    0    0    0    0     0
-## [2,]    0    0    0    0    0    0    0    0    0     0
+## [2,]    0    0    0    6    0    1    0    0    0     0
 ## [3,]    0    0    0    0    0    0    0    0    0     0
-## [4,]    0    2    4   10    1    1    1    3    7     0
-## [5,]    0    2    0    8    0    0    2    3    0     6
-## [6,]    1    2    0    2    6    1    2    3    1     2</code></pre>
+## [4,]    0    0    6    4    1    7    2    4    6     2
+## [5,]    1    4    0    3    0    5    5    4    0     0
+## [6,]    5    2    0    2    1    0    1    3    2     1</code></pre>
 <p>Now I can pass these to <code>createDHARMa</code> along with observed values and model predictions. I set <code>integerResponse</code> to <code>TRUE</code>, as well, as I’m working with counts.</p>
 <pre class="r"><code>sim_res_nbz = createDHARMa(simulatedResponse = sim_nbz, 
                            observedResponse = Salamanders$count,
@@ -127,12 +128,12 @@ mus = predict(fit_zinb, type = &quot;count&quot;)</code></pre>
 <p>The output of <code>replicate</code> in this case is a matrix, with one simulated response vector in every column and an observation in every row. This is ready for use in <code>createDHARMa</code>.</p>
 <pre class="r"><code>head(sim_zinb)</code></pre>
 <pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
-## [1,]    1    3    3    0    0    2    0    3    1     1
-## [2,]    4    3    0    1    5    1    0    2    0     2
-## [3,]    1    2    1    4    0    6    0    2    3     5
-## [4,]    1    1    0    0    1    0    0    1    1     0
-## [5,]    6    1    2    1    1    4    1    1    0     4
-## [6,]    1    0    0    2    1    0    0    0    1     1</code></pre>
+## [1,]    0    3    6    1    5    1    1    4    2     2
+## [2,]    1    2    4    0    1    0    0    1    0     5
+## [3,]    1    0    0    1    0    1    0    0    0     0
+## [4,]    4    3    0    1    2    0    6    1    2     2
+## [5,]    1    0    3    0    2    6    0    2    3     0
+## [6,]    3    0    1    0    0    0    0    0    1     1</code></pre>
 <p>Making the simulations was the hard part. Now that I have them, <code>createDHARMa</code> works exactly the same way as in the <code>glmmTMB</code> example.</p>
 <pre class="r"><code>sim_res_zinb = createDHARMa(simulatedResponse = sim_zinb,
                             observedResponse = bioChemists$art,

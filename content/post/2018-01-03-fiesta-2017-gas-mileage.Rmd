@@ -9,6 +9,7 @@ tags:
   - misc
   - googlesheets
 draft: FALSE
+description: "Since January is the month for analyzing last year's data, I take a quick look at my 2017 gas mileage in my commuter car (Fiesta! `r emo::ji('celebration')`).  I use package googlesheets for reading data, skimr for a quick summary of the dataset, and ggplot2 for plotting."
 ---
 
 It's January - time to see how we did on car gas mileage last year!

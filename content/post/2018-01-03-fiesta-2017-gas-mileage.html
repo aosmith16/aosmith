@@ -9,6 +9,7 @@ tags:
   - misc
   - googlesheets
 draft: FALSE
+description: "Since January is the month for analyzing last year's data, I take a quick look at my 2017 gas mileage in my commuter car (Fiesta! 🙌).  I use package googlesheets for reading data, skimr for a quick summary of the dataset, and ggplot2 for plotting."
 ---
 
 
@@ -28,13 +29,13 @@ Figure 1: The dog wonders if the gas mileage will be good enough
 <pre class="r"><code>library(googlesheets) # v 0.2.2
 library(skimr) # v. 1.0
 library(dplyr) # v. 0.7.4</code></pre>
-<p>The workbook has a sheet for every year of ownership (into the future! 😅) plus service records.</p>
+<p>The workbook has a sheet for every year of ownership (into the future! 😄) plus service records.</p>
 <pre class="r"><code>gs_title(&quot;Fiesta mpg&quot;)</code></pre>
 <pre><code>## Sheet successfully identified: &quot;Fiesta mpg&quot;</code></pre>
 <pre><code>##                   Spreadsheet title: Fiesta mpg
 ##                  Spreadsheet author: skylarkguy
-##   Date of googlesheets registration: 2018-01-04 17:27:28 GMT
-##     Date of last spreadsheet update: 2018-01-04 16:57:22 GMT
+##   Date of googlesheets registration: 2018-01-09 16:49:55 GMT
+##     Date of last spreadsheet update: 2018-01-07 19:26:41 GMT
 ##                          visibility: private
 ##                         permissions: rw
 ##                             version: new

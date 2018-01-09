@@ -5,6 +5,7 @@ date: '2017-12-21'
 slug: using-dharma-for-residual-checks-of-unsupported-models
 categories: [r, statistics]
 tags: [glmm, dharma, simulation]
+description: "Checking for model fit from generalized linear mixed models (GLMM) can be challenging.  The DHARMa package helps with this by giving simulated residuals but doesn't work with all model types.  I show how to use tools in DHARMa to extend it for use with unsupported models fit with glmmTMB() and zeroinfl()."
 ---
 
 # Why use simulations for model checking?
