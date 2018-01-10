@@ -11,51 +11,51 @@ description: "Where I discuss simulations, why I love them, and get started on a
 
 I have to confess:  I love simulations.  
 
-I use simulations to check my intuition and understanding of statistical theory.  When someone tells me with great certainty "I don't need to meet that assumption for this because [fill in the blank]", I tend turn to simulations rather than textbooks to check.
+I use simulations to check my intuition and understanding of statistical theory.  When someone tells me with great certainty "I don't need to meet that assumption because [fill in the blank]", I tend turn to simulations rather than textbooks to check.
 
-I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference.  Building the simulation increases my understanding of the problem and makes all the assumptions I am making clearer to me.
+I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference.  Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because we use them explicitly.
 
 # Simulate, simulate, dance to the music
 
-I would like to use simulations more in teaching and consulting to help folks understand their models better.  I co-instruct a data analysis/mixed models course winter term, but we've had a difficult time fitting simulations in; there's just too many other things that we have to cover in only eight weeks of instruction.
+I find simulations so useful for my own understanding, and would like to use them more in teaching and consulting as I think the could help folks understand their models better.  I haven't managed to fit it in so far, but it's always on my mind.
 
-It was when switiching to using mixed models in R from SAS when I really started using simulations heavily.  But I thought it worthwhile to start out with a simpler model.  Today I'll go over a simulation from a two-group linear model and then work up to linear mixed models and generalized linear mixed models in subsequent posts.
+It was when I was learning to using mixed models in R (having learned them in SAS) when I started using simulations heavily, and mixed models is where my brain jumps to when I thought about a "simulation" post.  However, I thought it worthwhile to start out with a simulation from a simpler model to demonstrate how things work before increasing the complexity.  Today I'll go over a simulation from a two-group linear model and then work up to linear mixed models and generalized linear mixed models in subsequent posts.
 
 # The statistical model
 
-**Warning: Here be some equations.**  
+**Warning: Here there be equations.**  
 
-This is where my brain likes to say, "I think this section doesn't pertain to me."  If this is you, you can jump right down to the R code in the next section.
+If your brain says "I think this section must not pertain to me" after seeing the mathematical notation (like mine does), you can jump right down to the R code in the next section.
 
-A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable.  It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup's 2015 "Generalized Linear Mixed Models" book for a more in-depth description).
+A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable.  It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup's 2015 "Generalized Linear Mixed Models" book for a more in-depth description).  So the statistical model, which can look very math-y, is where we write down the exact assumptions we are making when we fit a linear model to a set of data.  Once we know those, we can simulate data based on those assumptions.
 
 Here is an example of a linear model for two groups.  I wrote the statistical model to match the form of the default output of `lm` in R.
 
-$$y_t \thicksim \beta_0 + \beta_1(group_t=\textit{''group''}) + \epsilon_t$$
+$$y_t \thicksim \beta_0 + \beta_1*I_{(group_t=\textit{''group''})} + \epsilon_t$$
 
-+ $y_t$ is the observed, quantitative response variable for every observation, $t$ = 1-number of observations in the dataset  
++ $y_t$ is the observed value for the quantitative response variable for every observation, $t$ goes from 1 to the number of observations in the dataset  
 + $\beta_0$ is the mean response variable when the group is "group1"
-+ $\beta_1$ is the difference in mean response of "group2" from "group1"
-+ $\epsilon_t$ is the random variation present for each observation that is not explained by the group variable.  These are assumed to come from an iid normal distribution with some shared variance, $\epsilon_t \thicksim N(0, \sigma^2)$
++ $\beta_1$ is the difference in mean response of "group2" from "group1".  It only impacts the observed response when the group is "group2".  
++ The indicator variable, $I_{(group_t=\textit{''group2''})}$, is 1 when group is "group2" and 0 when group is "group1".
++ $\epsilon_t$ is the random variation present for each observation that is not explained by the group variable.  These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, $\sigma^2$: $\epsilon_t \thicksim N(0, \sigma^2)$
 
-# Do one simulation from a two-group model
+# A single simulation from a two-group model
 
-Now I can use the statistical model to build a simulation.  In this case I'll call my response variable "growth", and the two groups "group1" and "group2".  I'll have 10 observations per group (it's possibly to simulate unbalanced groups but balanced groups is a good place to start).
+I use the statistical model to build a simulation.  In this case I'll call my response variable "growth", and the two groups "group1" and "group2".  I'll have 10 observations per group (it's possible to simulate unbalanced groups but balanced groups is a good place to start).
 
-I'll set my seed so I can replicate this you can replicate this simulation exactly at home.
+I'll set my seed for the random number generation so I can replicate this you simulation exactly at home.
 
 ```{r}
 set.seed(16)
 ```
 
+I'll start out by defining what the "truth" is in the simulation by setting the parameter values.  Here's what I'll do today.
 
-I like to start out by defining what the "truth" is in the simulation by setting parameter values.  Here's what I'll do today.
-
-+ The true group mean for "group1" will be 5 ($\beta_0$)
++ The true group mean ($\beta_0$) for "group1" will be 5 
 + The mean of "group2" will be 2 less than "group1" ($\beta_1$)
-+ The shared variance will be set at 4 ($\sigma^2$) so the standard deviation ($\sigma$) is 2.
++ The shared variance will be set at 4 ($\sigma^2$), so the standard deviation ($\sigma$) is 2.
 
-I'll define the number of groups and number of replicates per group while I'm at it.  The total number of obserations is the number of groups times the number of replicates per group.
+I'll define the number of groups and number of replicates per group while I'm at it.  The total number of obserations is the number of groups times the number of replicates per group, which is `2*10 = 20`.
 
 ```{r}
 ngroup = 2
@@ -65,34 +65,167 @@ b1 = -2
 sd = 2
 ```
 
-I also need to create the variable "group".  I use `rep` a lot when doing simulations in order to repeat values of variables the correct amount of times.  Here I'll repeat each level of "group" 10 times.
+I need to create the variable "group" to use as the explanatory variable when fitting a model in R.  I use `rep` a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I'm working in.  Here I'll repeat each level of `group` 10 times.
 
 ```{r}
 ( group = rep( c("group1", "group2"), each = nrep) )
 ```
 
-I create a variable for the random errors by drawing from a normal distribution with a mean of 0 and standard deviation of 2.  I need one error for every observation, so will make 20 draws total from this distribution.
+I'll simulate the random errors by taking random draws from a normal distribution with a mean of 0 and standard deviation of 2.  Each observation has random variation not explained by `group`, so I will make 20 draws total from this distribution (`ngroup*nrep`).
 
 ```{r}
 ( eps = rnorm(ngroup*nrep, 0, sd) )
 ```
 
-I have all the pieces, so I can add everything together based on the statistical model.  I use an indicator variable so ($\beta_1$) is only added when `group == "group2"`.
+Once I have all the pieces, so I can add everything together to create the response variable based on the statistical model.  I create the indicator variable in R with `group == "group2"`.
 
 ```{r}
 ( growth = b0 + b1*(group == "group2") + eps )
 ```
 
-I've been working with vectors, but I like to put my "variables" in a dataset.
+It's not necessary for this simple case, but I will most often store the variables I need for the analysis in to a dataset to keep things organized.  This becomes more important when working with more variables.
 
 ```{r}
 growthdat = data.frame(growth, group)
 ```
 
-Which can be used to fit a model.  This is a simulation that has random noise, 
+Now I can fit the two group linear model and take a look at the results.
 
 ```{r}
 growthfit = lm(growth ~ group, data = growthdat)
 summary(growthfit)
 ```
+
+# Make a function for simulation the two-group linear model
+
+Once we've worked out the basic simulation we can "functionize" things.  We'll put the simulation into a function in preparation for repeating the same simulation many times.
+
+In my function I'm going to set all the arguments to the parameter values above.  The argument values can be changed if I want to see how things looked with larger sample sizes or different amounts of variability.
+
+This function returns the linear model fit with `lm`.
+
+```{r}
+twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
+     ngroup = 2
+     group = rep( c("group1", "group2"), each = nrep)
+     eps = rnorm(ngroup*nrep, 0, sd)
+     growth = b0 + b1*(group == "group2") + eps
+     growthfit = lm(growth ~ group)
+     growthfit
+}
+```
+
+I test the function, using the same `seed`, to make sure I that things are working as expected and I get the same results as above.
+
+```{r}
+set.seed(16)
+twogroup_fun()
+```
+
+If I want to change some element of the simulation, like have a smaller standard deviation or a larger number of reps per group, I can.
+
+```{r}
+twogroup_fun(sigma = 1)
+```
+
+# Do many simulations
+
+A single simulation isn't very useful. The goal of a simulation is to gain insight on how a model can perform if a sample was taken repeatedly.  
+
+Once I have a working function I can repeat the simulation many times, saving the model after each one.  This will allow exploration of model performance with the given parameters.
+
+This is a task I commonly use `replicate` for.  The `rerun` function from package **purrr** is equivalent to `replicate` with `simplify = FALSE`, and I'll use it here for convenience.  The result is a list of fitted two-group linear models based on the given simulation parameters.
+
+```{r}
+library(purrr)
+```
+
+```{r}
+sims = rerun(1000, twogroup_fun() )
+```
+
+# Extracting results from the linear model
+
+If we wanted to keep track of estimates over many simulations, we'd want to pull out the coefficients.  Package **broom** can help us here via `tidy`.  
+
+```{r}
+library(broom)
+```
+
+If we were looking to save test statistics and p-values for a power analysis we can also get those via `tidy`.
+
+```{r}
+tidy(growthfit)
+```
+
+Another thing that might be of interest to keep track of is the variance/standard deviation.  This has been more common for me in a mixed model framework when there are multiple variances.  For a linear model we can extract an estimate of the residual standard deviation from the `summary` output.
+
+```{r}
+summary(growthfit)$sigma
+```
+
+# Look at the results from the simulation
+
+Now for the fun part!  Given we know the truth, how do estimates of the parameters behave?  
+
+I can extract whatever results I'm interested in looking at.  Functions from package **purrr** are useful here for working with the list of models and I'll use functions from **dplyr** to get the coefficient I want when working with `broom::tidy`.  I'll do plotting with **ggplot2**.
+
+```{r}
+suppressMessages( library(dplyr) )
+library(ggplot2)
+```
+
+**Estimated differences in mean response**
+
+As this is a linear model about differences among groups, the estimate of $\beta_1$ is one of the statisics of most interest.  What does the distribution of differences in mean growth between groups look like?  Here's a density plot.
+
+```{r}
+sims %>%
+     map_df(tidy) %>%
+     filter(term == "groupgroup2") %>%
+     ggplot( aes(estimate) ) +
+          geom_density(fill = "blue", alpha = .5) +
+          geom_vline( xintercept = -2)
+```
+
+It's this sort of simulation results from situations involving small samples of a noisy measurement that I think can be so compelling.  There is quite a range of estimated differences in mean growth across simulations, both overestimating and underestimating the true value.  Some models got the sign wrong, and estimated "group2" to have greater mean growth than "group1" even though we know that "group2" is lower.
+
+**Estimates of the standard deviation**
+
+I can do a similar plot for the residual standard deviation, extracting `sigma` from the model object and plotting it as a density plot.
+
+```{r}
+sims %>%
+     map_dbl(~summary(.x)$sigma) %>%
+     data.frame(sigma = .) %>%
+     ggplot( aes(sigma) ) +
+          geom_density(fill = "blue", alpha = .5) +
+          geom_vline(xintercept = 2)
+```
+
+The estimated variation ranges between 1 to just over 3.  Not unexpected (to me), across all the simulations there are slightly more instances of underestimating the variation than overestimating it. This is what gets interesting in the world of mixed models, which I'll tackle in a later post.  
+
+The standard deviation is underestimated 54% of the time.
+
+```{r}
+sims %>%
+     map_dbl(~summary(.x)$sigma) %>%
+     {. < 2} %>%
+     mean()
+```
+
+**Statistical results**
+
+If the goal of a simulation was to get an idea of the statistical power of a test we'd look at the proportion of times the null hypothesis was rejected given a fixed alpha level.  Here the percentage of models that correctly rejected the null hypothesis given that we know it's not true is just over 56%.
+
+```{r}
+sims %>%
+     map_df(tidy) %>%
+     filter(term == "groupgroup2") %>%
+     pull(p.value) %>%
+     {. < .05} %>%
+     mean()
+```
+
+So that's an intro to simulations, where you get to learn all about the model you are using and how it's working.  I'll do future posts about simulating mixed models and, in particular, looking at interesting issues that crop up with estimating variances.
 

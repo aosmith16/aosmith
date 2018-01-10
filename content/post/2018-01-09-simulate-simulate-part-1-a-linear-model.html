@@ -12,64 +12,66 @@ description: "Where I discuss simulations, why I love them, and get started on a
 
 
 <p>I have to confess: I love simulations.</p>
-<p>I use simulations to check my intuition and understanding of statistical theory. When someone tells me with great certainty “I don’t need to meet that assumption for this because [fill in the blank]”, I tend turn to simulations rather than textbooks to check.</p>
-<p>I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference. Building the simulation increases my understanding of the problem and makes all the assumptions I am making clearer to me.</p>
+<p>I use simulations to check my intuition and understanding of statistical theory. When someone tells me with great certainty “I don’t need to meet that assumption because [fill in the blank]”, I tend turn to simulations rather than textbooks to check.</p>
+<p>I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference. Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because we use them explicitly.</p>
 <div id="simulate-simulate-dance-to-the-music" class="section level1">
 <h1>Simulate, simulate, dance to the music</h1>
-<p>I would like to use simulations more in teaching and consulting to help folks understand their models better. I co-instruct a data analysis/mixed models course winter term, but we’ve had a difficult time fitting simulations in; there’s just too many other things that we have to cover in only eight weeks of instruction.</p>
-<p>It was when switiching to using mixed models in R from SAS when I really started using simulations heavily. But I thought it worthwhile to start out with a simpler model. Today I’ll go over a simulation from a two-group linear model and then work up to linear mixed models and generalized linear mixed models in subsequent posts.</p>
+<p>I find simulations so useful for my own understanding, and would like to use them more in teaching and consulting as I think the could help folks understand their models better. I haven’t managed to fit it in so far, but it’s always on my mind.</p>
+<p>It was when I was learning to using mixed models in R (having learned them in SAS) when I started using simulations heavily, and mixed models is where my brain jumps to when I thought about a “simulation” post. However, I thought it worthwhile to start out with a simulation from a simpler model to demonstrate how things work before increasing the complexity. Today I’ll go over a simulation from a two-group linear model and then work up to linear mixed models and generalized linear mixed models in subsequent posts.</p>
 </div>
 <div id="the-statistical-model" class="section level1">
 <h1>The statistical model</h1>
-<p><strong>Warning: Here be some equations.</strong></p>
-<p>This is where my brain likes to say, “I think this section doesn’t pertain to me.” If this is you, you can jump right down to the R code in the next section.</p>
-<p>A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable. It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup’s 2015 “Generalized Linear Mixed Models” book for a more in-depth description).</p>
+<p><strong>Warning: Here there be equations.</strong></p>
+<p>If your brain says “I think this section must not pertain to me” after seeing the mathematical notation (like mine does), you can jump right down to the R code in the next section.</p>
+<p>A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable. It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup’s 2015 “Generalized Linear Mixed Models” book for a more in-depth description). So the statistical model, which can look very math-y, is where we write down the exact assumptions we are making when we fit a linear model to a set of data. Once we know those, we can simulate data based on those assumptions.</p>
 <p>Here is an example of a linear model for two groups. I wrote the statistical model to match the form of the default output of <code>lm</code> in R.</p>
-<p><span class="math display">\[y_t \thicksim \beta_0 + \beta_1(group_t=\textit{&quot;group2&quot;}) + \epsilon_t\]</span></p>
+<p><span class="math display">\[y_t \thicksim \beta_0 + \beta_1*I_{(group_t=\textit{&#39;&#39;group&#39;&#39;})} + \epsilon_t\]</span></p>
 <ul>
-<li><span class="math inline">\(y_t\)</span> is the observed, quantitative response variable for every observation, <span class="math inline">\(t\)</span> = 1-number of observations in the dataset<br />
+<li><span class="math inline">\(y_t\)</span> is the observed value for the quantitative response variable for every observation, <span class="math inline">\(t\)</span> goes from 1 to the number of observations in the dataset<br />
 </li>
 <li><span class="math inline">\(\beta_0\)</span> is the mean response variable when the group is “group1”</li>
-<li><span class="math inline">\(\beta_1\)</span> is the difference in mean response of “group2” from “group1”</li>
-<li><span class="math inline">\(\epsilon_t\)</span> is the random variation present for each observation that is not explained by the group variable. These are assumed to come from an iid normal distribution with some shared variance, <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span></li>
+<li><span class="math inline">\(\beta_1\)</span> is the difference in mean response of “group2” from “group1”. It only impacts the observed response when the group is “group2”.<br />
+</li>
+<li>The indicator variable, <span class="math inline">\(I_{(group_t=\textit{&#39;&#39;group2&#39;&#39;})}\)</span>, is 1 when group is “group2” and 0 when group is “group1”.</li>
+<li><span class="math inline">\(\epsilon_t\)</span> is the random variation present for each observation that is not explained by the group variable. These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, <span class="math inline">\(\sigma^2\)</span>: <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span></li>
 </ul>
 </div>
-<div id="do-one-simulation-from-a-two-group-model" class="section level1">
-<h1>Do one simulation from a two-group model</h1>
-<p>Now I can use the statistical model to build a simulation. In this case I’ll call my response variable “growth”, and the two groups “group1” and “group2”. I’ll have 10 observations per group (it’s possibly to simulate unbalanced groups but balanced groups is a good place to start).</p>
-<p>I’ll set my seed so I can replicate this you can replicate this simulation exactly at home.</p>
+<div id="a-single-simulation-from-a-two-group-model" class="section level1">
+<h1>A single simulation from a two-group model</h1>
+<p>I use the statistical model to build a simulation. In this case I’ll call my response variable “growth”, and the two groups “group1” and “group2”. I’ll have 10 observations per group (it’s possible to simulate unbalanced groups but balanced groups is a good place to start).</p>
+<p>I’ll set my seed for the random number generation so I can replicate this you simulation exactly at home.</p>
 <pre class="r"><code>set.seed(16)</code></pre>
-<p>I like to start out by defining what the “truth” is in the simulation by setting parameter values. Here’s what I’ll do today.</p>
+<p>I’ll start out by defining what the “truth” is in the simulation by setting the parameter values. Here’s what I’ll do today.</p>
 <ul>
-<li>The true group mean for “group1” will be 5 (<span class="math inline">\(\beta_0\)</span>)</li>
+<li>The true group mean (<span class="math inline">\(\beta_0\)</span>) for “group1” will be 5</li>
 <li>The mean of “group2” will be 2 less than “group1” (<span class="math inline">\(\beta_1\)</span>)</li>
-<li>The shared variance will be set at 4 (<span class="math inline">\(\sigma^2\)</span>) so the standard deviation (<span class="math inline">\(\sigma\)</span>) is 2.</li>
+<li>The shared variance will be set at 4 (<span class="math inline">\(\sigma^2\)</span>), so the standard deviation (<span class="math inline">\(\sigma\)</span>) is 2.</li>
 </ul>
-<p>I’ll define the number of groups and number of replicates per group while I’m at it. The total number of obserations is the number of groups times the number of replicates per group.</p>
+<p>I’ll define the number of groups and number of replicates per group while I’m at it. The total number of obserations is the number of groups times the number of replicates per group, which is <code>2*10 = 20</code>.</p>
 <pre class="r"><code>ngroup = 2
 nrep = 10
 b0 = 5
 b1 = -2
 sd = 2</code></pre>
-<p>I also need to create the variable “group”. I use <code>rep</code> a lot when doing simulations in order to repeat values of variables the correct amount of times. Here I’ll repeat each level of “group” 10 times.</p>
+<p>I need to create the variable “group” to use as the explanatory variable when fitting a model in R. I use <code>rep</code> a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I’m working in. Here I’ll repeat each level of <code>group</code> 10 times.</p>
 <pre class="r"><code>( group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep) )</code></pre>
 <pre><code>##  [1] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot;
 ##  [8] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;
 ## [15] &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;</code></pre>
-<p>I create a variable for the random errors by drawing from a normal distribution with a mean of 0 and standard deviation of 2. I need one error for every observation, so will make 20 draws total from this distribution.</p>
+<p>I’ll simulate the random errors by taking random draws from a normal distribution with a mean of 0 and standard deviation of 2. Each observation has random variation not explained by <code>group</code>, so I will make 20 draws total from this distribution (<code>ngroup*nrep</code>).</p>
 <pre class="r"><code>( eps = rnorm(ngroup*nrep, 0, sd) )</code></pre>
 <pre><code>##  [1]  0.9528268 -0.2507600  2.1924324 -2.8884581  2.2956586 -0.9368241
 ##  [7] -2.0119012  0.1271254  2.0499452  1.1462840  3.6943642  0.2238667
 ## [13] -1.4920746  3.3164273  1.4434411 -3.3261610  1.1518191  0.9455202
 ## [19] -1.0854633  2.2553741</code></pre>
-<p>I have all the pieces, so I can add everything together based on the statistical model. I use an indicator variable so (<span class="math inline">\(\beta_1\)</span>) is only added when <code>group == &quot;group2&quot;</code>.</p>
+<p>Once I have all the pieces, so I can add everything together to create the response variable based on the statistical model. I create the indicator variable in R with <code>group == &quot;group2&quot;</code>.</p>
 <pre class="r"><code>( growth = b0 + b1*(group == &quot;group2&quot;) + eps )</code></pre>
 <pre><code>##  [1]  5.952827  4.749240  7.192432  2.111542  7.295659  4.063176  2.988099
 ##  [8]  5.127125  7.049945  6.146284  6.694364  3.223867  1.507925  6.316427
 ## [15]  4.443441 -0.326161  4.151819  3.945520  1.914537  5.255374</code></pre>
-<p>I’ve been working with vectors, but I like to put my “variables” in a dataset.</p>
+<p>It’s not necessary for this simple case, but I will most often store the variables I need for the analysis in to a dataset to keep things organized. This becomes more important when working with more variables.</p>
 <pre class="r"><code>growthdat = data.frame(growth, group)</code></pre>
-<p>Which can be used to fit a model. This is a simulation that has random noise,</p>
+<p>Now I can fit the two group linear model and take a look at the results.</p>
 <pre class="r"><code>growthfit = lm(growth ~ group, data = growthdat)
 summary(growthfit)</code></pre>
 <pre><code>## 
@@ -90,4 +92,101 @@ summary(growthfit)</code></pre>
 ## Residual standard error: 2.008 on 18 degrees of freedom
 ## Multiple R-squared:  0.1427, Adjusted R-squared:  0.0951 
 ## F-statistic: 2.997 on 1 and 18 DF,  p-value: 0.1005</code></pre>
+</div>
+<div id="make-a-function-for-simulation-the-two-group-linear-model" class="section level1">
+<h1>Make a function for simulation the two-group linear model</h1>
+<p>Once we’ve worked out the basic simulation we can “functionize” things. We’ll put the simulation into a function in preparation for repeating the same simulation many times.</p>
+<p>In my function I’m going to set all the arguments to the parameter values above. The argument values can be changed if I want to see how things looked with larger sample sizes or different amounts of variability.</p>
+<p>This function returns the linear model fit with <code>lm</code>.</p>
+<pre class="r"><code>twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
+     ngroup = 2
+     group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep)
+     eps = rnorm(ngroup*nrep, 0, sd)
+     growth = b0 + b1*(group == &quot;group2&quot;) + eps
+     growthfit = lm(growth ~ group)
+     growthfit
+}</code></pre>
+<p>I test the function, using the same <code>seed</code>, to make sure I that things are working as expected and I get the same results as above.</p>
+<pre class="r"><code>set.seed(16)
+twogroup_fun()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = growth ~ group)
+## 
+## Coefficients:
+## (Intercept)  groupgroup2  
+##       5.268       -1.555</code></pre>
+<p>If I want to change some element of the simulation, like have a smaller standard deviation or a larger number of reps per group, I can.</p>
+<pre class="r"><code>twogroup_fun(sigma = 1)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = growth ~ group)
+## 
+## Coefficients:
+## (Intercept)  groupgroup2  
+##       5.626       -2.952</code></pre>
+</div>
+<div id="do-many-simulations" class="section level1">
+<h1>Do many simulations</h1>
+<p>A single simulation isn’t very useful. The goal of a simulation is to gain insight on how a model can perform if a sample was taken repeatedly.</p>
+<p>Once I have a working function I can repeat the simulation many times, saving the model after each one. This will allow exploration of model performance with the given parameters.</p>
+<p>This is a task I commonly use <code>replicate</code> for. The <code>rerun</code> function from package <strong>purrr</strong> is equivalent to <code>replicate</code> with <code>simplify = FALSE</code>, and I’ll use it here for convenience. The result is a list of fitted two-group linear models based on the given simulation parameters.</p>
+<pre class="r"><code>library(purrr)</code></pre>
+<pre class="r"><code>sims = rerun(1000, twogroup_fun() )</code></pre>
+</div>
+<div id="extracting-results-from-the-linear-model" class="section level1">
+<h1>Extracting results from the linear model</h1>
+<p>If we wanted to keep track of estimates over many simulations, we’d want to pull out the coefficients. Package <strong>broom</strong> can help us here via <code>tidy</code>.</p>
+<pre class="r"><code>library(broom)</code></pre>
+<p>If we were looking to save test statistics and p-values for a power analysis we can also get those via <code>tidy</code>.</p>
+<pre class="r"><code>tidy(growthfit)</code></pre>
+<pre><code>##          term  estimate std.error statistic      p.value
+## 1 (Intercept)  5.267633 0.6351230  8.293878 1.460563e-07
+## 2 groupgroup2 -1.554922 0.8981996 -1.731154 1.005290e-01</code></pre>
+<p>Another thing that might be of interest to keep track of is the variance/standard deviation. This has been more common for me in a mixed model framework when there are multiple variances. For a linear model we can extract an estimate of the residual standard deviation from the <code>summary</code> output.</p>
+<pre class="r"><code>summary(growthfit)$sigma</code></pre>
+<pre><code>## [1] 2.008435</code></pre>
+</div>
+<div id="look-at-the-results-from-the-simulation" class="section level1">
+<h1>Look at the results from the simulation</h1>
+<p>Now for the fun part! Given we know the truth, how do estimates of the parameters behave?</p>
+<p>I can extract whatever results I’m interested in looking at. Functions from package <strong>purrr</strong> are useful here for working with the list of models and I’ll use functions from <strong>dplyr</strong> to get the coefficient I want when working with <code>broom::tidy</code>. I’ll do plotting with <strong>ggplot2</strong>.</p>
+<pre class="r"><code>suppressMessages( library(dplyr) )
+library(ggplot2)</code></pre>
+<p><strong>Estimated differences in mean response</strong></p>
+<p>As this is a linear model about differences among groups, the estimate of <span class="math inline">\(\beta_1\)</span> is one of the statisics of most interest. What does the distribution of differences in mean growth between groups look like? Here’s a density plot.</p>
+<pre class="r"><code>sims %&gt;%
+     map_df(tidy) %&gt;%
+     filter(term == &quot;groupgroup2&quot;) %&gt;%
+     ggplot( aes(estimate) ) +
+          geom_density(fill = &quot;blue&quot;, alpha = .5) +
+          geom_vline( xintercept = -2)</code></pre>
+<p><img src="/post/2018-01-09-simulate-simulate-part-1-a-linear-model_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p>It’s this sort of simulation results from situations involving small samples of a noisy measurement that I think can be so compelling. There is quite a range of estimated differences in mean growth across simulations, both overestimating and underestimating the true value. Some models got the sign wrong, and estimated “group2” to have greater mean growth than “group1” even though we know that “group2” is lower.</p>
+<p><strong>Estimates of the standard deviation</strong></p>
+<p>I can do a similar plot for the residual standard deviation, extracting <code>sigma</code> from the model object and plotting it as a density plot.</p>
+<pre class="r"><code>sims %&gt;%
+     map_dbl(~summary(.x)$sigma) %&gt;%
+     data.frame(sigma = .) %&gt;%
+     ggplot( aes(sigma) ) +
+          geom_density(fill = &quot;blue&quot;, alpha = .5) +
+          geom_vline(xintercept = 2)</code></pre>
+<p><img src="/post/2018-01-09-simulate-simulate-part-1-a-linear-model_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p>The estimated variation ranges between 1 to just over 3. Not unexpected (to me), across all the simulations there are slightly more instances of underestimating the variation than overestimating it. This is what gets interesting in the world of mixed models, which I’ll tackle in a later post.</p>
+<p>The standard deviation is underestimated 54% of the time.</p>
+<pre class="r"><code>sims %&gt;%
+     map_dbl(~summary(.x)$sigma) %&gt;%
+     {. &lt; 2} %&gt;%
+     mean()</code></pre>
+<pre><code>## [1] 0.539</code></pre>
+<p><strong>Statistical results</strong></p>
+<p>If the goal of a simulation was to get an idea of the statistical power of a test we’d look at the proportion of times the null hypothesis was rejected given a fixed alpha level. Here the percentage of models that correctly rejected the null hypothesis given that we know it’s not true is just over 56%.</p>
+<pre class="r"><code>sims %&gt;%
+     map_df(tidy) %&gt;%
+     filter(term == &quot;groupgroup2&quot;) %&gt;%
+     pull(p.value) %&gt;%
+     {. &lt; .05} %&gt;%
+     mean()</code></pre>
+<pre><code>## [1] 0.563</code></pre>
+<p>So that’s an intro to simulations, where you get to learn all about the model you are using and how it’s working. I’ll do future posts about simulating mixed models and, in particular, looking at interesting issues that crop up with estimating variances.</p>
 </div>
