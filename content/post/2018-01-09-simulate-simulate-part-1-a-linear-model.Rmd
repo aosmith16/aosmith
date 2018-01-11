@@ -9,27 +9,27 @@ draft: TRUE
 description: "Where I discuss simulations, why I love them, and get started on a simulation series with a simple two-group linear model."
 ---
 
-I have to confess:  I love simulations.  
+Confession:  I love simulations.  
 
-I use simulations to check my intuition and understanding of statistical theory.  When someone tells me with great certainty "I don't need to meet that assumption because [fill in the blank]", I tend turn to simulations rather than textbooks to check.
+I find them incredibly useful in understanding of statistical theory and assumptions of linear models.  When someone tells me with great certainty "I don't need to meet that assumption because [fill in the blank]", I tend turn to simulations rather than a textbook to check.
 
-I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference.  Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because we use them explicitly.
+I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference.  Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because I use them explicitly.  Plus it's fun to put everything together and explore the results!
 
 # Simulate, simulate, dance to the music
 
-I find simulations so useful for my own understanding, and would like to use them more in teaching and consulting as I think the could help folks understand their models better.  I haven't managed to fit it in so far, but it's always on my mind.
+I find simulations so helpful that I'm always wishing I could find a way to use them more in teaching and consulting.  Being able to build a simulation could help folks understand their models better.  I haven't managed to fit it in so far, but it's definitely on my mind and, so, this post.
 
-It was when I was learning to using mixed models in R (having learned them in SAS) when I started using simulations heavily, and mixed models is where my brain jumps to when I thought about a "simulation" post.  However, I thought it worthwhile to start out with a simulation from a simpler model to demonstrate how things work before increasing the complexity.  Today I'll go over a simulation from a two-group linear model and then work up to linear mixed models and generalized linear mixed models in subsequent posts.
+Today I'm going to go over an example of simulating data from a two-group linear model.  I'll work work up to linear mixed models and generalized linear mixed models (the fun stuff! `r emo::ji("laugh")`) in subsequent posts.
 
 # The statistical model
 
 **Warning: Here there be equations.**  
 
-If your brain says "I think this section must not pertain to me" after seeing the mathematical notation (like mine does), you can jump right down to the R code in the next section.
+If you are like me and your brain says "I think this section must not pertain to me" when your eyes hit mathematical notation, you can jump right down to the R code in the next section.  But, honest, these equations are pretty helpful when setting up a simulation.
 
-A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable.  It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup's 2015 "Generalized Linear Mixed Models" book for a more in-depth description).  So the statistical model, which can look very math-y, is where we write down the exact assumptions we are making when we fit a linear model to a set of data.  Once we know those, we can simulate data based on those assumptions.
+A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable.  It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup's 2013 "Generalized Linear Mixed Models" book for a more in-depth description).  So the statistical model, which can look very math-y, is where we write down the exact assumptions we are making when we fit a linear model to a set of data.  Once we know those, we can simulate data based on those assumptions.
 
-Here is an example of a linear model for two groups.  I wrote the statistical model to match the form of the default output of `lm` in R.
+Here is an example of a linear model for two groups.  I wrote the statistical model to match the form of the default summary output from a model fit with `lm` in R.
 
 $$y_t \thicksim \beta_0 + \beta_1*I_{(group_t=\textit{''group''})} + \epsilon_t$$
 
@@ -43,13 +43,13 @@ $$y_t \thicksim \beta_0 + \beta_1*I_{(group_t=\textit{''group''})} + \epsilon_t$
 
 I use the statistical model to build a simulation.  In this case I'll call my response variable "growth", and the two groups "group1" and "group2".  I'll have 10 observations per group (it's possible to simulate unbalanced groups but balanced groups is a good place to start).
 
-I'll set my seed for the random number generation so I can replicate this you simulation exactly at home.
+I'll set my seed for the random number generation so you can replicate this simulation exactly at home.
 
 ```{r}
 set.seed(16)
 ```
 
-I'll start out by defining what the "truth" is in the simulation by setting the parameter values.  Here's what I'll do today.
+I'll start out by defining what the "truth" is in the simulation by setting all the parameters to a value of my choosing.  Here's what I'll do today.
 
 + The true group mean ($\beta_0$) for "group1" will be 5 
 + The mean of "group2" will be 2 less than "group1" ($\beta_1$)

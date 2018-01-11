@@ -11,20 +11,20 @@ description: "Where I discuss simulations, why I love them, and get started on a
 
 
 
-<p>I have to confess: I love simulations.</p>
-<p>I use simulations to check my intuition and understanding of statistical theory. When someone tells me with great certainty “I don’t need to meet that assumption because [fill in the blank]”, I tend turn to simulations rather than textbooks to check.</p>
-<p>I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference. Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because we use them explicitly.</p>
+<p>Confession: I love simulations.</p>
+<p>I find them incredibly useful in understanding of statistical theory and assumptions of linear models. When someone tells me with great certainty “I don’t need to meet that assumption because [fill in the blank]”, I tend turn to simulations rather than a textbook to check.</p>
+<p>I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference. Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because I use them explicitly. Plus it’s fun to put everything together and explore the results!</p>
 <div id="simulate-simulate-dance-to-the-music" class="section level1">
 <h1>Simulate, simulate, dance to the music</h1>
-<p>I find simulations so useful for my own understanding, and would like to use them more in teaching and consulting as I think the could help folks understand their models better. I haven’t managed to fit it in so far, but it’s always on my mind.</p>
-<p>It was when I was learning to using mixed models in R (having learned them in SAS) when I started using simulations heavily, and mixed models is where my brain jumps to when I thought about a “simulation” post. However, I thought it worthwhile to start out with a simulation from a simpler model to demonstrate how things work before increasing the complexity. Today I’ll go over a simulation from a two-group linear model and then work up to linear mixed models and generalized linear mixed models in subsequent posts.</p>
+<p>I find simulations so helpful that I’m always wishing I could find a way to use them more in teaching and consulting. Being able to build a simulation could help folks understand their models better. I haven’t managed to fit it in so far, but it’s definitely on my mind and, so, this post.</p>
+<p>Today I’m going to go over an example of simulating data from a two-group linear model. I’ll work work up to linear mixed models and generalized linear mixed models (the fun stuff! 😅) in subsequent posts.</p>
 </div>
 <div id="the-statistical-model" class="section level1">
 <h1>The statistical model</h1>
 <p><strong>Warning: Here there be equations.</strong></p>
-<p>If your brain says “I think this section must not pertain to me” after seeing the mathematical notation (like mine does), you can jump right down to the R code in the next section.</p>
-<p>A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable. It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup’s 2015 “Generalized Linear Mixed Models” book for a more in-depth description). So the statistical model, which can look very math-y, is where we write down the exact assumptions we are making when we fit a linear model to a set of data. Once we know those, we can simulate data based on those assumptions.</p>
-<p>Here is an example of a linear model for two groups. I wrote the statistical model to match the form of the default output of <code>lm</code> in R.</p>
+<p>If you are like me and your brain says “I think this section must not pertain to me” when your eyes hit mathematical notation, you can jump right down to the R code in the next section. But, honest, these equations are pretty helpful when setting up a simulation.</p>
+<p>A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable. It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (See Stroup’s 2013 “Generalized Linear Mixed Models” book for a more in-depth description). So the statistical model, which can look very math-y, is where we write down the exact assumptions we are making when we fit a linear model to a set of data. Once we know those, we can simulate data based on those assumptions.</p>
+<p>Here is an example of a linear model for two groups. I wrote the statistical model to match the form of the default summary output from a model fit with <code>lm</code> in R.</p>
 <p><span class="math display">\[y_t \thicksim \beta_0 + \beta_1*I_{(group_t=\textit{&#39;&#39;group&#39;&#39;})} + \epsilon_t\]</span></p>
 <ul>
 <li><span class="math inline">\(y_t\)</span> is the observed value for the quantitative response variable for every observation, <span class="math inline">\(t\)</span> goes from 1 to the number of observations in the dataset<br />
@@ -39,9 +39,9 @@ description: "Where I discuss simulations, why I love them, and get started on a
 <div id="a-single-simulation-from-a-two-group-model" class="section level1">
 <h1>A single simulation from a two-group model</h1>
 <p>I use the statistical model to build a simulation. In this case I’ll call my response variable “growth”, and the two groups “group1” and “group2”. I’ll have 10 observations per group (it’s possible to simulate unbalanced groups but balanced groups is a good place to start).</p>
-<p>I’ll set my seed for the random number generation so I can replicate this you simulation exactly at home.</p>
+<p>I’ll set my seed for the random number generation so you can replicate this simulation exactly at home.</p>
 <pre class="r"><code>set.seed(16)</code></pre>
-<p>I’ll start out by defining what the “truth” is in the simulation by setting the parameter values. Here’s what I’ll do today.</p>
+<p>I’ll start out by defining what the “truth” is in the simulation by setting all the parameters to a value of my choosing. Here’s what I’ll do today.</p>
 <ul>
 <li>The true group mean (<span class="math inline">\(\beta_0\)</span>) for “group1” will be 5</li>
 <li>The mean of “group2” will be 2 less than “group1” (<span class="math inline">\(\beta_1\)</span>)</li>

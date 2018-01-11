@@ -242,3 +242,10 @@ math = true
   name = "RSS"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-rss\"></i>"
   url = "/index.xml"
+
+  [[menu.misc]]
+  weight = 6
+  identifier = "rweekly"
+  name = "R Weekly"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-thumb-tack\"></i>"
+  url = "https://rweekly.org/"
