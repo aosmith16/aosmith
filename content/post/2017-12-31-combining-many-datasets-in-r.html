@@ -216,7 +216,7 @@ test</code></pre>
 </div>
 <div id="are-we-finally-done" class="section level1">
 <h1>Are we finally done?</h1>
-<p>Hopefully! 😄</p>
+<p>Hopefully! 😅</p>
 <p>In working with real data, the final “combining” step can lead to errors due to unanticipated complexities. In my experience, this most often happens because some of the datasets are physically different than the rest. I’ve worked on problems where, for example, it turned out some datasets were present in the directory but were empty.</p>
 <p>In the real files for this particular example, it turned out some of the files had been previously modified manually to remove the header information. We ended up adding an <code>if</code> statement to the function to test each file as we read it in. If it had the header information we’d use <code>skip</code> while reading in the dataset and if it didn’t we wouldn’t. I did something similar in the case where some of the datasets were blank.</p>
 <p>After the combined dataset has been created, you might want to save it for further data exploration and/or analysis. If working on an interim set of datasets (such as before a field season is over), saving the R object with <code>saveRDS</code> can be pretty convenient. Saving a final dataset as a CSV may be useful for sharing with collaborators once all datasets have been downloaded and combined, which can be done with, e.g., <code>write.csv</code>.</p>
