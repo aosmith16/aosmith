@@ -28,7 +28,7 @@ We record gas mileage for all our vehicles on Google Sheets, so I can read the d
 
 ```{r, message = FALSE}
 library(googlesheets) # v 0.2.2
-library(skimr) # v. 1.0
+library(skimr) # v. 1.0.1
 library(dplyr) # v. 0.7.4
 ```
 
@@ -49,10 +49,9 @@ We calculate gas mileage (`mpgcalc`) based on recorded gallons and mileage drive
 head(fiesta2017)
 ```
 
-Here's my first chance to use functions from package **skimr** to get a quick summary of the variables in the dataset. (The locale change is to try to get [histograms to display correctly](https://github.com/ropenscilabs/skimr/issues/136), which works in the RMD but not in HTML.)
+Here's my first chance to use functions from package **skimr** to get a quick summary of the variables in the dataset. (Starting in **skimr** 1.0.1 the histograms work in R markdown documents on Windows!)
 
 ```{r}
-Sys.setlocale("LC_CTYPE", "Chinese")
 skim(fiesta2017)
 ```
 

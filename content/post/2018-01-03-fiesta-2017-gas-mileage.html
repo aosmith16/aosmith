@@ -9,7 +9,7 @@ tags:
   - misc
   - googlesheets
 draft: FALSE
-description: "Since January is the month for analyzing last year's data, I take a quick look at my 2017 gas mileage in my commuter car (Fiesta! 🙌).  I use package googlesheets for reading data, skimr for a quick summary of the dataset, and ggplot2 for plotting."
+description: "Since January is the month for analyzing last year's data, I take a quick look at my 2017 gas mileage in my commuter car (Fiesta! 🤶🏾).  I use package googlesheets for reading data, skimr for a quick summary of the dataset, and ggplot2 for plotting."
 ---
 
 
@@ -27,15 +27,15 @@ Figure 1: The dog wonders if the gas mileage will be good enough
 <h1>The gas mileage data</h1>
 <p>We record gas mileage for all our vehicles on Google Sheets, so I can read the data in directly from there.</p>
 <pre class="r"><code>library(googlesheets) # v 0.2.2
-library(skimr) # v. 1.0
+library(skimr) # v. 1.0.1
 library(dplyr) # v. 0.7.4</code></pre>
 <p>The workbook has a sheet for every year of ownership (into the future! 😄) plus service records.</p>
 <pre class="r"><code>gs_title(&quot;Fiesta mpg&quot;)</code></pre>
 <pre><code>## Sheet successfully identified: &quot;Fiesta mpg&quot;</code></pre>
 <pre><code>##                   Spreadsheet title: Fiesta mpg
 ##                  Spreadsheet author: skylarkguy
-##   Date of googlesheets registration: 2018-01-09 16:49:55 GMT
-##     Date of last spreadsheet update: 2018-01-07 19:26:41 GMT
+##   Date of googlesheets registration: 2018-01-21 22:30:58 GMT
+##     Date of last spreadsheet update: 2018-01-20 22:42:27 GMT
 ##                          visibility: private
 ##                         permissions: rw
 ##                             version: new
@@ -67,39 +67,37 @@ library(dplyr) # v. 0.7.4</code></pre>
 <p>We calculate gas mileage (<code>mpgcalc</code>) based on recorded gallons and mileage driven every time we get gas. We also record what the car estimated the gas mileage would be (<code>mpggage</code>).</p>
 <pre class="r"><code>head(fiesta2017)</code></pre>
 <pre><code>## # A tibble: 6 x 6
-##        date gallons  cost mileage mpggage mpgcalc
-##       &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1  1/2/2017   9.776 24.04   359.4    38.3    36.8
-## 2 1/10/2017   8.872 22.17   330.3    38.2    37.2
-## 3 1/17/2017  10.352 25.87      NA    39.2     0.0
-## 4 1/20/2017   7.146 17.71   297.4    40.6    41.6
-## 5 1/24/2017   7.959 19.73   311.1    40.4    39.1
-## 6 1/30/2017   9.603 23.61   385.8    41.1    40.2</code></pre>
-<p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick summary of the variables in the dataset. (The locale change is to try to get <a href="https://github.com/ropenscilabs/skimr/issues/136">histograms to display correctly</a>, which works in the RMD but not in HTML.)</p>
-<pre class="r"><code>Sys.setlocale(&quot;LC_CTYPE&quot;, &quot;Chinese&quot;)</code></pre>
-<pre><code>## [1] &quot;Chinese (Simplified)_People&#39;s Republic of China.936&quot;</code></pre>
+##   date      gallons  cost mileage mpggage mpgcalc
+##   &lt;chr&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 1/2/2017     9.78  24.0     359    38.3    36.8
+## 2 1/10/2017    8.87  22.2     330    38.2    37.2
+## 3 1/17/2017   10.4   25.9      NA    39.2     0  
+## 4 1/20/2017    7.15  17.7     297    40.6    41.6
+## 5 1/24/2017    7.96  19.7     311    40.4    39.1
+## 6 1/30/2017    9.60  23.6     386    41.1    40.2</code></pre>
+<p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick summary of the variables in the dataset. (Starting in <strong>skimr</strong> 1.0.1 the histograms work in R markdown documents on Windows!)</p>
 <pre class="r"><code>skim(fiesta2017)</code></pre>
 <pre><code>## Skim summary statistics
 ##  n obs: 64 
 ##  n variables: 6 
 ## 
 ## Variable type: character 
-##   variable missing complete  n min max empty n_unique
-## 1     date       0       64 64   8  10     0       62
+##  variable missing complete  n min max empty n_unique
+##      date       0       64 64   8  10     0       62
 ## 
 ## Variable type: numeric 
-##   variable missing complete  n   mean    sd    min    p25 median    p75
-## 1     cost       0       64 64  23.75  3.68  12.23  22.65  24.05  26.39
-## 2  gallons       0       64 64   8.83  1.33   5.01   8.13   9.13   9.81
-## 3  mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
-## 4  mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
-## 5  mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
-##      max     hist
-## 1  30.82 ¨x¨x¨x¨y¨~¨~¨~¨x
-## 2  10.63 ¨y¨x¨x¨y¨|¨~¨~¨~
-## 3 653.7  ¨y¨y¨|¨~¨x¨x¨x¨x
-## 4  96.2  ¨x¨x¨x¨~¨x¨x¨x¨x
-## 5  46.8  ¨y¨z¨~¨~¨z¨x¨x¨x</code></pre>
+##  variable missing complete  n   mean    sd     p0    p25 median    p75
+##      cost       0       64 64  23.75  3.68  12.23  22.65  24.05  26.39
+##   gallons       0       64 64   8.83  1.33   5.01   8.13   9.13   9.81
+##   mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
+##   mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
+##   mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
+##    p100     hist
+##   30.82 &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2581&gt;
+##   10.63 &lt;U+2582&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;
+##  653.7  &lt;U+2582&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
+##   96.2  &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
+##   46.8  &lt;U+2582&gt;&lt;U+2583&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2583&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;</code></pre>
 <p>I’ll need to convert <code>date</code> to a date and remove that missing value from <code>mileage</code> before proceeding (looks like we forget to enter the mileage on one gas stop).</p>
 <pre class="r"><code>fiesta2017 = fiesta2017 %&gt;%
      mutate(date = as.Date(date, format = &quot;%m/%d/%Y&quot;) ) %&gt;%
@@ -107,16 +105,16 @@ library(dplyr) # v. 0.7.4</code></pre>
 <p>The <code>skim</code> output shows an odd <code>mpgcalc</code> value as the max, with a mpg over 90.</p>
 <pre class="r"><code>filter(fiesta2017, mpgcalc &gt; 50)</code></pre>
 <pre><code>## # A tibble: 1 x 6
-##         date gallons  cost mileage mpggage mpgcalc
-##       &lt;date&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 2017-06-05   6.796 22.42   653.7    43.3    96.2</code></pre>
+##   date       gallons  cost mileage mpggage mpgcalc
+##   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 2017-06-05    6.80  22.4     654    43.3    96.2</code></pre>
 <p>Turns out something weird happened on June 5th. There are two data points, one that looks pretty standard and the other that is impossibly high for <code>mpgcalc</code>.</p>
 <pre class="r"><code>filter(fiesta2017, date == as.Date(&quot;2017-06-05&quot;) )</code></pre>
 <pre><code>## # A tibble: 2 x 6
-##         date gallons  cost mileage mpggage mpgcalc
-##       &lt;date&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 2017-06-05   8.122 23.55   327.0    41.9    40.3
-## 2 2017-06-05   6.796 22.42   653.7    43.3    96.2</code></pre>
+##   date       gallons  cost mileage mpggage mpgcalc
+##   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 2017-06-05    8.12  23.6     327    41.9    40.3
+## 2 2017-06-05    6.80  22.4     654    43.3    96.2</code></pre>
 <p>I’ll have to remove the odd data point as I’m not sure what the mistake is (changing the mileage to <code>3</code> instead of <code>6</code> seems a reasonable guess but that still led to something impossibly large).</p>
 <pre class="r"><code>fiesta2017 = filter(fiesta2017, mpgcalc &lt;= 50)</code></pre>
 </div>
@@ -143,9 +141,9 @@ library(dplyr) # v. 0.7.4</code></pre>
 <p>That high point is a high value for both the observed and estimated mpg, so I’m guessing the driving conditions were good for that tank. 😄</p>
 <pre class="r"><code>filter(fiesta2017, mpgcalc &gt; 45)</code></pre>
 <pre><code>## # A tibble: 1 x 6
-##         date gallons  cost mileage mpggage mpgcalc
-##       &lt;date&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 2017-10-03   8.369  25.6   401.4    46.8      48</code></pre>
+##   date       gallons  cost mileage mpggage mpgcalc
+##   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 2017-10-03    8.37  25.6     401    46.8    48.0</code></pre>
 <p><strong>Compare observed mpg vs car-estimated mpg</strong></p>
 <p>It’s fun to watch how the estimated mpg is affected by conditions while I’m driving (e.g., AC, defrost, wind), but it looks like whatever that algorithm is tends to overestimate the gas mileage. But not always!</p>
 <pre class="r"><code>ggplot(fiesta2017, aes(date, mpgcalc) ) +
