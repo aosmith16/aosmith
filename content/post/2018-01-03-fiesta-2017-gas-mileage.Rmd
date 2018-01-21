@@ -9,7 +9,7 @@ tags:
   - misc
   - googlesheets
 draft: FALSE
-description: "Since January is the month for analyzing last year's data, I take a quick look at my 2017 gas mileage in my commuter car (Fiesta! `r emo::ji('celebration')`).  I use package googlesheets for reading data, skimr for a quick summary of the dataset, and ggplot2 for plotting."
+description: "Since January is the month for analyzing last year's data, I take a quick look at my 2017 gas mileage in my commuter car (Fiesta! `r emo::ji('fireworks')`).  I use package googlesheets for reading data, skimr for a quick summary of the dataset, and ggplot2 for plotting."
 ---
 
 It's January - time to see how we did on car gas mileage last year!
@@ -49,7 +49,7 @@ We calculate gas mileage (`mpgcalc`) based on recorded gallons and mileage drive
 head(fiesta2017)
 ```
 
-Here's my first chance to use functions from package **skimr** to get a quick summary of the variables in the dataset. (Starting in **skimr** 1.0.1 the histograms work in R markdown documents on Windows!)
+Here's my first chance to use functions from package **skimr** to get a quick summary of the variables in the dataset. (Starting in **skimr** 1.0.1 the histograms work in R markdown documents on Windows!  They're still not coming through in HTML, but I'll work on it)
 
 ```{r}
 skim(fiesta2017)

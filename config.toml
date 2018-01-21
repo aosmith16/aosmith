@@ -13,7 +13,7 @@
 # use grunt task `build` to synchronize assets
 
 baseurl = "https://aosmith.rbind.io/"
-languageCode = "en-us"
+# languageCode = "en-us"
 title = "Very statisticious"
 theme = "hugo-tranquilpeak-theme-master"
 enableEmoji = true
