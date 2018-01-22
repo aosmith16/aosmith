@@ -7,13 +7,13 @@ categories:
   - r
 tags:
   - ggplot2
-draft: TRUE
+draft: FALSE
 description: "A quick example of reversing the legend order in a ggplot2 plot, which is done via guide_legend() instead of by changing the order of the levels in the dataset."
 ---
 
-It's always nice to get good questions in a workshop. It can help everybody get a bit of extra learnin' in.
+It's always nice to get good questions in a workshop. It can help everybody, including the instructor, get a bit of extra learnin' in.
 
-I do a **ggplot2** workshop for graduate students in my College every spring.  The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() `r emo::ji("dart")` ). 
+Every spring I give a **ggplot2** workshop for graduate students in my college.  The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() `r emo::ji("dart")` ). 
 
 The second half is spent more on making more "final" versions of plots, which is where the question came up.
 
@@ -21,7 +21,7 @@ The second half is spent more on making more "final" versions of plots, which is
 library(ggplot2)
 ```
 
-I have a "results" dataset I use in one of the "final" graphs, displaying the results from some statistical model used to answer a question about differences in mean response between some groups vs a control group.
+I have a "results" dataset I use for one of the "final" plot examples, displaying the results from some statistical model used to answer a question about differences in mean response between some groups vs a control group.
 
 ```{r}
 res = structure(list(Diffmeans = c(-0.27, 0.11, -0.15, -1.27, -1.18
@@ -33,7 +33,7 @@ res = structure(list(Diffmeans = c(-0.27, 0.11, -0.15, -1.27, -1.18
 "Upper.CI", "plantdate", "stocktype"), row.names = c(NA, -5L), class = "data.frame")
 ```
 
-In the workshop, making the graph of these results is done in many stages to demonstrate how scales and themes and flipping coordinates works.  At one point during the workshop the graph looks like this.
+In the workshop, making a plot of these results is done in many stages to demonstrate controlling scales and themes and dodging, etc.  At one point during the workshop the graph looks like this.
 
 ```{r}
 ( g1 = ggplot(res, aes(x = plantdate, y = Diffmeans, group = stocktype) ) +
@@ -54,9 +54,9 @@ In the workshop, making the graph of these results is done in many stages to dem
                             labels = c("Bare root", "Container") ) )
 ```
 
-One year I had a student ask a great question about the order of the legend.  The order of the horizontal lines in the plot is exactly opposite of the order of the lines in the legend.  He pointed out that the plot would feel "tighter" if the orders matched; I agreed.
+One year I had a student ask a great question about the order of the legend.  The order of the lines representing the two groups in the plot is exactly opposite of the order of the groups in the legend.  He felt the plot would feel more polished if the group order between the elements matched; I agreed.
 
-Now, a lot of time the answer to "how do I change the order of a categorical variable in **ggplot2**" is "change the data to change the plot."  (I've use `forcats::fct_inorder` a *lot* for getting the levels of variables like month names in the right order in plots.)
+Now, a lot of time the answer to "how do I change the order of a categorical variable in **ggplot2**" is *change the data to change the plot*.  (I've use `forcats::fct_inorder` a *lot* for getting the levels of variables like month names in the correct order for plotting.)
 
 But that doesn't work in this case.  If I change the order of the levels of the factor...
 
@@ -64,7 +64,7 @@ But that doesn't work in this case.  If I change the order of the levels of the 
 res$stocktype = factor(res$stocktype, levels = c("cont", "bare") )
 ```
 
-...both the order of the lines in the plot and the legend flip orders.
+...both the order of the groups in the plot and the legend flip, so they are still exactly opposite of each other.
 
 ```{r}
 g1 %+% 
@@ -74,9 +74,11 @@ g1 %+%
                             labels = c("Container", "Bare root") )
 ```
 
-Back to the drawing board (and some time online), it turned out the answer was to reverse the legend within **ggplot2**.  There is a "reverse" argument in the guide_legend() function.  This function can be used either inside a scale_*() function with the "guides" argument or within guides().
+Back to the drawing board (and some time online), it turns out the answer is to reverse the legend within **ggplot2**.  There is a "reverse" argument in the guide_legend() function.  This function can be used either inside a scale_*() function with the "guides" argument or within guides().
 
 In this particular case, the scale_linetype_manual() line can be changed to incorporate guide_legend().
+
+Like this:
 
 ```{r, eval = FALSE}
 scale_linetype_manual(values = c("solid", "twodash"),

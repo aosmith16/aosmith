@@ -7,17 +7,17 @@ categories:
   - r
 tags:
   - ggplot2
-draft: TRUE
+draft: FALSE
 description: "A quick example of reversing the legend order in a ggplot2 plot, which is done via guide_legend() instead of by changing the order of the levels in the dataset."
 ---
 
 
 
-<p>It’s always nice to get good questions in a workshop. It can help everybody get a bit of extra learnin’ in.</p>
-<p>I do a <strong>ggplot2</strong> workshop for graduate students in my College every spring. The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() 🎯 ).</p>
+<p>It’s always nice to get good questions in a workshop. It can help everybody, including the instructor, get a bit of extra learnin’ in.</p>
+<p>Every spring I give a <strong>ggplot2</strong> workshop for graduate students in my college. The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() 🎯 ).</p>
 <p>The second half is spent more on making more “final” versions of plots, which is where the question came up.</p>
 <pre class="r"><code>library(ggplot2)</code></pre>
-<p>I have a “results” dataset I use in one of the “final” graphs, displaying the results from some statistical model used to answer a question about differences in mean response between some groups vs a control group.</p>
+<p>I have a “results” dataset I use for one of the “final” plot examples, displaying the results from some statistical model used to answer a question about differences in mean response between some groups vs a control group.</p>
 <pre class="r"><code>res = structure(list(Diffmeans = c(-0.27, 0.11, -0.15, -1.27, -1.18
 ), Lower.CI = c(-0.63, -0.25, -0.51, -1.63, -1.54), Upper.CI = c(0.09, 
 0.47, 0.21, -0.91, -0.82), plantdate = structure(c(1L, 2L, 2L, 
@@ -25,7 +25,7 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
     stocktype = structure(c(2L, 2L, 1L, 2L, 1L), .Label = c(&quot;bare&quot;, 
     &quot;cont&quot;), class = &quot;factor&quot;)), .Names = c(&quot;Diffmeans&quot;, &quot;Lower.CI&quot;, 
 &quot;Upper.CI&quot;, &quot;plantdate&quot;, &quot;stocktype&quot;), row.names = c(NA, -5L), class = &quot;data.frame&quot;)</code></pre>
-<p>In the workshop, making the graph of these results is done in many stages to demonstrate how scales and themes and flipping coordinates works. At one point during the workshop the graph looks like this.</p>
+<p>In the workshop, making a plot of these results is done in many stages to demonstrate controlling scales and themes and dodging, etc. At one point during the workshop the graph looks like this.</p>
 <pre class="r"><code>( g1 = ggplot(res, aes(x = plantdate, y = Diffmeans, group = stocktype) ) +
     geom_point(position = position_dodge(width = .75) ) +
     geom_errorbar( aes(ymin = Lower.CI, ymax = Upper.CI,
@@ -43,11 +43,11 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
                             name = element_blank(),
                             labels = c(&quot;Bare root&quot;, &quot;Container&quot;) ) )</code></pre>
 <p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
-<p>One year I had a student ask a great question about the order of the legend. The order of the horizontal lines in the plot is exactly opposite of the order of the lines in the legend. He pointed out that the plot would feel “tighter” if the orders matched; I agreed.</p>
-<p>Now, a lot of time the answer to “how do I change the order of a categorical variable in <strong>ggplot2</strong>” is “change the data to change the plot.” (I’ve use <code>forcats::fct_inorder</code> a <em>lot</em> for getting the levels of variables like month names in the right order in plots.)</p>
+<p>One year I had a student ask a great question about the order of the legend. The order of the lines representing the two groups in the plot is exactly opposite of the order of the groups in the legend. He felt the plot would feel more polished if the group order between the elements matched; I agreed.</p>
+<p>Now, a lot of time the answer to “how do I change the order of a categorical variable in <strong>ggplot2</strong>” is <em>change the data to change the plot</em>. (I’ve use <code>forcats::fct_inorder</code> a <em>lot</em> for getting the levels of variables like month names in the correct order for plotting.)</p>
 <p>But that doesn’t work in this case. If I change the order of the levels of the factor…</p>
 <pre class="r"><code>res$stocktype = factor(res$stocktype, levels = c(&quot;cont&quot;, &quot;bare&quot;) )</code></pre>
-<p>…both the order of the lines in the plot and the legend flip orders.</p>
+<p>…both the order of the groups in the plot and the legend flip, so they are still exactly opposite of each other.</p>
 <pre class="r"><code>g1 %+% 
      res +
      scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
@@ -56,8 +56,9 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
 <pre><code>## Scale for &#39;linetype&#39; is already present. Adding another scale for
 ## &#39;linetype&#39;, which will replace the existing scale.</code></pre>
 <p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>Back to the drawing board (and some time online), it turned out the answer was to reverse the legend within <strong>ggplot2</strong>. There is a “reverse” argument in the guide_legend() function. This function can be used either inside a scale_*() function with the “guides” argument or within guides().</p>
+<p>Back to the drawing board (and some time online), it turns out the answer is to reverse the legend within <strong>ggplot2</strong>. There is a “reverse” argument in the guide_legend() function. This function can be used either inside a scale_*() function with the “guides” argument or within guides().</p>
 <p>In this particular case, the scale_linetype_manual() line can be changed to incorporate guide_legend().</p>
+<p>Like this:</p>
 <pre class="r"><code>scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
                       name = element_blank(),
                       labels = c(&quot;Container&quot;, &quot;Bare root&quot;),

@@ -29,12 +29,13 @@ Figure 1: The dog wonders if the gas mileage will be good enough
 <pre class="r"><code>library(googlesheets) # v 0.2.2
 library(skimr) # v. 1.0.1
 library(dplyr) # v. 0.7.4</code></pre>
-<p>The workbook has a sheet for every year of ownership (into the future! 🤣) plus service records.</p>
+<p>The workbook has a sheet for every year of ownership (into the future! 😄) plus service records.</p>
 <pre class="r"><code>gs_title(&quot;Fiesta mpg&quot;)</code></pre>
+<pre><code>## Auto-refreshing stale OAuth token.</code></pre>
 <pre><code>## Sheet successfully identified: &quot;Fiesta mpg&quot;</code></pre>
 <pre><code>##                   Spreadsheet title: Fiesta mpg
 ##                  Spreadsheet author: skylarkguy
-##   Date of googlesheets registration: 2018-01-21 23:13:33 GMT
+##   Date of googlesheets registration: 2018-01-22 15:42:23 GMT
 ##     Date of last spreadsheet update: 2018-01-20 22:42:27 GMT
 ##                          visibility: private
 ##                         permissions: rw
@@ -82,22 +83,22 @@ library(dplyr) # v. 0.7.4</code></pre>
 ##  n variables: 6 
 ## 
 ## Variable type: character 
-##  variable missing complete  n min max empty n_unique
-##      date       0       64 64   8  10     0       62
+##   variable missing complete  n min max empty n_unique
+## 1     date       0       64 64   8  10     0       62
 ## 
 ## Variable type: numeric 
-##  variable missing complete  n   mean    sd     p0    p25 median    p75
-##      cost       0       64 64  23.75  3.68  12.23  22.65  24.05  26.39
-##   gallons       0       64 64   8.83  1.33   5.01   8.13   9.13   9.81
-##   mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
-##   mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
-##   mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
-##    p100     hist
-##   30.82 &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2581&gt;
-##   10.63 &lt;U+2582&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;
-##  653.7  &lt;U+2582&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
-##   96.2  &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
-##   46.8  &lt;U+2582&gt;&lt;U+2583&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2583&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;</code></pre>
+##   variable missing complete  n   mean    sd    min    p25 median    p75
+## 1     cost       0       64 64  23.75  3.68  12.23  22.65  24.05  26.39
+## 2  gallons       0       64 64   8.83  1.33   5.01   8.13   9.13   9.81
+## 3  mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
+## 4  mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
+## 5  mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
+##      max                                                             hist
+## 1  30.82 &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2581&gt;
+## 2  10.63 &lt;U+2582&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;
+## 3 653.7  &lt;U+2582&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
+## 4  96.2  &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
+## 5  46.8  &lt;U+2582&gt;&lt;U+2583&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2583&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;</code></pre>
 <p>I’ll need to convert <code>date</code> to a date and remove that missing value from <code>mileage</code> before proceeding (looks like we forget to enter the mileage on one gas stop).</p>
 <pre class="r"><code>fiesta2017 = fiesta2017 %&gt;%
      mutate(date = as.Date(date, format = &quot;%m/%d/%Y&quot;) ) %&gt;%
