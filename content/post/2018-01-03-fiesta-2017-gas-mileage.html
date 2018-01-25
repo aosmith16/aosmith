@@ -31,12 +31,11 @@ library(skimr) # v. 1.0.1
 library(dplyr) # v. 0.7.4</code></pre>
 <p>The workbook has a sheet for every year of ownership (into the future! 😄) plus service records.</p>
 <pre class="r"><code>gs_title(&quot;Fiesta mpg&quot;)</code></pre>
-<pre><code>## Auto-refreshing stale OAuth token.</code></pre>
 <pre><code>## Sheet successfully identified: &quot;Fiesta mpg&quot;</code></pre>
 <pre><code>##                   Spreadsheet title: Fiesta mpg
 ##                  Spreadsheet author: skylarkguy
-##   Date of googlesheets registration: 2018-01-22 15:42:23 GMT
-##     Date of last spreadsheet update: 2018-01-20 22:42:27 GMT
+##   Date of googlesheets registration: 2018-01-25 22:53:27 GMT
+##     Date of last spreadsheet update: 2018-01-24 02:26:57 GMT
 ##                          visibility: private
 ##                         permissions: rw
 ##                             version: new
@@ -76,7 +75,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 ## 4 1/20/2017    7.15  17.7     297    40.6    41.6
 ## 5 1/24/2017    7.96  19.7     311    40.4    39.1
 ## 6 1/30/2017    9.60  23.6     386    41.1    40.2</code></pre>
-<p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick summary of the variables in the dataset. (Starting in <strong>skimr</strong> 1.0.1 the histograms work in R markdown documents on Windows! They’re still not coming through in HTML, but I’ll work on it)</p>
+<p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick summary of the variables in the dataset. (I’ve removed the spark histograms since I haven’t gotten them to play nicely in HTML.)</p>
 <pre class="r"><code>skim(fiesta2017)</code></pre>
 <pre><code>## Skim summary statistics
 ##  n obs: 64 
@@ -93,12 +92,12 @@ library(dplyr) # v. 0.7.4</code></pre>
 ## 3  mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
 ## 4  mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
 ## 5  mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
-##      max                                                             hist
-## 1  30.82 &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2581&gt;
-## 2  10.63 &lt;U+2582&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2587&gt;
-## 3 653.7  &lt;U+2582&gt;&lt;U+2582&gt;&lt;U+2585&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
-## 4  96.2  &lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2587&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;
-## 5  46.8  &lt;U+2582&gt;&lt;U+2583&gt;&lt;U+2587&gt;&lt;U+2587&gt;&lt;U+2583&gt;&lt;U+2581&gt;&lt;U+2581&gt;&lt;U+2581&gt;</code></pre>
+##      max
+## 1  30.82
+## 2  10.63
+## 3 653.7 
+## 4  96.2 
+## 5  46.8</code></pre>
 <p>I’ll need to convert <code>date</code> to a date and remove that missing value from <code>mileage</code> before proceeding (looks like we forget to enter the mileage on one gas stop).</p>
 <pre class="r"><code>fiesta2017 = fiesta2017 %&gt;%
      mutate(date = as.Date(date, format = &quot;%m/%d/%Y&quot;) ) %&gt;%
