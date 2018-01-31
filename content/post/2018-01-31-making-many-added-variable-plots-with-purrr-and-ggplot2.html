@@ -8,41 +8,34 @@ categories:
   - statistics
 tags:
   - ggplot2
-draft: TRUE
+  - purrr
+draft: FALSE
 description: "In this post I show one approach for making added variable plots from a model with many continuous explanatory variables.  Since this is done for every variable in the model, I show how to automate the process via functions from package purrr." 
 ---
 
 
 
-<p>Last week two of my consulting meetings ended up covering the same topic: making added variable plots.</p>
-<p>In both cases, the student had a linear model of some flavor that had several continuous explanatory variables. This is the kind of situation where students could end up doing a lot of copying and pasting to make added variable plots for each explanatory variable. Because of this I decided to write up an example of how they might automate the task with functions and loops to make an added variable plot for each explanatory variable in the model.</p>
+<p>Last week two of my consulting meetings ended up on the same topic: making added variable plots.</p>
+<p>In both cases, the student had a linear model of some flavor that had several continuous explanatory variables. They wanted to plot the estimated relationship between each variable in the model and the response. This could easily lead to a lot of copying and pasting of code, since they want to do the same thing for every explanatory variable in the model. I worked up some example code showing an approach on how one might automate the task in R with functions and loops, and thought I’d generalize it for a blog post.</p>
 <div id="the-basics-of-added-variable-plots" class="section level1">
 <h1>The basics of added variable plots</h1>
-<p>Added variable plots (aka partial regression plots, adjusted variable plots, individual coefficient plots), are what I would call “results” plots. These are plots showing the estimated relationship between the response and an explanatory variable <em>after accounting for the other variables in the model</em>. If working with only two explanatory variables, a 3-dimensional plot could be used in place of the added variable plot (if one liked those sorts of plots). But once there are many variables in the model we don’t have enough plotting dimensions to show how all the variables relate to the response simultaneously and so added variable plots are an option.</p>
-<p>Added variable plots can be made using, e.g., the <strong>effects</strong> package in R. I’ve found this package to have matured nicely, and I think the plots look pretty nice. However, I often like more flexibility, which I can get by making my own plots. This involves getting appropriate predictions and confidence intervals from the model.</p>
-<p>For making an added variable plot, it is fairly standard to make the predictions with all other variables fixed to their medians or means. Note that in my example I’m talking about the relatively simple case where there are no interactions between continuous variables in the model. That would involve a more complicated set-up.</p>
+<p>Added variable plots (aka partial regression plots, adjusted variable plots, individual coefficient plots), are “results” plots. They are plots showing the estimated relationship between the response and an explanatory variable <em>after accounting for the other variables in the model</em>. If working with only two continuous explanatory variables, a 3-dimensional plot could be used in place of an added variable plot (if one likes those sorts of plots 😃). Once there are many variables in the model, though, we don’t have enough plotting dimensions to show how all the variables relate to the response simultaneously and so the added variable plot is an alternative.</p>
+<p>There are packages available for making added variable plots in R, such as the <strong>effects</strong> package. However, I tend to like a bit more flexibility, which I can get by making my own plots. To do this I need to extract the appropriate predictions and confidence intervals from the model.</p>
+<p>When making an added variable plot, it is fairly standard to make the predictions with all other variables fixed to their medians or means. I use medians today. Note that in my example I’m demonstrating code for the relatively simple case where there are no interactions between continuous variables in the model. Continuous-by-continuous interactions would involve a more complicated set-up for making plots.</p>
 </div>
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
-<p>The main workhorses I’m using today is <strong>purrr</strong> for looping through variables/lists and <strong>ggplot2</strong> for plotting. But I also use helper functions from <strong>dplyr</strong> for data manipulation and <strong>broom</strong> for making model predictions.</p>
-<pre class="r"><code>library(dplyr) # v. 0.7.4</code></pre>
-<pre><code>## 
-## Attaching package: &#39;dplyr&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     filter, lag</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     intersect, setdiff, setequal, union</code></pre>
-<pre class="r"><code>library(ggplot2) # v. 2.2.1.9000
+<p>The main workhorses I’m using today is <strong>purrr</strong> for looping through variables/lists and <strong>ggplot2</strong> for plotting. I also use helper functions from <strong>dplyr</strong> for data manipulation and <strong>broom</strong> for getting the model predictions and standard errors.</p>
+<pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
+library(ggplot2) # v. 2.2.1.9000
 library(purrr) # v. 0.2.4
 library(broom) # v. 0.4.3</code></pre>
 </div>
-<div id="the-model" class="section level1">
-<h1>The model</h1>
-<p>I’ll show an example for fitting a linear model with a transformed response variable in <code>lm()</code>, but the process works the same for generalized linear models fit with <code>glm()</code> and would be very similar for other linear models.</p>
-<p>My linear model is based on five continuous variable from the <em>mtcars</em> dataset. (<em>I know, I know, that dataset has been incredibly overused. I seriously looked around for another dataset to use (that wasn’t a time series) that had many continuous explanatory variables in it but didn’t come up with anything. If you know of one, let me know!</em>)</p>
-<p>The model I fit uses a log transformation for the response variable, so predictions and confidence interval limits will need to be back-transformed for plotting.</p>
+<div id="the-linear-model" class="section level1">
+<h1>The linear model</h1>
+<p>My example model is a linear model with a transformed response variable, fit using <code>lm()</code>. The process works the same for generalized linear models fit with <code>glm()</code> and would be very similar for other linear models (although you may have to calculate any standard errors manually).</p>
+<p>My linear model is based on five continuous variable from the <em>mtcars</em> dataset. (<em>I know, I know, that dataset has been incredibly overused. Seriously, though, I looked around a bit for another dataset to use that had many continuous explanatory variables in it (that wasn’t a time series) but I couldn’t come up with anything. If you know of one, let me know!</em>)</p>
+<p>The model I fit uses a log transformation for the response variable, so predictions and confidence interval limits will need to be back-transformed prior to plotting to show the relationship between the variables on the response on the original scale.</p>
 <pre class="r"><code>fit1 = lm( log(mpg) ~ disp + hp + drat + wt, data = mtcars)
 summary(fit1)</code></pre>
 <pre><code>## 
@@ -69,22 +62,22 @@ summary(fit1)</code></pre>
 </div>
 <div id="the-explanatory-variables" class="section level1">
 <h1>The explanatory variables</h1>
-<p>The approach I’m going to take is to loop through the explanatory variables in the model, following the same process for each one so I end up with an added variable plot per variable.</p>
-<p>I could write out a vector of variable names manually, but I prefer to pull them out of the model. In the approach I used the first variable is the response variable, which I don’t need and so I remove it.</p>
+<p>The approach I’m going to take is to loop through the explanatory variables in the model, create datasets for prediction, get the predictions, and make the plots. I’ll end with one added variable plot per variable.</p>
+<p>I could write out a vector of variable names to loop through manually, but I prefer to pull them out of the model. In the approach I use the first variable in the output is the response variable. I don’t need the response variable for what I’m doing, so I remove it.</p>
 <pre class="r"><code>( mod_vars = all.vars( formula(fit1) )[-1] )</code></pre>
 <pre><code>## [1] &quot;disp&quot; &quot;hp&quot;   &quot;drat&quot; &quot;wt&quot;</code></pre>
 </div>
 <div id="a-function-for-making-a-prediction-dataset" class="section level1">
 <h1>A function for making a prediction dataset</h1>
-<p>The first step in making an added variable plot manually is to create the dataset for making the predictions. This dataset will contain the observed data for the explanatory variable of interest (which I’ll call the “focus” variable) with all other variables fixed to their medians (or means if you prefer).</p>
-<p>Below is a function for doing this task. The function takes a dataset, a vector of the variables in the model (as strings), and the explanatory variable of interest (as a string). The <strong>dplyr</strong> *_at() functions can take strings as input, so I use <code>summarise_at()</code> to calculate the medians of the non-focus variables and then bind them with the values of the focus variable from the original dataset. The <code>cbind()</code> functions is handy here because it allows recycling.</p>
+<p>The first step in making an added variable plot manually is to create the dataset to use for making the predictions. This dataset will contain the observed data for the explanatory variable of interest (the “focus” variable) with all other variables fixed to their medians.</p>
+<p>Below is a function for doing this task. The function takes a dataset, a vector of all the variables in the model (as strings), and the name of the focus variable (as a string). The <strong>dplyr</strong> <code>*_at()</code> functions can take strings as input, so I use <code>summarise_at()</code> to calculate the medians of the non-focus variables. I bind the summary values to the focus variable data from the original dataset with <code>cbind()</code>, since <code>cbind()</code> allows recycling.</p>
 <pre class="r"><code>preddat_fun = function(data, allvars, var) {
      sums = summarise_at(data, 
                          vars( one_of(allvars), -one_of(var) ), 
                          median) 
      cbind( select_at(data, var), sums)
 }</code></pre>
-<p>Here’s what the result of the function looks like for a single focus variable, “disp” (top six rows).</p>
+<p>Here’s what the result of the function looks like for a single focus variable, “disp” (showing first six rows).</p>
 <pre class="r"><code>head( preddat_fun(mtcars, mod_vars, &quot;disp&quot;) )</code></pre>
 <pre><code>##                   disp  hp  drat    wt
 ## Mazda RX4          160 123 3.695 3.325
@@ -96,7 +89,7 @@ summary(fit1)</code></pre>
 </div>
 <div id="making-a-prediction-dataset-for-each-variable" class="section level1">
 <h1>Making a prediction dataset for each variable</h1>
-<p>Now that I have a working function I can loop through each variable in the “mod_vars” vector and create the prediction dataset. I’ll use <code>map()</code> from <strong>purrr</strong> for this. I use <code>set_names()</code> prior to the loop so each dataset will be labeled with the variable name.</p>
+<p>Now that I have a working function I can loop through each variable in the “mod_vars” vector and create a prediction dataset for each one. I’ll use <code>map()</code> from <strong>purrr</strong> for the loop. I use <code>set_names()</code> prior to <code>map()</code> so each element of the resulting list will be labeled with the name of the focus variable of that dataset. This helps me stay organized.</p>
 <p>The result is a list of prediction datasets.</p>
 <pre class="r"><code>pred_dats = mod_vars %&gt;%
      set_names() %&gt;%
@@ -126,16 +119,16 @@ str(pred_dats)</code></pre>
 </div>
 <div id="calculate-model-predictions" class="section level1">
 <h1>Calculate model predictions</h1>
-<p>Once the prediction datasets are created, the predictions can be calculated and added to each one I do this on the model scale, since I want to make confidence intervals with the standard errors prior to back-transforming.</p>
-<p>The <code>augment()</code> function from <strong>broom</strong> works with a variety of model objects, including <em>lm</em> and <em>glm</em> objects. It can take new datasets for prediction with the “newdata” argument.</p>
-<p>This step can be done by looping through the prediction datasets, first to add the predictions and then to calculate the approximate confidence intervals and back-transform the predictions and confidence interval limits to the original data scale.</p>
+<p>Once the prediction datasets are created, the predictions can be calculated from the model and added to each dataset. I do this on the model scale, since I want to make confidence intervals with the standard errors prior to back-transforming.</p>
+<p>The <code>augment()</code> function from <strong>broom</strong> works with a variety of model objects, including <em>lm</em> and <em>glm</em> objects. It can take new datasets for prediction with the “newdata” argument, and I use it here to add both the prediction and the standard errors of the predictions to each dataset.</p>
+<p>I do this task by looping through the prediction datasets with <code>map()</code>, first to add the predictions via <code>augment()</code> and then to calculate the approximate confidence intervals and back-transform the predictions and confidence interval limits to the original data scale.</p>
 <pre class="r"><code>preds = pred_dats %&gt;%
      map(~augment(fit1, newdata = .x) ) %&gt;%
      map(~mutate(.x, 
                  lower = exp(.fitted - 2*.se.fit),
                  upper = exp(.fitted + 2*.se.fit),
                  pred = exp(.fitted) ) )</code></pre>
-<p>Here is what the structure of the list elements look like now (showing only the first list).</p>
+<p>Here is what the structure of the list elements look like now (showing only the first list element).</p>
 <pre class="r"><code>str(preds$disp)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    32 obs. of  10 variables:
 ##  $ .rownames: chr  &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
@@ -151,28 +144,28 @@ str(pred_dats)</code></pre>
 </div>
 <div id="a-function-for-plotting" class="section level1">
 <h1>A function for plotting</h1>
-<p>With the predictions done, it’s time for plotting. If each plot is going to look really different, the plots could be made individually. However, if they will all have a similar look then it can be worthwhile to make a function for plotting.</p>
-<p>I don’t spend a bunch of time making the plots look really nice in my plotting function for this example, but the point of building these plots based on predictions instead of having a plotting package to the work is for the flexibility of making them look exactly how you want them.</p>
-<p>One problem I anticipate running into in automating the plotting is with the x axis labels. If I want to the x axis names to look nicer than the variable names I’ll need to make a vector of labels. This needs to be in the same order as the vector of variable names and the list of prediction datasets.</p>
+<p>With the predictions successfully made it’s time for plotting. If each plot needs to look really different, the plots could be made individually. However, if they will all have a similar look then it makes sense to create a function for making the plots.</p>
+<p>One problem I anticipated running into when automating the plotting is with the x axis labels. The variable names in the dataset aren’t very nice looking. If I want the x axis labels to be more polished in the plots I’ll need replacement labels. I decided to make a vector of nicer labels, one label for each focus variable. This vector needs to be the same length and in the same order as the vector of variable names and the list of prediction datasets so each plot gets the correct new axis label.</p>
 <pre class="r"><code>xlabs = c(&quot;Displacement (cu.in.)&quot;, &quot;Gross horsepower&quot;,
           &quot;Rear axle ratio&quot;, &quot;Weight (1000 lbs)&quot;)</code></pre>
 <p>My plotting function has three arguments: the dataset to plot, the explanatory variable to plot on the x axis (as a string), and label for the x axis (also as a string).</p>
 <pre class="r"><code>pred_plot = function(data, variable, xlab) {
-     ggplot(data, aes_string(variable, &quot;pred&quot;) ) +
+     ggplot(data, aes_string(x = variable, y = &quot;pred&quot;) ) +
           geom_line(size = 1) +
           geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
+          geom_rug(sides = &quot;b&quot;) +
           theme_bw() +
           labs(x = xlab,
                y = &quot;Miles/(US) gallon&quot;) +
           ylim(10, 32)
 }</code></pre>
-<p>And a plot for the “disp” variable, which is the first element of the three lists (prediction dataset, variables, axis labels).</p>
+<p>Here is the plotting function in action. I plot the “disp” variable, which is the first element of the three lists (prediction datasets, variables, axis labels).</p>
 <pre class="r"><code>pred_plot(preds[[1]], mod_vars[1], xlabs[1])</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 </div>
 <div id="making-all-the-plots" class="section level1">
 <h1>Making all the plots</h1>
-<p>The last step is to make all the plots. Because we want to loop through three different lists (the prediction datasets, the variable names, and the axis labels), this can be a done via <code>pmap</code> from <strong>purrr</strong>.</p>
+<p>The very last step is to make all the plots. Because we want to loop through three different lists (the prediction datasets, the variables, and the axis labels), this can be a done via <code>pmap()</code> from <strong>purrr</strong>. <code>pmap()</code> loops through all three lists simultaneously.</p>
 <pre class="r"><code>all_plots = pmap( list(preds, mod_vars, xlabs), pred_plot)
 all_plots</code></pre>
 <pre><code>## $disp</code></pre>
@@ -188,10 +181,10 @@ all_plots</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-12-4.png" width="672" /></p>
 <div id="using-the-plots" class="section level2">
 <h2>Using the plots</h2>
-<p>The plots can be printed all at once as above or individually using indexes or list names, with code like <code>all_plots[[1]]</code> or <code>all_plots$disp</code>. Plots can also be saved for use outside of R; for saving individual plots you might use a <code>walk()</code> loop.</p>
-<p>I could see there being interest in combining these into a multi-plot. A faceted plot would be an option, but the approach I’ve done here in its current form isn’t a great one for using faceting instead of making individual plots (although I’m sure it could likely be modified with that in mind).</p>
+<p>The plots can be printed all at once as above or individually using indexes or list names, using code such as <code>all_plots[[1]]</code> or <code>all_plots$disp</code>. Plots can also be saved for use outside of R; for saving individual plots you might use a <code>walk()</code> loop.</p>
+<p>It might be nice to combine these individual plots into a single multi-plot. A faceted plot would be an option, but the approach I’ve done here in its current form isn’t a great one for faceting (although I’m sure it could be modified with that in mind).</p>
 <p>The individual plots can be combined into a single figure via <strong>cowplot</strong> functions, though, without too much trouble. Note that <strong>cowplot</strong> is opinionated about the theme, so I use it without loading it.</p>
-<p>The <code>plot_grid()</code> function can take a list of plots and has a variety of options you might want to explore.</p>
+<p>The <code>plot_grid()</code> function can take a list of plots, which is what I have. It has a variety of options you might want to explore for getting the plots stitched together nicely.</p>
 <pre class="r"><code>cowplot::plot_grid(plotlist = all_plots,
           labels = &quot;AUTO&quot;,
           align = &quot;hv&quot;)</code></pre>
