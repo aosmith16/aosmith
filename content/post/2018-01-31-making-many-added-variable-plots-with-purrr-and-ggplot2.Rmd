@@ -173,3 +173,5 @@ cowplot::plot_grid(plotlist = all_plots,
           labels = "AUTO",
           align = "hv")
 ```
+
+**Addendum:** Package **rms** makes added variable plots via **ggplot2** and **plotly** along with simultaneous confidence bands for any model type the package works with. That includes linear models and generalized linear models excluding the negative binomial family.  This may be a useful place to start if you are working with these kinds of models.
