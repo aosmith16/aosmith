@@ -9,17 +9,17 @@ categories:
 tags:
   - glmm
   - lme4
-draft: TRUE
-description: "Unstandardizing coefficients in order to interpret them on the original scale is necessary when explanatory variables were standardized to help with convergence when fitting a generalized linear mixed model.  Here I show one way to do this for a generalized linear mixed model fit with lme4." 
+draft: FALSE
+description: "Unstandardizing coefficients in order to interpret them on the original scale can be needed when explanatory variables were standardized to help with model convergence when fitting generalized linear mixed models.  Here I show one approach to unstandardizing for a generalized linear mixed model fit with lme4." 
 ---
 
 
 
-<p>Winter term grades are in and I can now once again scrape together some time to write blog posts! 🎉</p>
-<p>The last post I did about making <a href="https://aosmith.rbind.io/2018/01/31/added-variable-plots/">added variable plots</a> led me to think other topics involving getting model results, including the one I’m talking about today: unstandardizing coefficients.</p>
-<p>This comes up particularly for generalized linear mixed models (GLMM), where models don’t always converge if explanatory variables are left unstandardized. The lack of convergence can be caused by explanatory variables with very different magnitudes, and so standardizing the variables prior to model fitting can be useful. In such cases, coefficients and confidence interval limits usually need to be converted to their unstandardized values for interpretation.</p>
+<p>Winter term grades are in and I can once again scrape together some time to write blog posts! 🎉</p>
+<p>The last post I did about making <a href="https://aosmith.rbind.io/2018/01/31/added-variable-plots/">added variable plots</a> led me to think about other “get model results” topics, such as the one I’m talking about today: unstandardizing coefficients.</p>
+<p>I find this comes up particularly for generalized linear mixed models (GLMM), where models don’t always converge if explanatory variables are left unstandardized. The lack of convergence can be caused by explanatory variables with very different magnitudes, and standardizing the variables prior to model fitting can be useful. In such cases, coefficients and confidence interval limits will often need to be converted to their unstandardized values for interpretation. I don’t find thinking about the change in mean response for a 1 standard deviation increase in a variable to be super intuitive, which is the interpretation of a standardized coefficient.</p>
 <p>The math for converting the standardized slope estimates to unstandardized ones turns out to be fairly straightforward. Coefficients for each variable need to be divided by the standard deviation of that variable (this is only true for slopes, not intercepts). The math is shown <a href="https://stats.stackexchange.com/questions/74622/converting-standardized-betas-back-to-original-variables">here</a>.</p>
-<p>The first time I went though this process was pretty clunky. I’ve managed to tidy it up quite a bit through some recent work with students, which I’m demonstrating today.</p>
+<p>The first time I went though this process was quite clunky. Since then I’ve managed to tidy things up quite a bit through work with students, and things are now much more organized.</p>
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
 <p>Model fitting will be done via <strong>lme4</strong>, which is where I’ve most often needed to do this. Data manipulation tools from <strong>dplyr</strong> will be useful for getting results tidied up. I’ll also use helper functions from <strong>purrr</strong> to loop through variables and <strong>broom</strong> for the tidy extraction of fixed-effects coefficients from the model.</p>
@@ -31,7 +31,7 @@ library(broom) # 0.4.3</code></pre>
 </div>
 <div id="the-dataset" class="section level1">
 <h1>The dataset</h1>
-<p>The dataset I’ll use is named <code>cbpp</code>, and comes with <strong>lme4</strong>. It is a dataset of counted proportions, so is analyzed via a binomial generalized linear mixed model.</p>
+<p>The dataset I’ll use is named <code>cbpp</code>, and comes with <strong>lme4</strong>. It is a dataset that has a response variable that is counted proportions, so the data will be analyzed via a binomial generalized linear mixed model.</p>
 <pre class="r"><code>glimpse(cbpp)</code></pre>
 <pre><code>## Observations: 56
 ## Variables: 4
@@ -39,7 +39,7 @@ library(broom) # 0.4.3</code></pre>
 ## $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
 ## $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
 ## $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...</code></pre>
-<p>This dataset has no continuous explanatory variables in it, so I’ll add some. I decided to create three new variables with very different ranges.</p>
+<p>This dataset has no continuous explanatory variables in it, so I’ll add some to demonstrate standardizing/unstandardizing. I create three new variables with very different ranges.</p>
 <pre class="r"><code>set.seed(16)
 
 cbpp = mutate(cbpp, y1 = rnorm(56, 500, 100),
@@ -76,7 +76,7 @@ glimpse(cbpp)</code></pre>
 <div id="standardizing-the-variables" class="section level2">
 <h2>Standardizing the variables</h2>
 <p>I’ll now standardize the three explanatory variables, which involves subtracting the mean and then dividing by the standard deviation. The <code>scale()</code> function is one way to do this in R.</p>
-<p>I do the work inside <code>mutate_at()</code>, which allows me to choose the three variables I want to standardize by name and add “s” as the suffix by using a name in <code>funs()</code>. Adding the suffix allows me to keep the original variables, as I will need them later. The extra <code>as.numeric()</code> has to do with what the <code>scale()</code> function returns.</p>
+<p>I do the work inside <code>mutate_at()</code>, which allows me to choose the three variables I want to standardize by name and add “s” as the suffix by using a name in <code>funs()</code>. Adding the suffix allows me to keep the original variables, as I will need them later. I use <code>as.numeric()</code> to convert the matrix that the <code>scale()</code> function returns into a vector.</p>
 <pre class="r"><code>cbpp = mutate_at(cbpp, vars( y1:y3 ), funs(s = as.numeric( scale(.) ) ) )
 
 glimpse(cbpp)</code></pre>
@@ -95,7 +95,7 @@ glimpse(cbpp)</code></pre>
 </div>
 <div id="standardized-model" class="section level2">
 <h2>Standardized model</h2>
-<p>The model with standardized variables converges without a problem.</p>
+<p>The model with standardized variables converges without any problems.</p>
 <pre class="r"><code>fit2 = glmer( cbind(incidence, size - incidence) ~ y1_s + y2_s + y3_s + (1|herd),
               data = cbpp, family = binomial)</code></pre>
 </div>
@@ -104,8 +104,9 @@ glimpse(cbpp)</code></pre>
 <h1>Unstandardizing slope coefficients</h1>
 <div id="get-coefficients-and-profile-confidence-intervals-from-model" class="section level2">
 <h2>Get coefficients and profile confidence intervals from model</h2>
-<p>If I were to use this model for inference I would want to unstandardize the coefficients before reporting them. The first step in the process is to get the standardized estimates and confidence intervals from the model; I use <code>tidy()</code> from package <strong>broom</strong> for this. The help page is at <code>?tidy.merMod</code> if you want to explore the options.</p>
-<p>I chose to get profile likelihood confidence intervals as well as the estimates for the fixed effects only.</p>
+<p>If I want to use this model for inference I need to unstandardize the coefficients before reporting them to make them more easily interpretable.</p>
+<p>The first step in the process is to get the standardized estimates and confidence intervals from the model. I use <code>tidy()</code> from package <strong>broom</strong> for this, which returns a data.frame of coefficients, statistical tests, and confidence intervals. The help page is at <code>?tidy.merMod</code> if you want to explore some of the options.</p>
+<p>I use <code>tidy()</code> to extract the fixed effects along with profile likelihood confidence intervals.</p>
 <pre class="r"><code>coef_st = tidy(fit2, effects = &quot;fixed&quot;,
      conf.int = TRUE,
      conf.method = &quot;profile&quot;)</code></pre>
@@ -124,16 +125,16 @@ glimpse(cbpp)</code></pre>
 </div>
 <div id="calculate-standard-deviations-for-each-variable" class="section level2">
 <h2>Calculate standard deviations for each variable</h2>
-<p>I need the standard deviations for each variable in order to unstandardize the coefficients. If I do this right, I can get the standard deviations into a data.frame that I can then join to <code>coef_st</code>. Once I do that, dividing the estimated slopes and confidence interval limits by the standard deviation should be straightforward.</p>
+<p>I need the standard deviations for each variable in order to unstandardize the coefficients. If I do this right, I can get the standard deviations into a data.frame that I can then join to <code>coef_st</code>. Once that is done, dividing the estimated slopes and confidence interval limits by the standard deviation will be straightforward.</p>
 <p>I will calculate the standard deviations per variable with <code>map()</code> from <strong>purrr</strong>, as it is a convenient way to loop through columns. I pull out the variables I want to calculate standard deviations for via <code>select()</code>. An alternative approach would have been to take the variables from columns and put them in rows (i.e., put the data in <em>long</em> format), and then summarize by groups.</p>
-<p>The output from <code>map()</code> returns a list, which can be stacked into a long format data.frame via <code>utils::stack()</code>. This results in a two column data.frame, with a column for the standard deviation (called “values”) and a column with the variable names.</p>
+<p>The output from <code>map()</code> returns a list, which can be stacked into a long format data.frame via <code>utils::stack()</code>. This results in a two column data.frame, with a column for the standard deviation (called <code>values</code>) and a column with the variable names (called <code>ind</code>).</p>
 <pre class="r"><code>map( select(cbpp, y1:y3), sd) %&gt;% 
      stack()</code></pre>
 <pre><code>##         values ind
 ## 1   90.4430192  y1
 ## 2    0.2951881  y2
 ## 3 2943.2098667  y3</code></pre>
-<p>The variables in my model and in my output end with <code>_s</code>, so I need to add the suffix the variable names before I can join the two data.frames together.</p>
+<p>The variables in my model and in my output end with <code>_s</code> , so I’ll need to add that suffix to the variable names in the “standard deviations” dataset prior to joining the two data.frames together.</p>
 <pre class="r"><code>sd_all = map( select(cbpp, y1:y3), sd) %&gt;% 
      stack() %&gt;%
      mutate(ind = paste(ind, &quot;s&quot;, sep = &quot;_&quot;) )
@@ -144,9 +145,9 @@ sd_all</code></pre>
 ## 2    0.2951881 y2_s
 ## 3 2943.2098667 y3_s</code></pre>
 </div>
-<div id="joining-standard-deviations-to-the-coefficients-table" class="section level2">
-<h2>Joining standard deviations to the coefficients table</h2>
-<p>Now I can join the standard deviations to the coefficients data.frame. I’m not unstandardizing the intercept at this point, so I’ll use <code>inner_join()</code> to only keep rows that have a match in both data.frames. Notice that the columns I’m joining by have different names in the two data.frames.</p>
+<div id="joining-the-standard-deviations-to-the-coefficients-table" class="section level2">
+<h2>Joining the standard deviations to the coefficients table</h2>
+<p>Once the names of the variables match between the datasets I can join the “standard deviations” data.frame to the “coefficients” data.frame. I’m not unstandardizing the intercept at this point, so I’ll use <code>inner_join()</code> to keep only rows that have a match in both data.frames. Notice that the columns I’m joining by have different names in the two data.frames.</p>
 <pre class="r"><code>coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) )</code></pre>
 <pre><code>##   term  estimate std.error statistic    p.value     conf.low conf.high
@@ -157,7 +158,7 @@ sd_all</code></pre>
 ## 1   90.4430192
 ## 2    0.2951881
 ## 3 2943.2098667</code></pre>
-<p>Once the joining is successful, I can divide “estimate”, “conf.low” and “conf.high” by the standard deviation in “values” via <code>mutate_at()</code>. I will round the results, as well, although I’m ignoring the vast differences in the variable range when I do this (this is treating the situation as if it were simpler than it really is).</p>
+<p>With everything in one data.frame I can easily divide <code>estimate</code>, <code>conf.low</code> and <code>conf.high</code> by the standard deviation in <code>values</code> via <code>mutate_at()</code>. I will round the results, as well, although I’m ignoring the vast differences in the variable range when I do this rounding.</p>
 <pre class="r"><code>coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
      mutate_at( vars(estimate, conf.low, conf.high), funs(round( ./values, 4) ) )</code></pre>
@@ -169,7 +170,7 @@ sd_all</code></pre>
 ## 1   90.4430192
 ## 2    0.2951881
 ## 3 2943.2098667</code></pre>
-<p>I’ll also get rid of the extra variables I don’t want and only keep the unstandardized coefficients and confidence interval limits along with the variable name.</p>
+<p>I’ll get rid of the extra variables via <code>select()</code>, so I end up with the unstandardized coefficients and confidence interval limits along with the variable name. I could also get the variable names cleaned up, possibly removing the suffix and/or capitalizing and adding units, etc., although I don’t do that with these fake variables today.</p>
 <pre class="r"><code>coef_unst = coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
      mutate_at( vars(estimate, conf.low, conf.high), funs(round( ./values, 4) ) ) %&gt;%
@@ -183,12 +184,12 @@ coef_unst</code></pre>
 </div>
 <div id="estimates-from-the-unstandardized-model" class="section level2">
 <h2>Estimates from the unstandardized model</h2>
-<p>Note that the estimated coefficients are the same from the model using unstandardized variables and the model where we unstandardized the coefficients after fitting with standardized variables.</p>
+<p>Note that the estimated coefficients are the same from the model where I manually unstandardize the coefficients (above) and the model fit using unstandardized variables.</p>
 <pre class="r"><code>round( fixef(fit1)[2:4], 4)</code></pre>
 <pre><code>##     y1     y2     y3 
 ## 0.0029 0.3495 0.0001</code></pre>
-<p>Given that the estimates are the same, couldn’t we simply go back and fit the unstandardized model and ignored the warning message? Unfortunately the convergence issues can cause problems when trying to calculate profile likelihood confidence intervals, so the simpler approach doesn’t always work.</p>
-<p>In this case there are a bunch of warnings (not shown), and confidence interval limits aren’t successfully calculated for some of the coefficients.</p>
+<p>Given that the estimates are the same, couldn’t we simply go back and fit the unstandardized model and ignored the warning message? Unfortunately, the convergence issues can cause problems when trying to calculate profile likelihood confidence intervals, so the simpler approach doesn’t always work.</p>
+<p>In this case there are a bunch of warnings (not shown), and the profile likelihood confidence interval limits aren’t successfully calculated for some of the coefficients.</p>
 <pre class="r"><code>tidy(fit1, effects = &quot;fixed&quot;,
      conf.int = TRUE,
      conf.method = &quot;profile&quot;)</code></pre>
@@ -207,6 +208,7 @@ coef_unst</code></pre>
 </div>
 <div id="further-important-work" class="section level1">
 <h1>Further (important!) work</h1>
-<p>These results are all on the scale of log-odds, and I would exponentiate the unstandardized coefficients to the odds scale for reporting and interpretation. Along these same lines, one thing I didn’t discuss in this post that is important to consider is the appropriate and interesting unit increase for each variable. Clearly the effect of a “1 unit” increase in the variable is likely not of interest for at least <code>y2</code> (range between 0 and 1) and <code>y3</code> (range between 10000 and 20000). In the first case, 1 unit encompasses the entire range of the variable and in the second case 1 unit appears to be much smaller than the scale of the measurement.</p>
-<p>The code to do this would be similar to what I’ve done above. I would create a data.frame with the unit increase of interest for each variable in it, join this to the coefficients dataset, and multiply all estimates and CI by those values. I’d make sure to report these in any tables of results so the reader can see that the reported estimate is a change in estimated odds/mean for some practically important increase in the variable. This multiplying step can occur before or after unstandardizing but must happen before doing exponentiation/inverse-linking.</p>
+<p>These results are all on the scale of log-odds, and I would exponentiate the unstandardized coefficients to the odds scale for reporting and interpretation.</p>
+<p>Along these same lines, one thing I didn’t discuss in this post that is important to consider is the appropriate and interesting unit increase for each variable. Clearly the effect of a “1 unit” increase in the variable is likely not of interest for at least <code>y2</code> (range between 0 and 1) and <code>y3</code> (range between 10000 and 20000). In the first case, 1 unit encompasses the entire range of the variable and in the second case 1 unit appears to be much smaller than the scale of the measurement.</p>
+<p>The code to calculate the change in odds for a practically interesting increase in each explanatory variable would be similar to what I’ve done above. I would create a data.frame with the unit increase of interest for each variable in it, join this to the “coefficients” dataset, and multiply all estimates and CI by those values. The multiplication step can occur before or after unstandardizing but must happen before doing exponentiation/inverse-linking. I’d report the unit increase for each variable in any tables of results so the reader can see that the reported estimate is a change in estimated odds/mean for the given practically important increase in the variable.</p>
 </div>
