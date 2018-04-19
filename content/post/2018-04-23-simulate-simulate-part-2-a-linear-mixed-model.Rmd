@@ -11,55 +11,57 @@ tags:
   - lmm
   - lme4
 draft: TRUE
-description: "In the second simulation example I show how to simulate from a basic hierarchical design, and then explore how well each variance component is estimated."
+description: "In my second simulation example I show how to simulate data from a basic hierarchical design.  I go on to explore how well the random effects variance component is estimated for different sample sizes."
 ---
 
-In [my first simulation post](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) I showed how to simulate data to fit a basic linear model. From here on out I'll be talking about how to simulate other kinds of linear models, starting with a linear mixed model. This means I'm still working with normally distributed residuals but will add another level of variation.
+I feel like I learn something every time I'm simulating new data to make an assignment or exploring a question from a client via simulation.  I've seen instances where residual autocorrelation isn't detectable when I *know* it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance.  Such results are generally due to small sample sizes, which even in this era of big data still isn't so unusual in ecology.  I've found exploring the effect of sample size on statistical results to be quite eye-opening `r emo::ji("eye")`.
+
+In [my first simulation post](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) I showed how to simulate data for a basic linear model. Today I'll be talking about how to simulate data for a linear mixed model. I'm still working with normally distributed residuals but will add an additional level of variation.
 
 # Simulate, simulate, dance to the music
 
-My learned the basics of linear mixed models in a class about "classically designed" experiments.  We spent a lot of time writing down the various statistical models in mathematical notation and then fitting said models in SAS.  I felt like I understood the basics of mixed models when the class was over and swore I was done with all those i's and j's once and for all `r emo::ji("laughing")`.
+I learned the basics of linear mixed models in a class where we learned about "classically designed" experiments.  We spent a lot of time writing down the various statistical models in mathematical notation and then fitting said models in SAS.  I felt like I understood the basics of mixed models when the class was over (and swore I was done with all those $i$'s and $j$'s once and for all `r emo::ji("laughing")`).
 
-But needing to work with clients in mixed models in R sent me into simulations to understand how well they worked in various scenarios.  These simulations took me to a whole new level of understanding for the meaning of that mathematical notation I was writing and how mixed models work.      
+It wasn't until when I started working with clients and teaching on mixed models in R that I learned how to do simulations to understand how well such models worked under various scenarios.  These simulations took me to a whole new level of understanding of these models and the meaning of that mathematical notation.      
 
 # The statistical model
 
 **Danger, equations below!**  
 
-If you don't have a good understanding of the statistical model (or even if you do), writing it out in mathematical notation can actually be pretty useful.  I'm going to start with a model with only random effects; we'll add in fixed effects later to make the model "mixed".
+If you don't have a good understanding of the statistical model (or even if you do), writing it out in mathematical notation can actually be pretty useful.  I'll write a relatively simple model with random effects below. (Note that I only have an overall mean in this model; I'll do a quick example at the end of the post to show how one can simulate additional fixed effects.)
 
-The study design that is the basic of this model has two different sizes of study units.  A classic forestry example is going to different stands of trees and then sampling plots within each stand.  This is a design with two levels, stands and plots; we could add a third level if individual trees were measured in each plot.
+The study design that is the basis of my model has two different sizes of study units.  I'm using a classic forestry example, where first stands of trees are somehow chosen for sampling followed by measurements taken in multiple plots within each stand.  This is a design with two levels, stands and plots; we could add a third level if individual trees were measured in each plot.
 
-Everything today will have perfect balance, so the same number of plots will be sampled in each stand.
+Everything today will be perfectly balanced, so the same number of plots will be sampled in each stand.
 
-I'm using "regression" style notation instead of experimental design notation, where the "t" indexes the observations.
+I'm using (somewhat sloppy) "regression" style notation instead of experimental design notation, where the $t$ indexes the observations.
 
 $$y_t = \mu + (b_s)_t + \epsilon_t$$
 
-+ $y_t$ is the observed values for the quantitative response variable; $t$ goes from 1 to the number of observations in the dataset. Since plot is the level of observation in this example (i.e., we have a single observation for each plot), $t$ indexes both the plots and the number of rows in the dataset.
-+ $\mu$ is the overall mean response of the quantitative response.
++ $y_t$ is the observed values for the quantitative response variable; $t$ goes from 1 to the number of observations in the dataset. Since plot is the level of observation in this example (i.e., we have a single observation for each plot), $t$ indexes both the number of plots and the number of rows in the dataset.
++ $\mu$ is the overall mean response
 + $b_s$ is the (random) effect of each stand on the response.  $s$ goes from 1 to the total number of stands sampled.  The stand-level random effects are assumed to come from an iid normal distribution with a mean of 0 and some shared, stand-level variance, $\sigma^2_s$: $b_s \thicksim N(0, \sigma^2_s)$
-+ $\epsilon_t$ is the observation-level random effect.  Since plots are the level of observation, this is the effect of each plot on the response.  These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, $\sigma^2$: $\epsilon_t \thicksim N(0, \sigma^2)$
++ $\epsilon_t$ is the observation-level random effect (the residual error term).  Since plots are the level of observation in my above scenario, this is essentially the effect of each plot on the response.  These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, $\sigma^2$: $\epsilon_t \thicksim N(0, \sigma^2)$
 
 # A single simulation for a two-level model
 
-Let's jump in and start simulating, as I find the statistical model and all those words explaining it become clearer once we have a simulated dataset to look at.
+Let's jump in and start simulating, as I find the statistical model and all those words I used trying to explain it become clearer once we have a simulated dataset to look at.
 
-Because I couldn't think of a good name for a plot-level response `r emo:ji("stuck_out_tongue_winking_eye")`, I'll call the response variable "resp", the stands "stand" and the plots "plot".
+I couldn't think of a good name for a plot-level response `r emo::ji("stuck_out_tongue_winking_eye")` so I'll call the response variable `resp`, the stands `stand` and the plots `plot`.
 
-I'll set the seed so these particular results can be reproduced.
+I'll start by setting the seed so these results can be reproduced.
 
 ```{r}
 set.seed(16)
 ```
 
-I need to define the "truth" is in the simulation by setting all the parameters in the statistical model to a value of my choosing.  Here's what I'll do today.
+I need to define the "truth" in the simulation by setting all the parameters in the statistical model to a value of my choosing.  Here's what I'll do today.  
 
-+ The true mean ($\mu$) for "group1" will be 10 
-+ The stand-level variance will be set at 4 ($\sigma^2_s$), so the standard deviation ($\sigma_s$) is 2.
-+ The residual (observation-level random effect) variance will be set at 1 ($\sigma^2$), so the standard deviation ($\sigma$) is 1.
++ The true mean ($\mu$) will be 10 
++ The stand-level variance ($\sigma^2_s$) will be set at 4, so the standard deviation ($\sigma_s$) is 2.
++ The observation-level random effect variance ($\sigma^2$) will be set at 1, so the standard deviation ($\sigma$) is 1.
 
-I'll define the number of groups and number of replicates per group while I'm at it.  I'll do 5 stands and 4 plots per stand.  The total number of plots/observations is the number of stands times the number of plots, which is `5*4 = 20`.
+I'll define the number of groups and number of replicates per group while I'm at it.  I'll use 5 stands and 4 plots per stand.  The total number of plots and so observations is the number of stands times the number of plots per stand: `5*4 = 20`.
 
 ```{r}
 nstand = 5
@@ -69,43 +71,47 @@ sds = 2
 sd = 1
 ```
 
-I need to create a "stand" variable, containing the names of the five stands.  I'll use capital letters for the stand names.  Each "stand" name will be repeated four times, because there are four plots in each stand.
+I need to create a `stand` variable, containing identifiers for the five sampled stands.  I use capital letters for the stand names.  Each stand name will be repeated four times, because each one was measured four times as there are four plots in each stand.
 
 ```{r}
 ( stand = rep(LETTERS[1:nstand], each = nplot) )
 ```
 
-I can make a "plot" variable, as well, although it's not needed for any modelling since we have a single value per plot.  It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I'm a big believe in giving plots unique names.  I'll name plots with lowercase letters.  There are a total of 20 plots.
+I can make a `plot` variable, as well, although it's not needed for modelling since we have a single value per plot.  It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I'm a big believer in giving plots unique names.  I'll name plots with lowercase letters.  There are a total of 20 plots.
 
 ```{r}
 ( plot = letters[1:(nstand*nplot)] )
 ```
 
-Now I need to simulate the stand-level random effects.  I defined these as $b_s \thicksim N(0, \sigma^2_s)$, so I need to randomly draw from a normal distribution with a mean of 0 and standard deviation of 2 (remember that `rnorm` uses standard deviation, not variance).  I have five stands, so I need to draw five values (defined in `nstand`).
+Now I will simulate the stand-level random effects.  I defined these as $b_s \thicksim N(0, \sigma^2_s)$, so I need to randomly draw from a normal distribution with a mean of 0 and standard deviation of 2 (remember that `rnorm` uses standard deviation, not variance).  I have five stands, so I draw five values.
 
 ```{r}
 ( standeff = rnorm(nstand, 0, sds) )
 ```
 
-Every plot in a stand has the same "stand effect"; that's the whole point here. The stand itself is causing whatever is being measured to be higher or lower across the whole stand.  This means every "stand effect" needs to be repeated for every stand.  This is one of the reasons I start by making the variables like "stand", so I know how to appropriately repeat the random effects.  Based on how I made "stand", ever stand effect needs to be repeated four times, once for each plot.
+Every plot in a stand has the same "stand effect", which I simulated with the five values above. This means that the stand itself is causing the measured response variable to be higher or lower than other stands across all plots in the stand.  This means that in a simulation the "stand effect" is repeated for every plot in a stand.  
+
+The `stand` variable I made helps me know how to repeat the stand effect values.  Based on that variable, every stand effect needs to be repeated four times in a row (once for each plot).
 
 ```{r}
 ( standeff = rep(standeff, each = nplot) )
 ```
 
-The observation-level random effect (the residual) is simulated the same was as for a linear model.  Every unique plot has some effect on the response, and that effect is drawn from a normal distribution with a mean of 0 and a standard deviation of 1 (from the model $\epsilon_t \thicksim N(0, \sigma^2)$).  I make 20 draws of this distribution, one for every plot.
+The observation-level random effect is simulated the same way as for a linear model.  Every unique plot has some effect on the response, and that effect is drawn from a normal distribution with a mean of 0 and a standard deviation of 1 ($\epsilon_t \thicksim N(0, \sigma^2)$).  
+
+I make 20 draws from this distribution, one for every plot/observation.
 
 ```{r}
-( ploteff = rnorm(nstand*nplot, 0, 1) )
+( ploteff = rnorm(nstand*nplot, 0, sd) )
 ```
 
-I'm going to put all of these variables in a dataset together.  It helps keep things organized for modelling but, more importantly for learning simulations, I think it helps show how every stand has some effect (repeated for ever observation in that stand) and every plot has a unique effect.
+I'm going to put all of these variables in a dataset together.  This helps me keep things organized for modelling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect.  This should be clear in the 20-row dataset shown below.
 
 ```{r}
 ( dat = data.frame(stand, standeff, plot, ploteff) )
 ```
 
-Now I have the fixed estimates of parameters, the variable `stand` to represent the random effect, and the simulated errors for stand and plots drawn from the defined distributions. That's all the pieces I need to calculate my response variable.
+At this point I have the fixed estimates of parameters, the variable `stand` to represent the random effect in a model, and the simulated effects of stands and plots drawn from the defined distributions. That's all the pieces I need to calculate my response variable.
 
 The statistical model
 
@@ -117,13 +123,13 @@ is my guide for how to combine these pieces to create the simulated response var
 ( dat$resp = with(dat, mu + standeff + ploteff ) )
 ```
 
-Once the response and all needed variables have been created, it's time for model fitting. I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer` function from package **lme4**.
+It's time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer` function from package **lme4**.
 
 ```{r}
 library(lme4)
 ```
 
-The results look pretty similar to the simulated values!
+The results for the estimated overall mean and standard deviations in this model look pretty similar to my defined parameter values.
 
 ```{r}
 fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
@@ -132,17 +138,17 @@ fit1
 
 # Make a function for the simulation
 
-A single simulation can help us understand the statistical model, but usually the goal if simulation is to see how the model behaves over the long run.  To repeat this simulation many times in R we'll want to "functionize" the data simulating and model fitting process.
+A single simulation can help us understand the statistical model, but usually the goal of a simulation is to see how the model behaves over the long run.  To repeat this simulation many times in R we'll want to "functionize" the data simulating and model fitting process.
 
-In my function I'm going to set all the arguments to the parameter values I've defined above.  I allow some flexibility, though, so the argument values can be changed if I want to explore the simulation with e.g., a different number of replications or a different amounts of random variation at either level.
+In my function I'm going to set all the arguments to the parameter values as I defined them above.  I allow some flexibility, though, so the argument values can be changed if I want to explore the simulation with, say, a different number of replications or different standard deviations at either level.
 
 This function returns a linear model fit with `lmer`.
 
 ```{r}
 twolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 2, sigma = 1) {
-     standeff = rep( rnorm(nstand, 0, sds), each = nplot)
+     standeff = rep( rnorm(nstand, 0, sigma_s), each = nplot)
      stand = rep(LETTERS[1:nstand], each = nplot)
-     ploteff = rnorm(nstand*nplot, 0, 1)
+     ploteff = rnorm(nstand*nplot, 0, sigma)
      resp = mu + standeff + ploteff
      dat = data.frame(stand, resp)
      lmer(resp ~ 1 + (1|stand), data = dat)
@@ -158,19 +164,20 @@ twolevel_fun()
 
 # Repeat the simulation many times
 
-Now that I have a working function to simulate data and fit the model, it's time to do the simulation many times.  The model from each individual simulation is saved to allow exploration of long run model performance.
+Now that I have a working function to simulate data and fit the model it's time to do the simulation many times.  The model from each individual simulation is saved to allow exploration of long run model performance.
 
-This is a task for `replicate`, where I can run the function many times; I'll re-run the simulation 1000 times.  The output here is a list, which will work well for going through and extracting elements from the models.
+This is a task for `replicate`, which repeatedly calls a function and saves the output.  The output is a list, which is convenient for later work to go through to extract elements from the models.  I'll re-run the simulation 100 times as an example, although I usually do 1000 runs.  
 
 ```{r}
-sims = replicate(1000, twolevel_fun() )
+sims = replicate(100, twolevel_fun() )
+sims[[100]]
 ```
 
 # Extract results from the linear mixed model
 
-Now we can extract whatever we are interested in. The `tidy` function from package **broom** extracts both fixed and random effects.
+After running all the models we will want to extract whatever we are interested in. The `tidy` function from package **broom** can be used to conveniently extract both fixed and random effects.
 
-Here is an example on our initial practice model.  You'll notice there are no p-values for fixed effects.  If those are desired and the degrees of freedom can be calculated, see packages **lmerTest** and (**broom.mixed**)[https://github.com/bbolker/broom.mixed].
+Below is an example on the practice model.  You'll notice there are no p-values for fixed effects.  If those are desired and the degrees of freedom can be calculated, see packages **lmerTest** and [**broom.mixed**](https://github.com/bbolker/broom.mixed).
 
 ```{r}
 library(broom)
@@ -183,19 +190,17 @@ If we want to extract only the fixed effects:
 tidy(fit1, effects = "fixed")
 ```
 
-And for the random effects, which can be pulled out as variances instead of standard deviations as needed:
+And for the random effects, which can be pulled out as variances via `scales` instead of the default standard deviations:
 
 ```{r}
 tidy(fit1, effects = "ran_pars", scales = "vcov")
 ```
 
-# Explore simulation results
+# Explore the effect of sample size on variance estimation
 
-I feel like I learn something every time I'm simulating new data to make an assignment or exploring a question from a client via simulation.  I've seen instances where residual autocorrelation isn't detectable when I *know* it exists (because I simulated it) or skewed residuals and/or unequal variances when I simulated residuals from a normal distribution.  Such results are generally due to small sample sizes, which even in this era of big data still isn't unusual in ecology.  
+Today I'll look at how well we estimate variances of random effects for different samples sizes.  I'll simulate data for sampling 5 stands, 20 stands, and 100 stands.  
 
-Today I'll look at how well we estimate variances of random effects at different samples sizes.  I'll simulate data for sampling 5 stands, 20 stands, and 100 stands.  
-
-I'm going to load some helper packages for this, including **purrr** for looping, **dplyr** for any data manipulation, and **ggplot2** for plotting.
+I'm going to load some helper packages for this, including **purrr** for looping, **dplyr** for data manipulation tasks, and **ggplot2** for plotting.
 
 ```{r}
 library(purrr) # v. 0.2.4
@@ -203,7 +208,7 @@ suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
 library(ggplot2) # v. 2.2.1
 ```
 
-I'm going to loop through a vector of the three stand sample sizes of interest and make 1000 models for each one.  I'll use **purrr** functions for this, ending up with a list of lists. This takes a minute or two to do the 3000 models.
+I'm going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one.  I'm using **purrr** functions for this, and I end up with a list of lists (1000 models for each). It takes a minute or two to fit the 3000 models.
 
 ```{r}
 stand_sims = c(5, 20, 100) %>%
@@ -211,7 +216,9 @@ stand_sims = c(5, 20, 100) %>%
      map(~replicate(1000, twolevel_fun(nstand = .x) ) )
 ```
 
-Then I'll pull out the stand variance for each model via `tidy`.  I use `modify_depth` to work on the nested list, and then bind the nested lists together into a data.frame to get things in a convenient format for plotting.  I filter to only the `stand` variance.
+Next I'll pull out the stand variance for each model via `tidy`.  
+
+I use `modify_depth` to work on the nested (innermost) list, and then row bind the nested lists into a data.frame to get things in a convenient format for plotting.  I then filter to keep only the `stand` variance, as I extracted both stand and residual variances from the model.
 
 ```{r}
 stand_vars = stand_sims %>%
@@ -221,9 +228,9 @@ stand_vars = stand_sims %>%
 head(stand_vars)
 ```
 
-Let's see how the distributions of these look.  We know the true variance is 4, so I'll add a vertical line at 4.  Here's the basic plot.
+Let's take a look at the distributions of the variances for each sample size via density plots.  We know the true variance is 4, so I'll add a vertical line at 4.
 
-```{r}
+```{r, cache = TRUE}
 ggplot(stand_vars, aes(x = estimate) ) +
      geom_density(fill = "blue", alpha = .25) +
      facet_wrap(~stand_num) +
@@ -236,7 +243,7 @@ Whoops, I need to get my factor levels in order.
 stand_vars = mutate(stand_vars, stand_num = forcats::fct_inorder(stand_num) )
 ```
 
-I'll also add some better labels for the facets.
+I'll also add some clearer labels for the facets.
 
 ```{r}
 add_prefix = function(string) {
@@ -244,7 +251,7 @@ add_prefix = function(string) {
 }
 ```
 
-And add the median variance as a second vertical line.
+And finally add the median of each distribution as a second vertical line.
 
 ```{r}
 groupmed = stand_vars %>%
@@ -252,16 +259,16 @@ groupmed = stand_vars %>%
      summarise(mvar = median(estimate) )
 ```
 
-Here's the density plots again, now in order from lowest to highest number of stands sampled.  
+Looking at the plots we can really see how poorly we can estimate variances when we have few replications.  When only 5 stands are sampled, the variance can be estimated as low as 0 and as high as ~18 (`r emo::ji("open_mouth")`) when it's really 4.  
 
-We can really see how poorly we might can estimate variances when we have few replications.  When only 5 stands are sampled the variance can be estimated as low as 0 and as high as 20 (`r emo::ji("open_mouth")`).  By the time we have 20 stands things look better, and things are quite good with 100 stands (although notice variance still range from 1 to 8).  We should likely be cautious for studies where the goal is make inference about the estimates of the variances or for testing variables measured at the level of the largest unit when the number of units is small.
+By the time we have 20 stands things look better, and things look quite good with 100 stands (although notice variance still ranges from 1 to ~8).  
 
 ```{r}
-ggplot(stand_vars, aes(x = estimate) ) +
+ggplot(stand_vars, aes(x = estimate) ) + 
      geom_density(fill = "blue", alpha = .25) +
      facet_wrap(~stand_num, labeller = as_labeller(add_prefix) ) +
      geom_vline(aes(xintercept = 4, linetype = "True variance"), size = .5 ) +
-     geom_vline(data = groupmean, aes(xintercept = mvar, linetype = "Median variance"),
+     geom_vline(data = groupmed, aes(xintercept = mvar, linetype = "Median variance"),
                 size = .5) +
      theme_bw() +
      scale_linetype_manual(name = "", values = c(2, 1) ) +
@@ -270,7 +277,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
      labs(x = "Estimated Variance", y = NULL)
 ```
 
-Here are some more descriptive statistics of the distribution of variances in each group to complement the info in the plot.
+Here are some additional descriptive statistics of the distribution of variances in each group to complement the info in the plot.
 
 ```{r}
 stand_vars %>%
@@ -278,9 +285,11 @@ stand_vars %>%
      summarise_at("estimate", funs(min, mean, median, max) )
 ```
 
-How much of the distribution is below 4 for each estimate?  
+So how much of the distribution is below 4 for each estimate?  
 
-We can see for 5 samples that the variance is definitively underestimated more often than it is overestimated; over 60% of the distribution is below the true variance of 4.  I am always surprised that even large samples tend to underestimate variances slightly more often than overestimate them.
+We can see for 5 samples that the variance is definitely underestimated more often than it is overestimated; almost 60% of the distribution is below the true variance of 4.  
+
+Every time I do this sort of simulation I am newly surprised that even large samples tend to underestimate variances slightly more often than overestimate them.
 
 ```{r}
 stand_vars %>%
@@ -288,29 +297,31 @@ stand_vars %>%
      summarise(mean(estimate < 4) )
 ```
 
+My take home from all of this? We may need to be cautious with results for studies where the goal is to make inference about the estimates of the variances or for testing variables measured at the level of the largest unit when the number of units is small.
 
-# An actual mixed model (with fixed effects)
+# An actual mixed model (with fixed effects this time)
 
-I simplified things above so much that we didn't have any fixed effects!  We can certainly include fixed effects in a simulation.  
+I simplified things above so much that we didn't have any fixed effects.  We can certainly include fixed effects in a simulation.  
 
-Here's a quick example of a simulate similar to the one above but with fixed effects.  I'll create two continuous variables, one measured at the stand level and one measured at the plot level, that have linear relationships with the response variable.
+Below is a quick example.  I'll create two continuous variables, one measured at the stand level and one measured at the plot level, that have linear relationships with the response variable.  The study is the same as the one I defined before.
 
 Here's the new statistical model.
 
 $$y_t = \beta_0 + \beta_1*(Elevation_s)_t + \beta_2*Slope_t + (b_s)_t + \epsilon_t$$
 
-Where
-+ $beta_0$ is the mean response when both Elevation and Slope are 0
-+ $\beta_1$ is the change in mean response for a 1-unit in elevation.  Elevation is measured at the stand level, so all plots in a stand share a single value of elevation.
-+ $beta_2$ is the change in mean response for a 1-unit change in slope. Slope is measured at the plot level, so every plot potentially has a unique value of slope.
+Where  
+  
++ $\beta_0$ is the mean response when both Elevation and Slope are 0  
++ $\beta_1$ is the change in mean response for a 1-unit change in elevation.  Elevation is measured at the stand level, so all plots in a stand share a single value of elevation.  
++ $\beta_2$ is the change in mean response for a 1-unit change in slope. Slope is measured at the plot level, so every plot potentially has a unique value of slope.  
 
-Setting the values for the three parameters above and simulating values for the continuous explanatory variables will be new steps in the simulation. We simulate the random effects as we did before.
+Setting the values for the three new parameters and simulating values for the continuous explanatory variables will be additional steps in the simulation. The random effects are simulated the same as we did before.
 
-I'll need to define the new parameters.
+I define the new parameters below.
 
 + The intercept ($\beta_0$) will be -1
-+ The coefficient for elevation will be ($\beta_1$) 0.005
-+ The coeffienct for slope ($\beta_2$) will be set to 0.1.
++ The coefficient for elevation ($\beta_1$) will be set to 0.005
++ The coefficient for slope ($\beta_2$) will be set to 0.1
 
 ```{r}
 nstand = 5
@@ -322,18 +333,18 @@ sds = 2
 sd = 1
 ```
 
-Here are the variables I simulated previously, which will be the same in this simulation as the first simulation.
+Here are the variables I simulated previously.
 
 ```{r}
 set.seed(16)
 stand = rep(LETTERS[1:nstand], each = nplot)
 standeff = rep( rnorm(nstand, 0, sds), each = nplot)
-ploteff = rnorm(nstand*nplot, 0, 1)
+ploteff = rnorm(nstand*nplot, 0, sd)
 ```
 
-I will draw the new variables from uniform distributions, using the minimum and maximum values to simulate variables with reasonable units.  If the distribuiton of your variables are more skewed you could use an alternative distribution (like a gamma).
+I will simulate the explanatory variables by drawing from uniform distributions, changing the minimum and maximum values of the uniform distribution as needed to get an appropriate spread for a given variable.  If the distribution of your explanatory variables are more skewed you could use a different distribution (like a Gamma distribution).
 
-First I simulate elevation. This has only five values, as it is a stand-level variable, and I need to repeat it appropriate for the four plots measured in each stand like I did with the "stand" variable.
+First I simulate elevation. This has only five values, as it is a stand-level variable.  I need to repeat each value for the four plots measured in each stand like I did when making the `stand` variable.
 
 ```{r}
 ( elevation = rep( runif(nstand, 1000, 1500), each = nplot) )
@@ -349,13 +360,15 @@ We now have everything we need to create the response variable.
 
 Based on our equation $$y_t = \beta_0 + \beta_1*(Elevation_s)_t + \beta_2*Slope_t + (b_s)_t + \epsilon_t$$
 
+the response variable will be calculated via 
+
 ```{r}
 ( resp2 = b0 + b1*elevation + b2*slope + standeff + ploteff )
 ```
 
-Which we can then use in a mixed model with `elevation` and `slope` as fixed effects, `stand` as the random effect and the residual error term based on plot-to-plot variation. (I didn't put these variables in a dataset, which I usually like to do to keep things organized and to avoid problems of vectors in my environment getting overwritten by mistake).
+Now we can fit a mixed model for `resp2` with `elevation` and `slope` as fixed effects, `stand` as the random effect and the residual error term based on plot-to-plot variation. (Notice I didn't put these variables in a dataset, which I usually like to do to keep things organized and to avoid problems of vectors in my environment getting overwritten by mistake).
 
-We can see some of the estimates aren't very similar to our set values, and doing a full simulation would allow us to explore the variation in estimtes.  I expect the coefficient for elevation, based on only five values, will be extremely unstable.
+We can see some of the estimates in this one model aren't very similar to our set values, and doing a full simulation would allow us to explore the variation in the estimates.  For example, I expect the coefficient for elevation, based on only five values, will be extremely unstable.
 
 ```{r}
 lmer(resp2 ~ elevation + slope + (1|stand) )
