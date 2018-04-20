@@ -26,7 +26,7 @@ description: "Where I discuss simulations, why I love them, and get started on a
 <p>If you’re like me and your brain says “I think this section must not pertain to me” when your eyes hit mathematical notation, you can jump right down to the R code in the next section. But if you can power through, these equations are actually pretty useful when setting up a simulation (honest).</p>
 <p>A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable. It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (There is more in-depth coverage of the statistical model in Stroup’s 2013 <a href="https://books.google.com/books/about/Generalized_Linear_Mixed_Models.html?id=GcGrySpkXRMC">Generalized Linear Mixed Models</a> book if you are interested and have access to it.)</p>
 <p>So the statistical model is where we write down the exact assumptions we are making when we fit a linear model to a set of data.</p>
-<p>Here is an example of a linear model for two groups. I wrote the statistical model to match the form of the default summary output from a model fit with <code>lm</code> in R.</p>
+<p>Here is an example of a linear model for two groups. I wrote the statistical model to match the form of the default summary output from a model fit with <code>lm()</code> in R.</p>
 <p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{&#39;&#39;group&#39;&#39;})} + \epsilon_t\]</span></p>
 <ul>
 <li><span class="math inline">\(y_t\)</span> is the observed values for the quantitative response variable; <span class="math inline">\(t\)</span> goes from 1 to the number of observations in the dataset<br />
@@ -55,12 +55,12 @@ nrep = 10
 b0 = 5
 b1 = -2
 sd = 2</code></pre>
-<p>I need to create the variable I’ll call “group” to use as the explanatory variable when fitting a model in R. I use <code>rep</code> a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I’m working in. Here I’ll repeat each level of <code>group</code> 10 times (<code>nrep</code>).</p>
+<p>I need to create the variable I’ll call “group” to use as the explanatory variable when fitting a model in R. I use <code>rep()</code> a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I’m working in. Here I’ll repeat each level of <code>group</code> 10 times (<code>nrep</code>).</p>
 <pre class="r"><code>( group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep) )</code></pre>
 <pre><code>##  [1] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot;
 ##  [8] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;
 ## [15] &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;</code></pre>
-<p>Next I’ll simulate the random errors. Remember I defined these above as <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span>. To simulate these I’ll take random draws from a normal distribution with a mean of 0 and standard deviation of 2 (note that <code>rnorm</code> in takes the standard deviation as input, not the variance). Every observation has a random error, so I need to make 20 draws total (<code>ngroup*nrep</code>).</p>
+<p>Next I’ll simulate the random errors. Remember I defined these above as <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span>. To simulate these I’ll take random draws from a normal distribution with a mean of 0 and standard deviation of 2 (note that <code>rnorm()</code> in takes the standard deviation as input, not the variance). Every observation has a random error, so I need to make 20 draws total (<code>ngroup*nrep</code>).</p>
 <pre class="r"><code>( eps = rnorm(ngroup*nrep, 0, sd) )</code></pre>
 <pre><code>##  [1]  0.9528268 -0.2507600  2.1924324 -2.8884581  2.2956586 -0.9368241
 ##  [7] -2.0119012  0.1271254  2.0499452  1.1462840  3.6943642  0.2238667
@@ -75,7 +75,7 @@ sd = 2</code></pre>
 ##  [8]  5.127125  7.049945  6.146284  6.694364  3.223867  1.507925  6.316427
 ## [15]  4.443441 -0.326161  4.151819  3.945520  1.914537  5.255374</code></pre>
 <p>It’s not necessary for this simple case, but I often store the variables I will use in fitting the model in a dataset to help keep things organized. This becomes more important when working with more variables. I’ll skip this step today.</p>
-<p>Once the response and explanatory variables have been created, it’s time for model fitting. I can fit the two group linear model with <code>lm</code>.</p>
+<p>Once the response and explanatory variables have been created, it’s time for model fitting. I can fit the two group linear model with <code>lm()</code>.</p>
 <pre class="r"><code>growthfit = lm(growth ~ group)
 summary(growthfit)</code></pre>
 <pre><code>## 
@@ -110,7 +110,7 @@ summary(growthfit)</code></pre>
      growthfit = lm(growth ~ group)
      growthfit
 }</code></pre>
-<p>I test the function, using the same <code>seed</code>, to make things are working as expected and that I get the same results as above.</p>
+<p>I test the function, using the same seed, to make things are working as expected and that I get the same results as above.</p>
 <pre class="r"><code>set.seed(16)
 twogroup_fun()</code></pre>
 <pre><code>## 
@@ -133,7 +133,7 @@ twogroup_fun()</code></pre>
 <div id="repeat-the-simulation-many-times" class="section level1">
 <h1>Repeat the simulation many times</h1>
 <p>Now that I have a working function to simulate data and fit the model, it’s time to do the simulation many times. The model from each individual simulation is saved to allow exploration of long run model performance.</p>
-<p>This is a task I’ve commonly used <code>replicate</code> for. The <code>rerun</code> function from package <strong>purrr</strong> is equivalent to <code>replicate</code> with <code>simplify = FALSE</code>, and I’ll use it here for convenience.</p>
+<p>This is a task I’ve commonly used <code>replicate()</code> for. The <code>rerun()</code> function from package <strong>purrr</strong> is equivalent to <code>replicate()</code> with <code>simplify = FALSE</code>, and I’ll use it here for convenience.</p>
 <pre class="r"><code>library(purrr)</code></pre>
 <p>I’ll run this simulation 1000 times, resulting in a list of fitted two-group linear models based on the simulation parameters I’ve set.</p>
 <pre class="r"><code>sims = rerun(1000, twogroup_fun() )</code></pre>
@@ -141,14 +141,14 @@ twogroup_fun()</code></pre>
 <div id="extracting-results-from-the-linear-model" class="section level1">
 <h1>Extracting results from the linear model</h1>
 <p>There are many elements of our model that we might be interested in exploring, including estimated coefficients, estimated standard deviations/variances, and the statistical results (test statistics/p-values).</p>
-<p>To get the coefficients and statistical tests of coefficients we can use <code>tidy</code> from package <strong>broom</strong>.</p>
+<p>To get the coefficients and statistical tests of coefficients we can use <code>tidy()</code> from package <strong>broom</strong>.</p>
 <pre class="r"><code>library(broom)</code></pre>
 <p>This returns the information on coefficients and tests of those coefficients in a tidy format that is easy to work with.</p>
 <pre class="r"><code>tidy(growthfit)</code></pre>
 <pre><code>##          term  estimate std.error statistic      p.value
 ## 1 (Intercept)  5.267633 0.6351230  8.293878 1.460563e-07
 ## 2 groupgroup2 -1.554922 0.8981996 -1.731154 1.005290e-01</code></pre>
-<p>I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models. For a linear model we can extract an estimate of the residual standard deviation from the <code>summary</code> output. This can be squared to get the variance as needed.</p>
+<p>I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models. For a linear model we can extract an estimate of the residual standard deviation from the <code>summary()</code> output. This can be squared to get the variance as needed.</p>
 <pre class="r"><code>summary(growthfit)$sigma</code></pre>
 <pre><code>## [1] 2.008435</code></pre>
 </div>

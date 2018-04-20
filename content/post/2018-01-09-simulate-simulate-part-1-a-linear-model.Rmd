@@ -33,7 +33,7 @@ A simulation for a linear model is based on the statistical model. The statistic
 
 So the statistical model is where we write down the exact assumptions we are making when we fit a linear model to a set of data.
 
-Here is an example of a linear model for two groups.  I wrote the statistical model to match the form of the default summary output from a model fit with `lm` in R.
+Here is an example of a linear model for two groups.  I wrote the statistical model to match the form of the default summary output from a model fit with `lm()` in R.
 
 $$y_t = \beta_0 + \beta_1*I_{(group_t=\textit{''group''})} + \epsilon_t$$
 
@@ -69,13 +69,13 @@ b1 = -2
 sd = 2
 ```
 
-I need to create the variable I'll call "group" to use as the explanatory variable when fitting a model in R.  I use `rep` a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I'm working in.  Here I'll repeat each level of `group` 10 times (`nrep`).
+I need to create the variable I'll call "group" to use as the explanatory variable when fitting a model in R.  I use `rep()` a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I'm working in.  Here I'll repeat each level of `group` 10 times (`nrep`).
 
 ```{r}
 ( group = rep( c("group1", "group2"), each = nrep) )
 ```
 
-Next I'll simulate the random errors.  Remember I defined these above as $\epsilon_t \thicksim N(0, \sigma^2)$.  To simulate these I'll take random draws from a normal distribution with a mean of 0 and standard deviation of 2 (note that `rnorm` in takes the standard deviation as input, not the variance).  Every observation has a random error, so I need to make 20 draws total (`ngroup*nrep`).
+Next I'll simulate the random errors.  Remember I defined these above as $\epsilon_t \thicksim N(0, \sigma^2)$.  To simulate these I'll take random draws from a normal distribution with a mean of 0 and standard deviation of 2 (note that `rnorm()` in takes the standard deviation as input, not the variance).  Every observation has a random error, so I need to make 20 draws total (`ngroup*nrep`).
 
 ```{r}
 ( eps = rnorm(ngroup*nrep, 0, sd) )
@@ -95,7 +95,7 @@ is my guide for how to combine these pieces to create the simulated response var
 
 It's not necessary for this simple case, but I often store the variables I will use in fitting the model in a dataset to help keep things organized.  This becomes more important when working with more variables.  I'll skip this step today.
 
-Once the response and explanatory variables have been created, it's time for model fitting. I can fit the two group linear model with `lm`.
+Once the response and explanatory variables have been created, it's time for model fitting. I can fit the two group linear model with `lm()`.
 
 ```{r}
 growthfit = lm(growth ~ group)
@@ -121,7 +121,7 @@ twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
 }
 ```
 
-I test the function, using the same `seed`, to make things are working as expected and that I get the same results as above.
+I test the function, using the same seed, to make things are working as expected and that I get the same results as above.
 
 ```{r}
 set.seed(16)
@@ -138,7 +138,7 @@ twogroup_fun(sigma = 1)
 
 Now that I have a working function to simulate data and fit the model, it's time to do the simulation many times.  The model from each individual simulation is saved to allow exploration of long run model performance.
 
-This is a task I've commonly used `replicate` for.  The `rerun` function from package **purrr** is equivalent to `replicate` with `simplify = FALSE`, and I'll use it here for convenience.  
+This is a task I've commonly used `replicate()` for.  The `rerun()` function from package **purrr** is equivalent to `replicate()` with `simplify = FALSE`, and I'll use it here for convenience.  
 
 ```{r}
 library(purrr)
@@ -154,7 +154,7 @@ sims = rerun(1000, twogroup_fun() )
 
 There are many elements of our model that we might be interested in exploring, including estimated coefficients, estimated standard deviations/variances, and the statistical results (test statistics/p-values).
 
-To get the coefficients and statistical tests of coefficients we can use `tidy` from package **broom**.    
+To get the coefficients and statistical tests of coefficients we can use `tidy()` from package **broom**.    
 
 ```{r}
 library(broom)
@@ -166,7 +166,7 @@ This returns the information on coefficients and tests of those coefficients in 
 tidy(growthfit)
 ```
 
-I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models.  For a linear model we can extract an estimate of the residual standard deviation from the `summary` output.  This can be squared to get the variance as needed.
+I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models.  For a linear model we can extract an estimate of the residual standard deviation from the `summary()` output.  This can be squared to get the variance as needed.
 
 ```{r}
 summary(growthfit)$sigma
