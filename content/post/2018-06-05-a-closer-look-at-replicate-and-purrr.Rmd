@@ -1,0 +1,166 @@
+---
+title: A closer look at replicate() and purrr::map() for simulations
+author: Ariel Muldoon
+date: '2018-06-05'
+slug: a-closer-look-at-replicate-and-purrr
+categories:
+  - r
+tags:
+  - purrr
+  - simulation
+draft: TRUE
+---
+
+I've done a couple of posts so far on simulations ([here](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) and [here](https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/)), where I show how to build a function for simulating data from a defined linear model and then explore long-run behavior of the models fit to simulated data.  The goal of those posts was about the simulation, so I didn't go into much detail on my R code.  Here I'll focus in on the code, specifically talking about the function `replicate()` and functions from package **purrr** that I use for repeating simulations and extracting output.
+
+# The `replicate()` function
+
+The `replicate()` function is a member of the `apply` family of functions in base R.  
+Specifically, from the documentation:
+
+> `replicate` is a wrapper for the common use of `sapply` for repeated evaluation of an expression (which will usually involve random number generation).
+
+Notice how it says it is for *repeated evaluations* and usually involves *random number generation*, which are usually what is involved when performing a simulation.  While I don't actually know the `apply` family of functions very well, I use `replicate()` a lot (although also see `purrr::rerun()`).  This is an alternative to building a `for()` loop to repeatedly simulate values.
+
+The function takes only three arguments:
+
+-`n`, which is how many replications you want.  I use this to set the number of simulations to run.
+-`expr`, the expression that should be run repeatedly.  I've only ever used a function here.
+-`simplify` to control the type of output the results of `expr` are in.  Use `simplify = FALSE` to get simple vectors as a list instead of an array.  If the output of `expr` is a list then you can leave this as the default.
+
+## Simple examples of `replicate()`
+
+Let's say I wanted to simulate some values from a normal distribution.  I can use the `rnorm()` function for this.  Here I'll simulate five values from a normal distribution with a mean of 0 and a standard deviation of 1 (which are the defaults for `mean` and `sd`, respectively).
+
+Since I'm going to simulate some values I'll set the seed so anyone following along at home will see the same values.
+
+```{r}
+set.seed(16)
+```
+
+```{r}
+rnorm(5, mean = 0, sd = 1)
+```
+
+That's one replication.  What If I want to simulate 5 values from the distribution multiple times?  That's where `replicate()` comes in, which allows me to run the function `n` times.  Here I'll do three replicates.  I use `simplify = FALSE` to get a list as output because the result of this function is a vector.
+
+```{r}
+set.seed(16)
+replicate(n = 3, rnorm(5, 0, 1), simplify = FALSE )
+```
+
+I get a matrix if I don't use `simplify = FALSE`, with each column containing the output of one simulation.  This can be useful, so show it below.  I focus on the list only because that's what I most often end up with the simulations I do.
+
+```{r}
+set.seed(16)
+replicate(n = 3, rnorm(5, 0, 1) )
+```
+
+## An equivalent `for()` loop example
+
+A `for()` loop can be used in place of `replicate()` for simulations.  With time and practice I found `replicate()` to be much more convenient in terms of writing the code, but I wanted to show a `for()` loop equivalent.  In my experience these can be intuitive to some folks when starting out in R.  I think it's because it is more clear exactly what is happening: we see we loop through `i` times and the output saved in each iteration.
+
+I'll save the output of each iteration of the loop in a list called `list1`, which I need I initialize prior to starting the loop.  I make three sets of simulated values (`i in 1:3`).
+
+```{r}
+set.seed(16)
+list1 = list() # Make an empty list to save output in
+for (i in 1:3) { # Indicate number of iterations with "i"
+    list1[[i]] = rnorm(5, 0, 1) # Save output in list for each iteration
+}
+list1
+```
+
+## Using `replicate()` on a user-made function
+
+When I do simulations to explore the behavior of linear models under different scenarios I make a function to simulate the data and fit the model.  For example, here's a function I used in an earlier blog post to simulate data from and then fit a two group linear model.
+
+```{r}
+twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
+     ngroup = 2
+     group = rep( c("group1", "group2"), each = nrep)
+     eps = rnorm(ngroup*nrep, 0, sigma)
+     growth = b0 + b1*(group == "group2") + eps
+     growthfit = lm(growth ~ group)
+     growthfit
+}
+```
+
+The output is a fitted model.
+
+```{r}
+twogroup_fun()
+```
+
+I get many fitted models out using `replicate()`.  I'll make 10 models to use in the next section.
+
+```{r}
+sim_lm = replicate(10, twogroup_fun(), simplify = FALSE )
+```
+
+# Using **purrr** functions for looping through lists
+
+When I do simulations I often end up with a list of models fit to simulated data, which I get using `replicate()` as I did to make `sim_lm`.  Once the models are fit and in a list I usually want to extract values from those models to explore the long-run behavior of some statistic.  This involves looping through the list of models.  
+
+Looping through the list can be done using a `for()` loop, but I prefer to use functions that do the looping without all the typing.  In particular I use the `map` family of functions these days from the **purrr** package to loop through lists.  Before **purrr** I primarily used `lapply()` (the only other *apply* family function that I know `r emo::ji("laughing")`). 
+
+The `map()` function takes a list as input and creates a list of the output.    The first argument to `map()` is the list I want to loop through and the second argument is the function I want to apply to each element of the list.  
+
+For example, I can pull out the coefficients of each model in `sim_lm` using the `coef()` function.
+
+```{r}
+library(purrr) # v. 0.2.4
+map(sim_lm, coef)
+```
+
+## Other functions in the `map` family for non-list outputs
+
+I can use variants of `map()` to output the results as something other than a list.  For example, if I am going to extract a single value from each model, like $R^2$, I might want the output to be a numeric vector instead of a list.  I'd use `map_dbl()` for this.
+
+I can extract the unadjusted $R^2$ from the model by pulling that item out of the model `summary()` output.  In this case I need to use code like `summary(model)$r.squared` to get the unadjusted $R^2$ from a model.  I'll use the convenient formula coding styling available in `map` functions to write this code, where a tilde (`~`) goes in front of the function and we use `.x` to refer to the list element.
+
+```{r}
+map_dbl(sim_lm, ~summary(.x)$r.squared)
+```
+
+If you don't like the formula style you can use an anonymous function inside `map` functions, where the function argument is used to refer to the list element.
+
+```{r}
+map_dbl(sim_lm, function(x) summary(x)$r.squared)
+```
+
+For output that is a data.frame we can use `map_dfr()` (for row binding) or `map_dfc()` (for column binding).  I use the former most often.
+
+This would be what we might want if we wanted to the coefficients, standard errors, and tests as the output.  We can get those with `broom::tidy()`.  Since the output of `broom::tidy()` is a data.frame it can be convenient to put all the output in one big data.frame.
+
+```{r}
+map_dfr(sim_lm, broom::tidy)
+```
+
+The data.frame variants of `map` have an additional argument, `.id`, if we want the list elements to get (if the original list has names) or be given unique names.  I'm using a list that has no names, so each unique model will be given a number.  We give the name we want this column to `.id`.
+
+```{r}
+map_dfr(sim_lm, broom::tidy, .id = "model")
+```
+
+Further arguments to the function we are applying to each list element can be given as additional arguments.  For `tidy.lm` I can add confidence intervals using the argument `conf.int = TRUE`.
+
+```{r}
+map_dfr(sim_lm, broom::tidy, .id = "model", conf.int = TRUE)
+```
+
+The `map` family of functions are made to easily use with a pipe, so can fit into a chain of functions.  I can, for example, take the estimates I get using `broom::tidy`, filter to just the intercept, and then plot the resulting estimate as a histogram.  I'll need packages **dplyr** and **ggplot2** for this.
+
+```{r}
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
+library(ggplot2) # v 2.2.1
+```
+
+```{r}
+sim_lm %>%
+     map_dfr(broom::tidy) %>%
+     filter(term == "(Intercept)") %>%
+     qplot(x = estimate, data = ., geom = "histogram")
+```
+
+There are even more variants of the `map` family of functions.  See the documentation to see them all and see additional examples.
