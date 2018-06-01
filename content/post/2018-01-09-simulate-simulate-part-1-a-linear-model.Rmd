@@ -114,7 +114,7 @@ This function returns a linear model fit with `lm`.
 twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
      ngroup = 2
      group = rep( c("group1", "group2"), each = nrep)
-     eps = rnorm(ngroup*nrep, 0, sd)
+     eps = rnorm(ngroup*nrep, 0, sigma)
      growth = b0 + b1*(group == "group2") + eps
      growthfit = lm(growth ~ group)
      growthfit

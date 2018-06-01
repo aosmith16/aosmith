@@ -105,7 +105,7 @@ summary(growthfit)</code></pre>
 <pre class="r"><code>twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
      ngroup = 2
      group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep)
-     eps = rnorm(ngroup*nrep, 0, sd)
+     eps = rnorm(ngroup*nrep, 0, sigma)
      growth = b0 + b1*(group == &quot;group2&quot;) + eps
      growthfit = lm(growth ~ group)
      growthfit
@@ -128,7 +128,7 @@ twogroup_fun()</code></pre>
 ## 
 ## Coefficients:
 ## (Intercept)  groupgroup2  
-##       5.626       -2.952</code></pre>
+##       5.313       -2.476</code></pre>
 </div>
 <div id="repeat-the-simulation-many-times" class="section level1">
 <h1>Repeat the simulation many times</h1>
