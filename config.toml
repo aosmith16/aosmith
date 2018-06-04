@@ -34,7 +34,7 @@ math = true
 
 [author]
   name = "Ariel Muldoon"
-  bio = "I currently work as a consulting statistician, advising natural and social science researchers on statistics, statistical programming, and study design.  I create and teach R workshops for applied science graduate students who are just getting started in R, where my goal is to make their transition to a programming language as smooth as possible."
+  bio = "I currently work as a consulting statistician, advising natural and social science researchers on statistics, statistical programming, and study design.  I create and teach R workshops for applied science graduate students who are just getting started in R, where my goal is to make their transition to a programming language as smooth as possible. See my workshop materials at [my website](http://ariel.rbind.io/)."
 
   # job = "Your job title"
   # location = "France"
@@ -205,7 +205,7 @@ math = true
 #  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-archive\"></i>"
 #  url = "/archives"
 [[menu.main]]
-  weight = 4
+  weight = 5
   identifier = "about"
   name = "About"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-question\"></i>"
