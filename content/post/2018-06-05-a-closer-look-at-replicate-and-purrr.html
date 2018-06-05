@@ -8,38 +8,39 @@ categories:
 tags:
   - purrr
   - simulation
-draft: TRUE
-description: "In this post I delve into the details of the R functions I've been using in my simulations, focusing on the replicate() function and the map family of functions from the purrr package.  I spend a little time showing the parellels between the replicate() function and a for() loop."
+draft: FALSE
+description: "In this post I delve into the details of the R functions I've been using in my simulation examples, focusing on the replicate() function and the map family of functions from the purrr package.  I spend a little time showing the parallels between the replicate() function and a for() loop."
 ---
 
 
 
-<p>I’ve done a couple of posts so far on simulations, <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">here</a> and <a href="https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/">here</a>, where I show how to build a function for simulating data from a defined linear model and then explore long-run behavior of statistics from models fit to simulated data. The goal of those posts was about the simulation, so I didn’t go into much detail on my R code. In this post I’ll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function <code>replicate()</code> and the <em>map</em> family of functions from package <strong>purrr</strong>.</p>
+<p>I’ve done a couple of posts so far on simulations, <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">here</a> and <a href="https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/">here</a>, where I demonstrate how to build a function for simulating data from a defined linear model and then explore long-run behavior of models fit to the simulated datasets. The focus of those posts was on the general simulation process, and I didn’t go into much detail on the specific R code. In this post I’ll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function <code>replicate()</code> and the <em>map</em> family of functions from package <strong>purrr</strong>.</p>
 <div id="the-replicate-function" class="section level1">
 <h1>The replicate() function</h1>
-<p>The <code>replicate()</code> function is a member of the <code>apply</code> family of functions in base R.<br />
+<p>The <code>replicate()</code> function is a member of the <em>apply</em> family of functions in base R.<br />
 Specifically, from the documentation:</p>
 <blockquote>
 <p><code>replicate</code> is a wrapper for the common use of <code>sapply</code> for repeated evaluation of an expression (which will usually involve random number generation).</p>
 </blockquote>
-<p>Notice how it says it is for <em>repeated evaluations</em> and usually involves <em>random number generation</em>. Those are both primary tasks of the simulations I do. While I don’t actually know the <code>apply</code> family of functions very well, I use <code>replicate()</code> a lot (although also see <code>purrr::rerun()</code>). Using <code>replicate()</code> is an alternative to building a <code>for()</code> loop to repeatedly simulate values.</p>
+<p>Notice the documentation mentions <em>repeated evaluations</em> and that the use of <code>replicate()</code> involves <em>random number generation</em>. Those are primary parts of the simulations I do. While I don’t actually know the <em>apply</em> family of functions very well, I use <code>replicate()</code> a lot (although also see <code>purrr::rerun()</code>). Using <code>replicate()</code> is an alternative to building a <code>for()</code> loop to repeatedly simulate new values.</p>
 <p>The <code>replicate()</code> function takes three arguments:</p>
 <ul>
 <li><code>n</code>, which is the number of replications to perform. This is where I set the number of simulations I want to run.<br />
 </li>
 <li><code>expr</code>, the expression that should be run repeatedly. I’ve only ever used a function here.<br />
 </li>
-<li><code>simplify</code>, which controls the type of output the results of <code>expr</code> are placed in. Use <code>simplify = FALSE</code> to get simple vectors as a list instead of in an array.</li>
+<li><code>simplify</code>, which controls the type of output the results of <code>expr</code> are saved into. Use <code>simplify = FALSE</code> to get vectors saved into a list instead of in an array.</li>
 </ul>
-<div id="simple-examples-of-replicate" class="section level2">
-<h2>Simple examples of replicate()</h2>
+<div id="simple-example-of-replicate" class="section level2">
+<h2>Simple example of replicate()</h2>
 <p>Let’s say I wanted to simulate some values from a normal distribution, which I can do using the <code>rnorm()</code> function. Below I’ll simulate five values from a normal distribution with a mean of 0 and a standard deviation of 1 (which are the defaults for <code>mean</code> and <code>sd</code> arguments, respectively).</p>
 <p>Since I’m going generate random numbers I’ll set the seed so anyone following along at home will see the same values.</p>
-<pre class="r"><code>set.seed(16)</code></pre>
-<pre class="r"><code>rnorm(5, mean = 0, sd = 1)</code></pre>
+<pre class="r"><code>set.seed(16)
+rnorm(5, mean = 0, sd = 1)</code></pre>
 <pre><code>## [1]  0.4764134 -0.1253800  1.0962162 -1.4442290  1.1478293</code></pre>
-<p>A single run of the function is one replication of my simulation. How do I simulate 5 values from the distribution multiple times? That’s where <code>replicate()</code> comes in, which allows me to run the function I put in <code>expr</code> exactly <code>n</code> times. Here I’ll ask for three runs. I use <code>simplify = FALSE</code> to get a list as output because the result of this function is a vector.</p>
-<p>The output is a list of three vectors. Each vector is one run of the function so contains the five random numbers drawn from the distributions.</p>
+<p>Using <code>rnorm()</code> directly gives me a single set of simulated values. How do I simulate 5 values from this same distribution multiple times? This is where <code>replicate()</code> comes in. It allows me to run the function I put in <code>expr</code> exactly <code>n</code> times.</p>
+<p>Here I’ll ask for three runs of 5 values each. Notice I use <code>simplify = FALSE</code> to get a list as output.</p>
+<p>The output below is a list of three vectors. Each vector is from a unique run of the function, so contains five random numbers drawn from the normal distribution with a mean of 0 and standard deviation of 1.</p>
 <pre class="r"><code>set.seed(16)
 replicate(n = 3, rnorm(5, 0, 1), simplify = FALSE )</code></pre>
 <pre><code>## [[1]]
@@ -50,7 +51,7 @@ replicate(n = 3, rnorm(5, 0, 1), simplify = FALSE )</code></pre>
 ## 
 ## [[3]]
 ## [1]  1.8471821  0.1119334 -0.7460373  1.6582137  0.7217206</code></pre>
-<p>Note if I don’t use <code>simplify = FALSE</code> here I get a matrix of values, where each column is the output of one run of the function. This can be useful output in some cases, so I show it below. I focus on the list style above only because that’s what I have been using most often recently for simulations I run.</p>
+<p>Note if I don’t use <code>simplify = FALSE</code> I will get a matrix of values instead of a list. Each column in the matrix is the output from one run of the function. In this case there will be three columns in the output, one for each run, and 5 rows. This can be a useful output type for simulations. I focus on list output throughout the rest of this post only because that’s what I have been using recently for simulations.</p>
 <pre class="r"><code>set.seed(16)
 replicate(n = 3, rnorm(5, 0, 1) )</code></pre>
 <pre><code>##            [,1]        [,2]       [,3]
@@ -62,9 +63,9 @@ replicate(n = 3, rnorm(5, 0, 1) )</code></pre>
 </div>
 <div id="an-equivalent-for-loop-example" class="section level2">
 <h2>An equivalent for() loop example</h2>
-<p>A <code>for()</code> loop can be used in place of <code>replicate()</code> for simulations. With time and practice I found <code>replicate()</code> to be much more convenient in terms of writing the code, but I wanted to show a <code>for()</code> loop equivalent. I’ve found that for some folks these loops feel intuitive when they are starting out in R. I think it’s because <code>for()</code> loops are more explicit on what is happening: we can see we loop through <code>i</code> and save the output for each <code>i</code> iteration.</p>
-<p>In my example I’ll save the output of each iteration of the loop into a list called <code>list1</code>. I initialize this as an empty list prior to starting the loop. To match what I did with <code>replicate()</code> I make three sets of simulated values (<code>i in 1:3</code>).</p>
-<p>The result is identical to my <code>replicate()</code> code above, it just took a little more code to do it.</p>
+<p>A <code>for()</code> loop can be used in place of <code>replicate()</code> for simulations. With time and practice I’ve found <code>replicate()</code> to be much more convenient in terms of writing the code. However, in my experience some folks find <code>for()</code> loops intuitive when they are starting out in R. I think it’s because <code>for()</code> loops are more explicit on the looping process: the user can see that <code>i</code> is looped over and the output for each <code>i</code> iteration is saved into the output object because the code is written out explicitly.</p>
+<p>In my example I’ll save the output of each iteration of the loop into a list called <code>list1</code>. I initialize this as an empty list prior to starting the loop. To match what I did with <code>replicate()</code> I do three iterations of the loop (<code>i in 1:3</code>), drawing 5 values via <code>rnorm()</code> each time.</p>
+<p>The result is identical to my <code>replicate()</code> code above. It took a little more code to do it but the process is very clear since it is explicitly written out.</p>
 <pre class="r"><code>set.seed(16)
 list1 = list() # Make an empty list to save output in
 for (i in 1:3) { # Indicate number of iterations with &quot;i&quot;
@@ -82,7 +83,7 @@ list1</code></pre>
 </div>
 <div id="using-replicate-on-a-user-made-function" class="section level2">
 <h2>Using replicate() on a user-made function</h2>
-<p>When I do simulations to explore the behavior of linear models under different scenarios I usually make a function to simulate the data and fit the model. For example, here’s a function I used in an <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">earlier blog post</a> to simulate data from and then fit a two group linear model.</p>
+<p>When I do simulations to explore the behavior of linear models under different scenarios I will create a function to simulate the data and fit the model. For example, here’s a function I used in an <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">earlier blog post</a> to simulate data from and then fit a two group linear model.</p>
 <pre class="r"><code>twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
      ngroup = 2
      group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep)
@@ -91,7 +92,7 @@ list1</code></pre>
      growthfit = lm(growth ~ group)
      growthfit
 }</code></pre>
-<p>The output is a fitted model fit to data generated from the fixed and random (residual) effects.</p>
+<p>The output is a model fit to data generated from the fixed and random (residual) effects.</p>
 <pre class="r"><code>twogroup_fun()</code></pre>
 <pre><code>## 
 ## Call:
@@ -100,18 +101,19 @@ list1</code></pre>
 ## Coefficients:
 ## (Intercept)  groupgroup2  
 ##       4.686       -1.267</code></pre>
-<p>I repeat the data generation and model fitting many times using <code>replicate()</code>, ending up with a list of fitted models. I’ll make 10 models to use throughout the next section.</p>
-<pre class="r"><code>sim_lm = replicate(10, twogroup_fun(), simplify = FALSE )
+<p>To explore the long-run behavior in my simulated scenario I will repeat the data generation and model fitting many times using <code>replicate()</code>. The result is a list of fitted models. I’ll run the function 5 times and save the result as <code>sim_lm</code> to use throughout the next section on <code>map()</code>.</p>
+<pre class="r"><code>sim_lm = replicate(5, twogroup_fun(), simplify = FALSE )
 length(sim_lm)</code></pre>
-<pre><code>## [1] 10</code></pre>
+<pre><code>## [1] 5</code></pre>
 </div>
 </div>
 <div id="using-purrrmap-for-looping-through-lists" class="section level1">
 <h1>Using purrr::map() for looping through lists</h1>
-<p>In the simulations I’ve been posting about I end end up with a list of models fit to simulated data from using <code>replicate()</code> with a function as shown above. Once the models are fit and in a list, I want to explore the long-run behavior of some statistic by extracting value(s) from those models. This involves looping through the list of models.</p>
+<p>So I have a list of fitted models from <code>replicate()</code>; now what?</p>
+<p>The <code>replicate()</code> function was about repeatedly running a function. Once I have the repeated runs I can explore the long-run behavior of some statistic by extracting value(s) from the resulting models. This involves looping through the list of models.</p>
 <p>Looping through the list can be done using a <code>for()</code> loop, but I prefer to use functions that do the looping without all the typing. In particular, these days I use the <em>map</em> family of functions from the <strong>purrr</strong> package to loop through lists. Before <strong>purrr</strong> I primarily used <code>lapply()</code> (the only other <em>apply</em> family function that I know 😆).</p>
-<p>The <code>map()</code> function takes a list as input and makes a list of the output. The first argument to <code>map()</code> is the list to loop through and the second argument is the function to apply to each element of the list.</p>
-<p>For example, I can pull out the coefficients of each model in <code>sim_lm</code> using the <code>coef()</code> function.</p>
+<p>The <code>map()</code> function takes a list as input and puts the output into a list of the same length. The first argument to <code>map()</code> is the list to loop through and the second argument is the function to apply to each element of the list.</p>
+<p>For example, I can pull out the coefficients of each model in my 5-run simulation by looping through <code>sim_lm</code> and applying the <code>coef()</code> function to each list element.</p>
 <pre class="r"><code>library(purrr) # v. 0.2.5
 map(sim_lm, coef)</code></pre>
 <pre><code>## [[1]]
@@ -132,42 +134,20 @@ map(sim_lm, coef)</code></pre>
 ## 
 ## [[5]]
 ## (Intercept) groupgroup2 
-##   4.3296875  -0.9724314 
-## 
-## [[6]]
-## (Intercept) groupgroup2 
-##    3.630176   -1.076639 
-## 
-## [[7]]
-## (Intercept) groupgroup2 
-##    5.221005   -1.370744 
-## 
-## [[8]]
-## (Intercept) groupgroup2 
-##    4.561289   -1.115369 
-## 
-## [[9]]
-## (Intercept) groupgroup2 
-##    5.113272   -2.337021 
-## 
-## [[10]]
-## (Intercept) groupgroup2 
-##    6.427458   -3.733723</code></pre>
-<div id="other-functions-in-the-map-family-for-non-list-outputs" class="section level2">
-<h2>Other functions in the <em>map</em> family for non-list outputs</h2>
-<p>There are many variants of <code>map()</code> that are convenient for saving results in something other than a list. For example, if I am going to extract a single value from each model, like <span class="math inline">\(R^2\)</span>, I might want the output to be a numeric vector instead of a list. I can use <code>map_dbl()</code> for this.</p>
+##   4.3296875  -0.9724314</code></pre>
+<div id="other-variants-of-map-for-non-list-outputs" class="section level2">
+<h2>Other variants of map() for non-list outputs</h2>
+<p>There are many variants of <code>map()</code> that are convenient for saving results into something other than a list. For example, if I am going to extract a single numeric value from each model, such as <span class="math inline">\(R^2\)</span>, I might want the output to be a numeric vector instead of a list. I can use <code>map_dbl()</code> for this.</p>
 <p>The unadjusted <span class="math inline">\(R^2\)</span> from a model fit with <code>lm()</code> can be pulled from the model <code>summary()</code> output. The code looks like: <code>summary(model)$r.squared</code>,<br />
 where “model” is a fitted model.</p>
-<p>So you can see that getting <span class="math inline">\(R^2\)</span> involves extracting a value after applying a function, which isn’t quite as straightforward as applying a single function to every model in the list like I did with <code>coef()</code>. Because of this I’ll demonstrate the formula coding styling available in <em>map</em> functions to write the code to get <span class="math inline">\(R^2\)</span> from each model. With formula coding a tilde (<code>~</code>) goes in front of the function and <code>.x</code> refers to the list element.</p>
+<p>So getting <span class="math inline">\(R^2\)</span> involves extracting a value after applying a function, which isn’t quite as straightforward as applying a single function to every model in the list like I did with <code>coef()</code>. This gives me a chance to demonstrate the formula coding styling available in <em>map</em> functions. In formula coding a tilde (<code>~</code>) goes in front of the function and <code>.x</code> refers to the list element.</p>
 <pre class="r"><code>map_dbl(sim_lm, ~summary(.x)$r.squared)</code></pre>
-<pre><code>##  [1] 0.22823549 0.16199867 0.25730022 0.38591045 0.06375695 0.10731367
-##  [7] 0.14275252 0.05920370 0.33317708 0.58484993</code></pre>
-<p>If you don’t like the formula style you can use an anonymous function inside <em>map</em> functions, where the function argument is used to refer to the list element. This is similar to how you’d do this if you used <code>lapply()</code>.</p>
+<pre><code>## [1] 0.22823549 0.16199867 0.25730022 0.38591045 0.06375695</code></pre>
+<p>If you don’t like the formula style you can use an anonymous function inside <em>map</em> functions, where the function argument is used to refer to the list element.</p>
 <pre class="r"><code>map_dbl(sim_lm, function(x) summary(x)$r.squared)</code></pre>
-<pre><code>##  [1] 0.22823549 0.16199867 0.25730022 0.38591045 0.06375695 0.10731367
-##  [7] 0.14275252 0.05920370 0.33317708 0.58484993</code></pre>
-<p>For output that is a data.frame we can use <code>map_dfr()</code> for row binding or <code>map_dfc()</code> for column binding. I’ve primarily used the former all will show an example here.</p>
-<p>We can extract the estimated coefficients, their standard errors, and the statistical tests from models fit with <code>lm()</code> into a data.frame with <code>broom::tidy()</code>. Using <code>map_dfr()</code> bind these individual coefficient data.frames into one large data.frame.</p>
+<pre><code>## [1] 0.22823549 0.16199867 0.25730022 0.38591045 0.06375695</code></pre>
+<p>For data.frame output we can use <code>map_dfr()</code> for row binding or <em>stacking</em> results together into a single data.frame.</p>
+<p>Estimated coefficients, their standard errors, and their statistical tests from models fit with <code>lm()</code> can be extracted into a tidy data.frame using <code>broom::tidy()</code>. Looping through the results and doing this for each model via <code>map_dfr()</code> will put the output in one data.frame instead of storing the individual data.frames for each model as one element of a list.</p>
 <pre class="r"><code>map_dfr(sim_lm, broom::tidy)</code></pre>
 <pre><code>##           term   estimate std.error statistic      p.value
 ## 1  (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08
@@ -179,18 +159,8 @@ where “model” is a fitted model.</p>
 ## 7  (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08
 ## 8  groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03
 ## 9  (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06
-## 10 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01
-## 11 (Intercept)  3.6301760 0.5175363  7.014341 1.511492e-06
-## 12 groupgroup2 -1.0766391 0.7319068 -1.471006 1.585559e-01
-## 13 (Intercept)  5.2210053 0.5598430  9.325838 2.585511e-08
-## 14 groupgroup2 -1.3707438 0.7917376 -1.731311 1.005003e-01
-## 15 (Intercept)  4.5612890 0.7410383  6.155268 8.212976e-06
-## 16 groupgroup2 -1.1153688 1.0479864 -1.064297 3.012639e-01
-## 17 (Intercept)  5.1132719 0.5510347  9.279400 2.787282e-08
-## 18 groupgroup2 -2.3370206 0.7792808 -2.998945 7.703057e-03
-## 19 (Intercept)  6.4274582 0.5242895 12.259369 3.573964e-10
-## 20 groupgroup2 -3.7337226 0.7414573 -5.035654 8.595210e-05</code></pre>
-<p>The data.frame variants of <code>map()</code> have an additional argument, <code>.id</code>, which can be used to keep the list names if the original list had names or add the list index to the output if it didn’t. I’m using a list that has no names, so each unique model output will be assigned its index number. The name of the new column is given as a string to <code>.id</code>.</p>
+## 10 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01</code></pre>
+<p>The <code>map_dfr()</code> function has an additional argument, <code>.id</code>, which can be used to store the list names (if the original list had names) or add the list index to the output (if it didn’t have names). I’m using a list that has no names, so each unique model output will be assigned its index number if I use the <code>.id</code> argument. The name of the new column is given as a string to <code>.id</code>.</p>
 <pre class="r"><code>map_dfr(sim_lm, broom::tidy, .id = &quot;model&quot;)</code></pre>
 <pre><code>##    model        term   estimate std.error statistic      p.value
 ## 1      1 (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08
@@ -202,40 +172,20 @@ where “model” is a fitted model.</p>
 ## 7      4 (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08
 ## 8      4 groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03
 ## 9      5 (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06
-## 10     5 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01
-## 11     6 (Intercept)  3.6301760 0.5175363  7.014341 1.511492e-06
-## 12     6 groupgroup2 -1.0766391 0.7319068 -1.471006 1.585559e-01
-## 13     7 (Intercept)  5.2210053 0.5598430  9.325838 2.585511e-08
-## 14     7 groupgroup2 -1.3707438 0.7917376 -1.731311 1.005003e-01
-## 15     8 (Intercept)  4.5612890 0.7410383  6.155268 8.212976e-06
-## 16     8 groupgroup2 -1.1153688 1.0479864 -1.064297 3.012639e-01
-## 17     9 (Intercept)  5.1132719 0.5510347  9.279400 2.787282e-08
-## 18     9 groupgroup2 -2.3370206 0.7792808 -2.998945 7.703057e-03
-## 19    10 (Intercept)  6.4274582 0.5242895 12.259369 3.573964e-10
-## 20    10 groupgroup2 -3.7337226 0.7414573 -5.035654 8.595210e-05</code></pre>
-<p>Further arguments to the function used in <code>map()</code> can be passed as additional arguments. I can add confidence intervals when using the <code>tidy.lm()</code> function using the argument <code>conf.int = TRUE</code>. If I want confidence intervals in for each coefficient in the output I can add this as an additional argument in <code>map_dfr()</code>.</p>
-<pre class="r"><code>map_dfr(sim_lm, broom::tidy, .id = &quot;model&quot;, conf.int = TRUE)</code></pre>
-<pre><code>##    model        term   estimate std.error statistic      p.value  conf.low
-## 1      1 (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08  4.084820
-## 2      1 groupgroup2 -1.7156023 0.7435860 -2.307201 3.314134e-02 -3.277819
-## 3      2 (Intercept)  4.6701884 0.7450412  6.268362 6.535353e-06  3.104915
-## 4      2 groupgroup2 -1.9654632 1.0536474 -1.865390 7.851233e-02 -4.179094
-## 5      3 (Intercept)  5.2319216 0.7333769  7.134015 1.203499e-06  3.691154
-## 6      3 groupgroup2 -2.5899532 1.0371516 -2.497179 2.243919e-02 -4.768928
-## 7      4 (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08  4.873874
-## 8      4 groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03 -5.190947
-## 9      5 (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06  3.024875
-## 10     5 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01 -2.817715
-## 11     6 (Intercept)  3.6301760 0.5175363  7.014341 1.511492e-06  2.542873
-## 12     6 groupgroup2 -1.0766391 0.7319068 -1.471006 1.585559e-01 -2.614318
-## 13     7 (Intercept)  5.2210053 0.5598430  9.325838 2.585511e-08  4.044819
-## 14     7 groupgroup2 -1.3707438 0.7917376 -1.731311 1.005003e-01 -3.034123
-## 15     8 (Intercept)  4.5612890 0.7410383  6.155268 8.212976e-06  3.004425
-## 16     8 groupgroup2 -1.1153688 1.0479864 -1.064297 3.012639e-01 -3.317106
-## 17     9 (Intercept)  5.1132719 0.5510347  9.279400 2.787282e-08  3.955591
-## 18     9 groupgroup2 -2.3370206 0.7792808 -2.998945 7.703057e-03 -3.974229
-## 19    10 (Intercept)  6.4274582 0.5242895 12.259369 3.573964e-10  5.325967
-## 20    10 groupgroup2 -3.7337226 0.7414573 -5.035654 8.595210e-05 -5.291467
+## 10     5 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01</code></pre>
+<p>Further arguments to the function used within <code>map()</code> can be passed as additional arguments. For example, I can add confidence intervals for estimated coefficients when using the <code>tidy.lm()</code> function via <code>conf.int = TRUE</code>. If I want to get confidence intervals for all models I add this as an additional argument in <code>map_dfr()</code>.</p>
+<pre class="r"><code>map_dfr(sim_lm, broom::tidy, conf.int = TRUE)</code></pre>
+<pre><code>##           term   estimate std.error statistic      p.value  conf.low
+## 1  (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08  4.084820
+## 2  groupgroup2 -1.7156023 0.7435860 -2.307201 3.314134e-02 -3.277819
+## 3  (Intercept)  4.6701884 0.7450412  6.268362 6.535353e-06  3.104915
+## 4  groupgroup2 -1.9654632 1.0536474 -1.865390 7.851233e-02 -4.179094
+## 5  (Intercept)  5.2319216 0.7333769  7.134015 1.203499e-06  3.691154
+## 6  groupgroup2 -2.5899532 1.0371516 -2.497179 2.243919e-02 -4.768928
+## 7  (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08  4.873874
+## 8  groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03 -5.190947
+## 9  (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06  3.024875
+## 10 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01 -2.817715
 ##     conf.high
 ## 1   6.2941272
 ## 2  -0.1533862
@@ -246,27 +196,17 @@ where “model” is a fitted model.</p>
 ## 7   7.6964420
 ## 8  -1.1992333
 ## 9   5.6345003
-## 10  0.8728526
-## 11  4.7174794
-## 12  0.4610401
-## 13  6.3971918
-## 14  0.2926351
-## 15  6.1181526
-## 16  1.0863688
-## 17  6.2709529
-## 18 -0.6998124
-## 19  7.5289494
-## 20 -2.1759787</code></pre>
-<p>The <em>map</em> family of functions are made to easily use with a pipe, so can fit this as one step in a chain of functions. I can, for example, take the estimates I get using <code>broom::tidy</code>, filter to just the intercept, and then plot the resulting estimate as a histogram. I’ll need packages <strong>dplyr</strong> and <strong>ggplot2</strong> for this.</p>
+## 10  0.8728526</code></pre>
+<p>The <em>map</em> family of functions can easily be used with pipes as one step in a chain of functions. I can, for example, take the estimates I get using <code>broom::tidy</code>, pull out the estimated intercepts, and then plot a histogram of those estimates. I’ll need packages <strong>dplyr</strong> and <strong>ggplot2</strong> for this.</p>
 <pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
 library(ggplot2) # v 2.2.1</code></pre>
-<p>You can see all the steps in this pipe chain. I first extract the coefficients from each element of <code>sim_lm</code> and put them in a data.frame using <code>map_dfr</code>. I use <code>filter()</code> to save only the rows with the estimate for each intercept and then plot all estimated intercepts for the whole simulation as a histogram with <code>qplot()</code>.</p>
+<p>You can see all the steps in the pipe chain below. I loop through <code>sim_lm</code> using <code>map_dfr()</code> to extract the coefficients from each element of the list and output a data.frame of results. I use <code>dplyr::filter()</code> to keep only the rows with estimated intercepts and then plot a histogram of these estimates for the whole simulation with <code>ggplot2::qplot()</code>.</p>
 <pre class="r"><code>sim_lm %&gt;%
      map_dfr(broom::tidy) %&gt;%
      filter(term == &quot;(Intercept)&quot;) %&gt;%
      qplot(x = estimate, data = ., geom = &quot;histogram&quot;)</code></pre>
 <pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
-<p><img src="/post/2018-06-05-a-closer-look-at-replicate-and-purrr_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
-<p>There are more variants of the <em>map</em> family of functions that you might find useful, both for simulations and in other work. See the documentation for <code>map()</code> (<code>?map</code>) to see them all along with additional examples.</p>
+<p><img src="/post/2018-06-05-a-closer-look-at-replicate-and-purrr_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>There are more variants of <code>map()</code> that you might find useful, both for simulations and in other iterative work. See the documentation for <code>map()</code> (<code>?map</code>) to see all of them along with additional examples.</p>
 </div>
 </div>

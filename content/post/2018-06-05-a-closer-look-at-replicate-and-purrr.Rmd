@@ -8,28 +8,28 @@ categories:
 tags:
   - purrr
   - simulation
-draft: TRUE
-description: "In this post I delve into the details of the R functions I've been using in my simulations, focusing on the replicate() function and the map family of functions from the purrr package.  I spend a little time showing the parellels between the replicate() function and a for() loop."
+draft: FALSE
+description: "In this post I delve into the details of the R functions I've been using in my simulation examples, focusing on the replicate() function and the map family of functions from the purrr package.  I spend a little time showing the parallels between the replicate() function and a for() loop."
 ---
 
-I've done a couple of posts so far on simulations, [here](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) and [here](https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/), where I show how to build a function for simulating data from a defined linear model and then explore long-run behavior of statistics from models fit to simulated data.  The goal of those posts was about the simulation, so I didn't go into much detail on my R code.  In this post I'll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function `replicate()` and the *map* family of functions from package **purrr**.
+I've done a couple of posts so far on simulations, [here](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) and [here](https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/), where I demonstrate how to build a function for simulating data from a defined linear model and then explore long-run behavior of models fit to the simulated datasets.  The focus of those posts was on the general simulation process, and I didn't go into much detail on the specific R code.  In this post I'll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function `replicate()` and the *map* family of functions from package **purrr**.
 
 # The replicate() function
 
-The `replicate()` function is a member of the `apply` family of functions in base R.  
+The `replicate()` function is a member of the *apply* family of functions in base R.  
 Specifically, from the documentation:
 
 > `replicate` is a wrapper for the common use of `sapply` for repeated evaluation of an expression (which will usually involve random number generation).
 
-Notice how it says it is for *repeated evaluations* and usually involves *random number generation*.  Those are both primary tasks of the simulations I do.  While I don't actually know the `apply` family of functions very well, I use `replicate()` a lot (although also see `purrr::rerun()`).  Using `replicate()` is an alternative to building a `for()` loop to repeatedly simulate values.
+Notice the documentation mentions *repeated evaluations* and that the use of `replicate()` involves *random number generation*.  Those are primary parts of the simulations I do.  While I don't actually know the *apply* family of functions very well, I use `replicate()` a lot (although also see `purrr::rerun()`).  Using `replicate()` is an alternative to building a `for()` loop to repeatedly simulate new values.
 
 The `replicate()` function takes three arguments:
 
 * `n`, which is the number of replications to perform.  This is where I set the number of simulations I want to run.  
 * `expr`, the expression that should be run repeatedly.  I've only ever used a function here.  
-* `simplify`, which controls the type of output the results of `expr` are placed in.  Use `simplify = FALSE` to get simple vectors as a list instead of in an array.  
+* `simplify`, which controls the type of output the results of `expr` are saved into.  Use `simplify = FALSE` to get vectors saved into a list instead of in an array.  
 
-## Simple examples of replicate()
+## Simple example of replicate()
 
 Let's say I wanted to simulate some values from a normal distribution, which I can do using the `rnorm()` function.  Below I'll simulate five values from a normal distribution with a mean of 0 and a standard deviation of 1 (which are the defaults for `mean` and `sd` arguments, respectively).
 
@@ -37,22 +37,21 @@ Since I'm going generate random numbers I'll set the seed so anyone following al
 
 ```{r}
 set.seed(16)
-```
-
-```{r}
 rnorm(5, mean = 0, sd = 1)
 ```
 
-A single run of the function is one replication of my simulation.  How do I simulate 5 values from the distribution multiple times?  That's where `replicate()` comes in, which allows me to run the function I put in `expr` exactly `n` times.  Here I'll ask for three runs.  I use `simplify = FALSE` to get a list as output because the result of this function is a vector.
+Using `rnorm()` directly gives me a single set of simulated values.  How do I simulate 5 values from this same distribution multiple times?  This is where `replicate()` comes in.  It allows me to run the function I put in `expr` exactly `n` times.  
 
-The output is a list of three vectors.  Each vector is one run of the function so contains the five random numbers drawn from the distributions.
+Here I'll ask for three runs of 5 values each.  Notice I use `simplify = FALSE` to get a list as output.
+
+The output below is a list of three vectors.  Each vector is from a unique run of the function, so contains  five random numbers drawn from the normal distribution with a mean of 0 and standard deviation of 1.
 
 ```{r}
 set.seed(16)
 replicate(n = 3, rnorm(5, 0, 1), simplify = FALSE )
 ```
 
-Note if I don't use `simplify = FALSE` here I get a matrix of values, where each column is the output of one run of the function.  This can be useful output in some cases, so I show it below.  I focus on the list style above only because that's what I have been using most often recently for simulations I run.
+Note if I don't use `simplify = FALSE` I will get a matrix of values instead of a list.  Each column in the matrix is the output from one run of the function.  In this case there will be three columns in the output, one for each run, and 5 rows.  This can be a useful output type for simulations.  I focus on list output throughout the rest of this post only because that's what I have been using recently for simulations.
 
 ```{r}
 set.seed(16)
@@ -61,11 +60,11 @@ replicate(n = 3, rnorm(5, 0, 1) )
 
 ## An equivalent for() loop example
 
-A `for()` loop can be used in place of `replicate()` for simulations.  With time and practice I found `replicate()` to be much more convenient in terms of writing the code, but I wanted to show a `for()` loop equivalent.  I've found that for some folks these loops feel intuitive when they are starting out in R.  I think it's because `for()` loops are more explicit on what is happening: we can see we loop through `i` and save the output for each `i` iteration.
+A `for()` loop can be used in place of `replicate()` for simulations.  With time and practice I've found `replicate()` to be much more convenient in terms of writing the code.  However, in my experience some folks find `for()` loops intuitive when they are starting out in R.  I think it's because `for()` loops are more explicit on the looping process: the user can see that `i` is looped over and the output for each `i` iteration is saved into the output object because the code is written out explicitly.
 
-In my example I'll save the output of each iteration of the loop into a list called `list1`.  I initialize this as an empty list prior to starting the loop.  To match what I did with `replicate()` I make three sets of simulated values (`i in 1:3`).
+In my example I'll save the output of each iteration of the loop into a list called `list1`.  I initialize this as an empty list prior to starting the loop.  To match what I did with `replicate()` I do three iterations of the loop (`i in 1:3`), drawing 5 values via `rnorm()` each time.
 
-The result is identical to my `replicate()` code above, it just took a little more code to do it.
+The result is identical to my `replicate()` code above.  It took a little more code to do it but the process is very clear since it is explicitly written out.
 
 ```{r}
 set.seed(16)
@@ -78,7 +77,7 @@ list1
 
 ## Using replicate() on a user-made function
 
-When I do simulations to explore the behavior of linear models under different scenarios I usually make a function to simulate the data and fit the model.  For example, here's a function I used in an [earlier blog post](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) to simulate data from and then fit a two group linear model.
+When I do simulations to explore the behavior of linear models under different scenarios I will create a function to simulate the data and fit the model.  For example, here's a function I used in an [earlier blog post](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) to simulate data from and then fit a two group linear model.
 
 ```{r}
 twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
@@ -91,81 +90,83 @@ twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
 }
 ```
 
-The output is a fitted model fit to data generated from the fixed and random (residual) effects.
+The output is a model fit to data generated from the fixed and random (residual) effects.
 
 ```{r}
 twogroup_fun()
 ```
 
-I repeat the data generation and model fitting many times using `replicate()`, ending up with a list of fitted models.  I'll make 10 models to use throughout the next section.
+To explore the long-run behavior in my simulated scenario I will repeat the data generation and model fitting many times using `replicate()`.  The result is a list of fitted models.  I'll run the function 5 times and save the result as `sim_lm` to use throughout the next section on `map()`.
 
 ```{r}
-sim_lm = replicate(10, twogroup_fun(), simplify = FALSE )
+sim_lm = replicate(5, twogroup_fun(), simplify = FALSE )
 length(sim_lm)
 ```
 
 # Using purrr::map() for looping through lists
 
-In the simulations I've been posting about I end end up with a list of models fit to simulated data from using `replicate()` with a function as shown above.  Once the models are fit and in a list, I want to explore the long-run behavior of some statistic by extracting value(s) from those models.  This involves looping through the list of models.  
+So I have a list of fitted models from `replicate()`; now what?   
+
+The `replicate()` function was about repeatedly running a function.  Once I have the repeated runs I can explore the long-run behavior of some statistic by extracting value(s) from the resulting models.  This involves looping through the list of models.  
 
 Looping through the list can be done using a `for()` loop, but I prefer to use functions that do the looping without all the typing.  In particular, these days I use the *map* family of functions from the **purrr** package to loop through lists.  Before **purrr** I primarily used `lapply()` (the only other *apply* family function that I know `r emo::ji("laughing")`). 
 
-The `map()` function takes a list as input and makes a list of the output.    The first argument to `map()` is the list to loop through and the second argument is the function to apply to each element of the list.  
+The `map()` function takes a list as input and puts the output into a list of the same length. The first argument to `map()` is the list to loop through and the second argument is the function to apply to each element of the list.  
 
-For example, I can pull out the coefficients of each model in `sim_lm` using the `coef()` function.
+For example, I can pull out the coefficients of each model in my 5-run simulation by looping through `sim_lm` and applying the `coef()` function to each list element.
 
 ```{r}
 library(purrr) # v. 0.2.5
 map(sim_lm, coef)
 ```
 
-## Other functions in the *map* family for non-list outputs
+## Other variants of map() for non-list outputs
 
-There are many variants of `map()` that are convenient for saving results in something other than a list.  For example, if I am going to extract a single value from each model, like $R^2$, I might want the output to be a numeric vector instead of a list.  I can use `map_dbl()` for this.
+There are many variants of `map()` that are convenient for saving results into something other than a list.  For example, if I am going to extract a single numeric value from each model, such as $R^2$, I might want the output to be a numeric vector instead of a list.  I can use `map_dbl()` for this.
 
 The unadjusted $R^2$ from a model fit with `lm()` can be pulled from the model `summary()` output.  The code looks like: `summary(model)$r.squared`,   
 where "model" is a fitted model.  
 
-So you can see that getting $R^2$ involves extracting a value after applying a function, which isn't quite as straightforward as applying a single function to every model in the list like I did with `coef()`.  Because of this I'll demonstrate the formula coding styling available in *map* functions to write the code to get $R^2$ from each model.  With formula coding a tilde (`~`) goes in front of the function and `.x` refers to the list element.
+So getting $R^2$ involves extracting a value after applying a function, which isn't quite as straightforward as applying a single function to every model in the list like I did with `coef()`.  This gives me a chance to demonstrate the formula coding styling available in *map* functions.  In formula coding a tilde (`~`) goes in front of the function and `.x` refers to the list element.
 
 ```{r}
 map_dbl(sim_lm, ~summary(.x)$r.squared)
 ```
 
-If you don't like the formula style you can use an anonymous function inside *map* functions, where the function argument is used to refer to the list element.  This is similar to how you'd do this if you used `lapply()`.  
+If you don't like the formula style you can use an anonymous function inside *map* functions, where the function argument is used to refer to the list element.  
 
 ```{r}
 map_dbl(sim_lm, function(x) summary(x)$r.squared)
 ```
 
-For output that is a data.frame we can use `map_dfr()` for row binding or `map_dfc()` for column binding.  I've primarily used the former all will show an example here.
+For data.frame output we can use `map_dfr()` for row binding or *stacking* results together into a single data.frame.
 
-We can extract the estimated coefficients, their standard errors, and the statistical tests from models fit with `lm()` into a data.frame with `broom::tidy()`.  Using `map_dfr()` bind these individual coefficient data.frames into one large data.frame.
+Estimated coefficients, their standard errors, and their statistical tests from models fit with `lm()` can be extracted into a tidy data.frame using `broom::tidy()`.  Looping through the results and doing this for each model via `map_dfr()` will put the output in one data.frame instead of storing the individual data.frames for each model as one element of a list.
 
 ```{r}
 map_dfr(sim_lm, broom::tidy)
 ```
 
-The data.frame variants of `map()` have an additional argument, `.id`, which can be used to keep the list names if the original list had names or add the list index to the output if it didn't.  I'm using a list that has no names, so each unique model output will be assigned its index number.  The name of the new column is given as a string to `.id`.
+The `map_dfr()` function has an additional argument, `.id`, which can be used to store the list names (if the original list had names) or add the list index to the output (if it didn't have names).  I'm using a list that has no names, so each unique model output will be assigned its index number if I use the `.id` argument.  The name of the new column is given as a string to `.id`.
 
 ```{r}
 map_dfr(sim_lm, broom::tidy, .id = "model")
 ```
 
-Further arguments to the function used in `map()` can be passed as additional arguments.  I can add confidence intervals when using the `tidy.lm()` function using the argument `conf.int = TRUE`.  If I want confidence intervals in for each coefficient in the output I can add this as an additional argument in `map_dfr()`.
+Further arguments to the function used within `map()` can be passed as additional arguments.  For example, I can add confidence intervals for estimated coefficients when using the `tidy.lm()` function via `conf.int = TRUE`.  If I want to get confidence intervals for all models I add this as an additional argument in `map_dfr()`.
 
 ```{r}
-map_dfr(sim_lm, broom::tidy, .id = "model", conf.int = TRUE)
+map_dfr(sim_lm, broom::tidy, conf.int = TRUE)
 ```
 
-The *map* family of functions are made to easily use with a pipe, so can fit this as one step in a chain of functions.  I can, for example, take the estimates I get using `broom::tidy`, filter to just the intercept, and then plot the resulting estimate as a histogram.  I'll need packages **dplyr** and **ggplot2** for this.
+The *map* family of functions can easily be used with pipes as one step in a chain of functions.  I can, for example, take the estimates I get using `broom::tidy`, pull out the estimated intercepts, and then plot a histogram of those estimates.  I'll need packages **dplyr** and **ggplot2** for this.
 
 ```{r}
 suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
 library(ggplot2) # v 2.2.1
 ```
 
-You can see all the steps in this pipe chain.  I first extract the coefficients from each element of `sim_lm` and put them in a data.frame using `map_dfr`.  I use `filter()` to save only the rows with the estimate for each intercept and then plot all estimated intercepts for the whole simulation as a histogram with `qplot()`.
+You can see all the steps in the pipe chain below.  I loop through `sim_lm` using `map_dfr()` to extract the coefficients from each element of the list and output a data.frame of results.  I use `dplyr::filter()` to keep only the rows with estimated intercepts and then plot a histogram of these estimates for the whole simulation with `ggplot2::qplot()`.
 
 ```{r}
 sim_lm %>%
@@ -174,4 +175,4 @@ sim_lm %>%
      qplot(x = estimate, data = ., geom = "histogram")
 ```
 
-There are more variants of the *map* family of functions that you might find useful, both for simulations and in other work.  See the documentation for `map()` (`?map`) to see them all along with additional examples.
+There are more variants of `map()` that you might find useful, both for simulations and in other iterative work.  See the documentation for `map()` (`?map`) to see all of them along with additional examples.
