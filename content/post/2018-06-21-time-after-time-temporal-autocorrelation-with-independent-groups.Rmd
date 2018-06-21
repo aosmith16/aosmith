@@ -1,0 +1,77 @@
+---
+title: 'Time after time: temporal autocorrelation with independent groups'
+author: Ariel Muldoon
+date: '2018-06-21'
+slug: group-autocorrelation
+categories:
+  - r
+  - statistics
+tags:
+  - autocorrelation
+  - tidyr
+draft: TRUE
+description: "Autocorrelation can be underestimated When independent groups are ignored.  I show an approach to respect groups by padding the dataset with NA via tidyr::complete()."
+---
+
+Simulate data with autocorrelated noise via `arima.sim()`.  
+
+```{r}
+library(purrr)
+suppressPackageStartupMessages( library(dplyr) )
+
+dat = map2_dfr(1:10, sample(6:9, 10, replace = TRUE), 
+               ~tibble(group = .x,
+                     x = runif(.y, 5, 10),
+                     y = 1 + x + arima.sim(list(ar = .7), .y),
+                     time = 1:.y)
+)
+```
+
+Check group sizes
+
+```{r}
+dat %>%
+    count(group) %>%
+    filter(n == max(n) )
+```
+
+Fit model and check for autocorrelation in the residuals via `acf()`.  I'm using a maximum lag is based on the smallest group size.
+
+```{r}
+fit1 = lm(y ~ x, data = dat)
+
+dat$res = residuals(fit1)
+
+acf(dat$res, plot = FALSE, lag.max = 6)
+```
+
+Expand dataset using `tidyr::complete()`.  A variable representing the autocorrelation variable is needed.  In this case it's `time`, but if I was doing soil depth that was taken evenly through a soil core it could be something like soild depth.
+
+I group the dataset so every group is padded with rows of missing values at the end.
+
+```{r}
+dat_expand = dat %>%
+    group_by(group) %>%
+    complete(time = 1:20) 
+```
+
+Here is an example of the first group, which has X observations and then 10 rows of `NA`.
+
+```{r}
+filter(dat_expand, group == 1)
+```
+
+Now calculate the residual autocorrelation again using the expanded dataset, using `na.action = na.pass`.  Now groups are not mistakenly considered in the autocorrelation since rows of observations are no longer contiguous.
+
+```{r}
+acf(dat_expand$res, lag.max = 7, plot = FALSE, na.action = na.pass)
+```
+
+For linear models, either with or without random effects, the **nlme** package as an `ACF` function that can be calculated by group. The calculation is very slightly different than the one we did, but clearly shows how I had underestimated the autocorrelation originally.
+
+```{r}
+library(nlme)
+fit2 = gls(y ~ x, data = dat)
+ACF(fit2, maxLag = 7, form = ~1|group)
+```
+
