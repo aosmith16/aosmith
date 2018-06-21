@@ -53,7 +53,9 @@ When a function has a `simulate` function, getting the simulations needed to use
 
 ## Example using glmmTMB()
 
-The `glmmTMB` function from package **glmmTMB** is one of those models that **DHARMa** doesn't currently support.  The `glmmTMB` functions does, however, have a `simulate` function.
+The `glmmTMB` function from package **glmmTMB** is one of those models that **DHARMa** doesn't currently support. (*2018-04-05 update: the development version of DHARMA [now supports glmmTMB objects for glmmTMB 0.2.1](https://github.com/florianhartig/DHARMa/issues/16).  I believe the example below is still useful for showing how to work with DHARMa-unsupported model types that have a simulate() function.*)  
+
+The `glmmTMB` function does have a `simulate` function.
 
 ```{r, warning = FALSE, message = FALSE}
 library(DHARMa) # version 0.1.5

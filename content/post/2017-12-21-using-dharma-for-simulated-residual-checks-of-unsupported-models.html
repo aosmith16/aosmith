@@ -41,7 +41,8 @@ description: "Checking for model fit from generalized linear mixed models (GLMM)
 <p>When a function has a <code>simulate</code> function, getting the simulations needed to use <code>createDHARMa</code> can be comparatively straightforward.</p>
 <div id="example-using-glmmtmb" class="section level2">
 <h2>Example using glmmTMB()</h2>
-<p>The <code>glmmTMB</code> function from package <strong>glmmTMB</strong> is one of those models that <strong>DHARMa</strong> doesn’t currently support. The <code>glmmTMB</code> functions does, however, have a <code>simulate</code> function.</p>
+<p>The <code>glmmTMB</code> function from package <strong>glmmTMB</strong> is one of those models that <strong>DHARMa</strong> doesn’t currently support. (<em>2018-04-05 update: the development version of DHARMA <a href="https://github.com/florianhartig/DHARMa/issues/16">now supports glmmTMB objects for glmmTMB 0.2.1</a>. I believe the example below is still useful for showing how to work with DHARMa-unsupported model types that have a simulate() function.</em>)</p>
+<p>The <code>glmmTMB</code> function does have a <code>simulate</code> function.</p>
 <pre class="r"><code>library(DHARMa) # version 0.1.5
 library(glmmTMB) # version 0.1.1</code></pre>
 <p>I’m going to use one of the models from the <strong>glmmTMB</strong> documentation to demonstrate how to make the simulations and then use them in <code>createDHARMa</code>.</p>
@@ -51,35 +52,35 @@ library(glmmTMB) # version 0.1.1</code></pre>
                   family = nbinom2, data = Salamanders)</code></pre>
 <p>If I try to calculate the scaled residuals via <strong>DHARMa</strong> functions, I get a warning and then an error. <strong>DHARMa</strong> attempts to make predictions from the model to simulate with, but it fails.</p>
 <pre class="r"><code>simulateResiduals(fittedModel = fit_nbz, n = 250)</code></pre>
-<pre><code>## Warning in checkModel(fittedModel): DHARMa: fittedModel not in class of
-## supported models. Absolutely no guarantee that this will work!</code></pre>
-<pre><code>## Error in predict.glmmTMB(fittedModel, type = &quot;response&quot;, re.form = ~0): re.form not yet implemented</code></pre>
+<pre><code>## Object of Class DHARMa with simulated residuals based on 250 simulations with refit = FALSE . See ?DHARMa::simulateResiduals for help. 
+##  
+## Scaled residual values: 0.12 0.492 0.424 0.672 0.644 0.568 0.456 0.672 0.836 0.556 0.392 0.004 0.452 0.116 0.084 0.296 0.184 0.54 0.576 0.56 ...</code></pre>
 <p>This is an indication I’ll need to use <code>createDHARMa</code> to make the residuals instead.</p>
 <p>I can simulate from my model via the <code>simulate</code> function (see the documentation for <code>simulate.glmmTMB</code> for details). I usually do at least 1000 simulations if it isn’t too time-consuming. I’ll do only 10 here as an example.</p>
 <pre class="r"><code>sim_nbz = simulate(fit_nbz, nsim = 10)</code></pre>
 <p>The result is a list of simulated response vectors.</p>
 <pre class="r"><code>str(sim_nbz)</code></pre>
-<pre><code>## List of 10
-##  $ : num [1:644] 0 0 0 0 0 12 2 2 2 8 ...
-##  $ : num [1:644] 0 0 0 0 15 6 1 6 0 0 ...
-##  $ : num [1:644] 0 0 0 0 0 0 0 0 6 17 ...
-##  $ : num [1:644] 0 0 0 0 3 3 0 3 2 4 ...
-##  $ : num [1:644] 0 0 0 0 0 0 7 0 0 0 ...
-##  $ : num [1:644] 0 2 0 1 0 4 3 11 0 0 ...
-##  $ : num [1:644] 0 0 0 1 1 0 1 0 0 2 ...
-##  $ : num [1:644] 0 0 0 2 0 0 2 0 0 1 ...
-##  $ : num [1:644] 0 0 0 0 2 0 2 2 0 4 ...
-##  $ : num [1:644] 0 0 1 3 1 2 0 2 0 4 ...</code></pre>
+<pre><code>## &#39;data.frame&#39;:    644 obs. of  10 variables:
+##  $ sim_1 : num  0 1 2 0 0 4 5 1 0 2 ...
+##  $ sim_2 : num  0 1 0 2 1 5 3 0 0 3 ...
+##  $ sim_3 : num  0 0 1 6 1 2 0 8 4 3 ...
+##  $ sim_4 : num  0 0 0 3 5 0 4 6 6 0 ...
+##  $ sim_5 : num  0 0 0 1 4 6 1 1 0 0 ...
+##  $ sim_6 : num  0 0 0 3 2 0 0 0 0 0 ...
+##  $ sim_7 : num  0 0 0 3 1 0 9 0 0 6 ...
+##  $ sim_8 : num  0 0 0 0 1 0 2 2 1 0 ...
+##  $ sim_9 : num  0 0 0 0 6 7 1 1 5 4 ...
+##  $ sim_10: num  0 2 0 5 3 0 1 1 1 6 ...</code></pre>
 <p>I need these in a matrix, not a list, where each column contains a simulated response vector and each row is an observation. I’ll collapse the list into a matrix by using <code>cbind</code> in <code>do.call</code>.</p>
 <pre class="r"><code>sim_nbz = do.call(cbind, sim_nbz)
 head(sim_nbz)</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
-## [1,]    0    0    0    0    0    0    0    0    0     0
-## [2,]    0    0    0    0    0    2    0    0    0     0
-## [3,]    0    0    0    0    0    0    0    0    0     1
-## [4,]    0    0    0    0    0    1    1    2    0     3
-## [5,]    0   15    0    3    0    0    1    0    2     1
-## [6,]   12    6    0    3    0    4    0    0    0     2</code></pre>
+<pre><code>##      sim_1 sim_2 sim_3 sim_4 sim_5 sim_6 sim_7 sim_8 sim_9 sim_10
+## [1,]     0     0     0     0     0     0     0     0     0      0
+## [2,]     1     1     0     0     0     0     0     0     0      2
+## [3,]     2     0     1     0     0     0     0     0     0      0
+## [4,]     0     2     6     3     1     3     3     0     0      5
+## [5,]     0     1     1     5     4     2     1     1     6      3
+## [6,]     4     5     2     0     6     0     0     0     7      0</code></pre>
 <p>Now I can pass these to <code>createDHARMa</code> along with observed values and model predictions. I set <code>integerResponse</code> to <code>TRUE</code>, as well, as I’m working with counts.</p>
 <pre class="r"><code>sim_res_nbz = createDHARMa(simulatedResponse = sim_nbz, 
                            observedResponse = Salamanders$count,
@@ -88,6 +89,7 @@ head(sim_nbz)</code></pre>
 <p>This function creates the scaled residuals that can be used to make residual plots via <strong>DHARMa</strong>’s <code>plotSimulatedResiduals</code>.</p>
 <p>Remember I’ve only done 10 simulations here, so this particular set of plots don’t look very nice.</p>
 <pre class="r"><code>plotSimulatedResiduals(sim_res_nbz)</code></pre>
+<pre><code>## plotSimulatedResiduals is deprecated, switch your code to using the plot function</code></pre>
 <p><img src="/post/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 </div>
 </div>
@@ -128,18 +130,19 @@ mus = predict(fit_zinb, type = &quot;count&quot;)</code></pre>
 <p>The output of <code>replicate</code> in this case is a matrix, with one simulated response vector in every column and an observation in every row. This is ready for use in <code>createDHARMa</code>.</p>
 <pre class="r"><code>head(sim_zinb)</code></pre>
 <pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
-## [1,]    0    0    3    0    2    1    2    2    2     1
-## [2,]    1    0    2    2    1    0    0    1    1     3
-## [3,]    0    5    2    3    1    0    0    0    3     0
-## [4,]    2    2    2    2    2    0    5    1    5     1
-## [5,]    9    1    3    2    1    5    3    2    0     4
-## [6,]    0    1    0    1    0    0    2    0    1     0</code></pre>
+## [1,]    0    1    0    1    1    0    0    3    2     0
+## [2,]    0    3    6    3    3    0    0    0    0     1
+## [3,]    3    1    1    0    1    1    1    2    0     0
+## [4,]    0    1    0    3    0    0    1    1    0     0
+## [5,]    2    0    3    3    3    0    2    1    0     8
+## [6,]    0    3    4    1    2    3    3    2    0     1</code></pre>
 <p>Making the simulations was the hard part. Now that I have them, <code>createDHARMa</code> works exactly the same way as in the <code>glmmTMB</code> example.</p>
 <pre class="r"><code>sim_res_zinb = createDHARMa(simulatedResponse = sim_zinb,
                             observedResponse = bioChemists$art,
                             fittedPredictedResponse = predict(fit_zinb, type = &quot;response&quot;),
                             integerResponse = TRUE)</code></pre>
 <pre class="r"><code>plotSimulatedResiduals(sim_res_zinb)</code></pre>
+<pre><code>## plotSimulatedResiduals is deprecated, switch your code to using the plot function</code></pre>
 <p><img src="/post/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 </div>
 </div>
