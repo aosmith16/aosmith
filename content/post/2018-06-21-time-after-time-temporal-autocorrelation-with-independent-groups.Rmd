@@ -13,7 +13,7 @@ draft: TRUE
 description: "Autocorrelation can be underestimated When independent groups are ignored.  I show an approach to respect groups by padding the dataset with NA via tidyr::complete()."
 ---
 
-Simulate data with autocorrelated noise via `arima.sim()`.  
+Simulate data with autocorrelated noise via `arima.sim()`.  [This link](https://stat.ethz.ch/pipermail/r-help/2008-July/168487.html) helped me figure out how I could do this.
 
 ```{r}
 library(purrr)
