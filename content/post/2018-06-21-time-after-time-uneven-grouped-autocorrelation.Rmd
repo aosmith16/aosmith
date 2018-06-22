@@ -1,8 +1,8 @@
 ---
-title: 'Time after time: temporal autocorrelation with independent groups'
+title: 'Time after time: autocorrelation for uneven and/or grouped time series'
 author: Ariel Muldoon
 date: '2018-06-21'
-slug: group-autocorrelation
+slug: uneven-group-autocorrelation
 categories:
   - r
   - statistics
@@ -10,7 +10,7 @@ tags:
   - autocorrelation
   - tidyr
 draft: TRUE
-description: "Autocorrelation can be underestimated When independent groups are ignored.  I show an approach to respect groups by padding the dataset with NA via tidyr::complete()."
+description: "Calculating autocorrelation when a time series is discrete but uneven and/or involves a time series in independent groups takes careful thought.  I show an approach to pad a dataset with NA via tidyr::complete() to fill in missed sampling times and keep groups independent."
 ---
 
 Simulate data with autocorrelated noise via `arima.sim()`.  [This link](https://stat.ethz.ch/pipermail/r-help/2008-July/168487.html) helped me figure out how I could do this.
