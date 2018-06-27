@@ -13,19 +13,21 @@ draft: TRUE
 description: "Checking for autocorrelation when some observations are missing from a time series and/or involves a time series in independent groups takes careful thought.  I show an approach to pad a dataset with NA via tidyr::complete() to fill in any missed sampling times while treating groups as independent."
 ---
 
-Calculating autocorrelation when sampling was uneven and/or we have separate time series for different independent sample units takes careful thought.  It's easy to mistakenly ignore the issues, which can lead to a poor estimate of what kind and how much autocorrelation there might be.  
+Calculating autocorrelation when sampling through time is uneven and/or there are distinct time series for independent sample units takes careful thought.  It's easy to mistakenly ignore this structure, which makes it difficult to determine what sort of and how much autocorrelation may be present. 
 
-The situation I'm addressing in this post involves samples where the time is evenly spaced like, e.g., an annual or daily time series.  The unevenness I refer to is due to some samples being missing from some of the sampling bouts.  This is different than treating time as continuous, where we would take a different approach.
+I first ran into this problem myself when I was analyzing data from a [rotating panel study design](http://methods.sagepub.com/reference/encyclopedia-of-survey-research-methods/n500.xml).  In the data I was working with some units were sampled every year, some sampled every 3rd year, some every 9th year, etc.  So samping was annual, but not all sample units had samples from every year.  The sample units were considered independent replicates of each time series, so any autocorrelation was within sample unit autocorrelation. 
 
-I first ran into this problem myself when I was analyzing data from a [rotating panel study design](http://methods.sagepub.com/reference/encyclopedia-of-survey-research-methods/n500.xml).  In the data I was working with some units were sampled every year, some sampled every 3rd year, some every 9th year, etc.  The sample units were considered independent replicates of each time series.  
+The kind of time series I'm talking about today would still be considered *discrete* time series, not continuous.  If time is continuous a different approach would be needed (which I may write about in some later post).
 
-It took me some time to figure out how to check for residual autocorrelation from models I fit,Since then I've periodically worked with students who needed to check for autocorrelation in the presence of unevenness and grouped time series.
+It took me some time to figure out how to check for any overall residual autocorrelation from models I fit to these data.  But that time was worth it, as I've since shared what I worked out with students when they are working on grouped or uneven time series data.
 
-In my working example today I'll use data data that has a pattern to the unevenness within groups, but the same approach applies to when some sampling events are missing because of unplanned events.  In addition, I'll focus on check for *residual* autocorrelation since that is what students I work with are most often doing (checking for any *leftover* autocorrelation, as things in the model could account for some autocorelation).
+In my working example today I'll use data data that has a pattern to the unevenness within the sampling units like the data I originally used from the rotating panel.  The same approach applies, though, for even data with groups or when some sampling events are missing because of unplanned events.  
 
 # Simulating data with autocorrelated noise
 
-Autocorrelated noise can be simulated in R using the `arima.sim()` function.  [This link](https://stat.ethz.ch/pipermail/r-help/2008-July/168487.html) helped me figure out how to do this.  I'm working with the default distribution, which is the normal distribution with a mean 0 and standard devation 1.
+I'm going to focus on checking for *residual* autocorrelation here, since that is what I see most often.  This means checking for autocorrelation that is left over after accounting for other variables in the model that may explain some of the autocorrelation.  
+
+Autocorrelated noise can be simulated in R using the `arima.sim()` function.  [This link](https://stat.ethz.ch/pipermail/r-help/2008-July/168487.html) helped me figure out how to do this.  I'm working with the default distribution in `arima.sim()`, which is the normal distribution with a mean 0 and standard deviation 1.
 
 I'll use helpers from **purrr** to do the looping and **dplyr** for any data manipulation.
 
@@ -34,19 +36,19 @@ library(purrr) # v. 0.2.5
 suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
 ```
 
-I'll start by setting the seed prior to doing the simulation.  I mix things up by using a seed of `64` instead of my go-to seed, `16`. `r emo::ji("laughing")`
+I'll start the simulation by setting the seed prior to doing the simulation.  I mix things up by using a seed of `64` instead of my go-to seed, `16`. `r emo::ji("laughing")`
 
 ```{r}
 set.seed(64)
 ```
 
-I'm going to start by simulating a 10-observation time series for 9 different sample units (`unit`).  Because each sample unit is an independent time series I do a loop via `map()` to simulate the 9 separate datasets.  
+I'm going simulate a 10-observation time series independently for 9 different sample units.  Because each sample unit is an independent time series I do a loop via `map_dfr()` to simulate 9 separate datasets and collapse them into one.  
 
-I simulate observations of the response variable `y` and explanatory variable `x` for each time series and index `time` with an integer to represent the time of the observations.  This time variable could be something like year or days or months or even depth in a soil core.  The key is that the unit of time is evenly spaced.
+I simulate observations of the response variable `y` and explanatory variable `x` for each time series and index `time` with an integer to represent the time of the observation.  This time variable could be something like year or days or months or even depth in a soil core or height along a tree (we can use time series tools for space in some situations!).  The key is that the unit of time is discrete and evenly spaced.
 
-The response variable `y` is constructed based on a relationship with the explanatory variable `x` along with AR1 errors from the normal distribuiton.  I set the lag-1 correlation to 0.75.  The "lag-1" correlation is the correlation between the set of observed values observed at time $t$ with the values at $t-1$.  So in this example for one sample unit the lag-1 correlation is the observed values at sample times 2-10 with those at sample times 1-9.  The lag-2 correlation would be between the observations two sampling times apart (3-10 vs 1-8), etc.  With 10 observations the largest lag is a lag-9.  
+The response variable `y` is constructed based on a relationship with the explanatory variable `x` along with autoregressive order 1 (AR(1)) errors from the normal distribution.  I set the lag-1 correlation to 0.7.  The "lag-1" correlation is the correlation between the set of observed values observed at time $t$ with the values at $t-1$.  In this example the lag-1 autocorrelation for one sample unit is the correlation of the observed values at sampling times 2-10 with those at sampling times 1-9.  The lag-2 correlation would be between the observations two sampling times apart (3-10 vs 1-8), etc.  With 10 observations per group the largest lag possible is a lag-9.  
 
-If you run this code you will get warnings about losing the time series attribute from `arima.sim()`, which I've suppressed in the output below but aren't a problem for what I'm doing here.
+When you run the code below you will get warnings about losing the time series attribute from `arima.sim()`, which I've suppressed in the output below. These warnings aren't a problem for what I'm doing here.
 
 ```{r, warning = FALSE}
 dat = map_dfr(1:9, 
@@ -55,29 +57,39 @@ dat = map_dfr(1:9,
                      y = 1 + x + arima.sim(list(ar = .7), 10),
                      time = 1:10)
 )
+```
 
+Here's the top 15 rows of this dataset.
+
+```{r}
 head(dat, 15)
 ```
 
-The list above results in 9 datasets that is all evenly spaced in time.  I want to have three units with samples taken only every three sampling times and three taken only ever 9 sampling times.  The last three will have been measured every time.
+The dataset above has 9 sample units all with the full time series.  I want to have three units with samples taken only every fourth sampling time and three with samples only the first and last sampling time.  The last three will have be sampled at every time.  
+
+I use `filter()` twice to remove rows from some of the sample units.
 
 ```{r}
 dat = dat %>%
      filter(unit %in% 4:9 | time %in% c(1, 4, 7, 10)) %>%
      filter(!unit %in% 4:6 | time %in% c(1, 10) )
+```
 
+Now you can see things are no longer even.
+
+```{r}
 head(dat, 15)
 ```
 
 # Fit model and extract residuals
 
-I'm first going to show the results of a naive analysis where we ignore groups.  I'll fit the model of `y` vs `x` via the `lm()` function.
+I'll fit the model of `y` vs `x` via the `lm()` function and extract the residuals to check for autocorrelation.
 
 ```{r}
 fit1 = lm(y ~ x, data = dat)
 ```
 
-I am interested in *residual* autocorrelation, so I will be working with the residuals from this model.  I add the residuals to the dataset to keep things organized.    
+I add the residuals to the dataset to keep things organized and to get ready for the next step.
 
 ```{r}
 dat$res = residuals(fit1)
@@ -85,27 +97,31 @@ dat$res = residuals(fit1)
 
 # Problems with naively using acf() on the residuals
 
-If we hadn't thought about our spacing issue in our grouped dataset, the next step would be to use the `acf()` function to check for any residual autocorrelation at various time lags.  The `acf()` function calculates and plots the autocorrelation function of a vector of values (see `pacf()` for partial autocorrelation).  That sounds like what we want; so why do I say this would be naive in this example?  
+If we hadn't thought about our spacing issue in our grouped dataset, the next step would be to use the `acf()` function to check for any residual autocorrelation at various time lags.  The `acf()` function calculates and plots the autocorrelation function of a vector of values (see `pacf()` for partial autocorrelation).  That sounds like what we want; so why do I say this would be naive?  
 
-The `acf()` function expects values to be in order by time and assumes equal spacing in time.  If we calculate the autocorrelation function directly on the residuals as they are now, we are ignoring instances where we didn't sample for several years so any two obserations that are next to each other are considered 1 lag apart even though it may have been three years since the last sample.  In addition, the `acf()` function doesn't know we have groups.  The last observations of one time series comes immediately before the first observation of another, and are considered one lag apart even though they are unrelated. 
+The `acf()` function expects values to be in order by time and assumes equal spacing in time.  If we calculate the autocorrelation function directly on the residuals as they are now, we are ignoring instances where we didn't sample for several years.  Any two observations that are next to each other in the dataset are considered 1 lag apart even though it may have been three years since the last sample was taken.  In addition, the `acf()` function doesn't know we have groups.  The last observations of one time series comes immediately before the first observation of another, and are considered one lag apart even though they are unrelated. 
 
 The `acf()` function is expecting the dataset to be in order by time, so make sure things are in order prior to using `acf()`.  Since I'm working with grouped data I'll make sure things are in order by time within each group.
 
-One option for data like this, where we are assuming normally distributed errors, is to work with the **nlme** package.  That package ahs an `ACF()` function that works on both `gls` and `lme` objects.  However, there are plenty of models that can't be fit with those functions, so I'll show a more general appraoch.
+```{r}
+dat = dat %>%
+     arrange(unit, time)
+```
 
-We need to make sure that the dataset has the appropriate spacing.  This means we need to add rows so that all times have an appropriate number of rows between them.  In addition, we need to add rows between groups so we don't mistakenly treat them as if groups were not independent.
-# Figure out maximum lag of interest via group sizes
+We need to make sure that the dataset has the appropriate spacing.  This means we need to add rows to the dataset for missing samples.  In addition, we need to add rows between units so we don't mistakenly treat them as if groups were not independent.
 
-# Deciding on a maximum lag to calculate based on group size
+Note that an alternative option for data like this, where we are assuming normally distributed errors, is to work with the **nlme** package.  That package has an `ACF()` function that works on both `gls` and `lme` objects.  I'll show a more general approach.
 
-In this example, the units are considered to be independent of each other.  So when checking for autocorrelation, the maximum lag to check for will be based on the maximum group size.  Here's one way to check for that.  Because I simulated these data I already know that the longest time series is 10, but when working with real data this sort of check would be standard.
+# Deciding on a maximum lag via group sizes
+
+In this example, the units are considered to be independent of each other.  So when checking for autocorrelation, the maximum lag to check for will be based on the maximum group size.  Below is one way to check for that.  Because I simulated these data I already know that the longest time series is 10, but when working with real data this sort of check would be standard.
 
 ```{r}
 dat %>%
     count(unit)
 ```
 
-That wouldn't be useful for a large number of groups, though, so here's an alternative to look at just the maximum group size.
+Printing out the result wouldn't be useful for a large number of groups, though, so here's an alternative to look at just the maximum group size.
 
 ```{r}
 dat %>%
@@ -115,15 +131,17 @@ dat %>%
 
 # Pad the dataset with tidyr::complete()
 
-When I was thinking through this problem for the first time, I found a [these lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#testing) that showed the basic idea of padding the residuals to get the spacing between groups correct.  I went a slightly different route at that point, where I did some joining to get the proper spacing.  Since then I've found the `complete()` function from package **tidyr** to be one of the more straightforward coding approaches for students.
+When I was thinking through this problem for the first time, I found these [lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#testing) that showed the basic idea of padding the residuals to get the spacing between groups correct.  I went a slightly different route at that point, where I used some joins to get the proper spacing instead of a loop.  Since then I've found the `complete()` function from package **tidyr** to be one of the more straightforward coding approaches for students.
 
 ```{r}
 library(tidyr) # v. 0.8.1
 ```
 
-A variable representing the autocorrelation variable is needed for this approach.  In this case it's `time`, but if I was doing soil depth that was taken evenly through a soil core it could be something like soil depth.
+A variable representing the autocorrelation variable is needed for this approach, which should be present in the dataset.  In this case it's `time`.
 
-I group the dataset so every group is padded with rows of missing values at the end.
+I group the dataset by `unit` prior to using `complete()` so every group is padded separately.  I define what values of `time` I want within `complete()`.  These are based on the maximum group size, since I need more rows between groups than the maximum lag I'm going to check for autocorrelation.  The maximum lag I will explore is a lag-9 autocorrelation so I want to add 10 extra rows between each `unit`.   
+
+Since I'm working with an integer variable for `time` I can make the full sequence I want in each group via `1:20` (but also see `tidyr::full_seq()`).  
 
 ```{r}
 dat_expand = dat %>%
@@ -139,7 +157,9 @@ filter(dat_expand, unit == 1)
 
 # Calculate residual autocorrelation of properly-spaced residuals
 
-Now calculate the residual autocorrelation again using the expanded dataset, using `na.action = na.pass`.  Now groups are not mistakenly considered in the autocorrelation since rows of observations are no longer contiguous.
+Now that things are spaced appropriately and in order by time, I can calculate the residual autocorrelation via `acf()` using the expanded dataset. For this to work we'll need to use `na.action = na.pass`.  
+
+Note that an alternative approach would be to expand the dataset prior to fitting the model.  To keep the appropriate spacing for the residuals, the option `na.action = na.exclude` can be added to `lm()`.
 
 ```{r}
 acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
@@ -147,7 +167,7 @@ acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
 
 # The confidence interval on the ACF plot
 
-I removed the confidence interval from the plot above.  The calculated confidence interval counts the NA values as part of the sample size, so the confidence interval is too narrow.  You can calculate your own confidence interval based on the actual sample size, but you have to calculate the true sample size for each lag yourself.  I refer you again to the [lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#acf) for some ideas.  I'll put code I've used before below as an example, but I won't walk through it.
+I removed the confidence interval from the plot above.  The calculated confidence interval counts the NA values as part of the sample size for each lag, so the confidence interval is too narrow.  You can calculate your own confidence interval based on the actual sample size, but you have to calculate the true sample size for each lag yourself.  I refer you again to the [lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#acf) for some ideas.  I'll put code I've used for this in the past below as an example, but I won't walk through it.
 
 ```{r}
 ( nall = map_df(1:9, ~
