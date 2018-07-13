@@ -38,7 +38,7 @@ I'm using (somewhat sloppy) "regression" style notation instead of experimental 
 
 $$y_t = \mu + (b_s)_t + \epsilon_t$$
 
-+ $y_t$ is the observed value for the $t$th quantitative response variable; $t$ goes from 1 to the number of observations in the dataset. Since plot is the level of observation in this example (i.e., we have a single observation for each plot), $t$ indexes both the number of plots and the number of rows in the dataset.
++ $y_t$ is the recorded value for the $t$th observation of the quantitative response variable; $t$ goes from 1 to the number of observations in the dataset. Since plot is the level of observation in this example (i.e., we have a single observation for each plot), $t$ indexes both the number of plots and the number of rows in the dataset.
 + $\mu$ is the overall mean response
 + $b_s$ is the (random) effect of the $s$th stand on the response.  $s$ goes from 1 to the total number of stands sampled.  The stand-level random effects are assumed to come from an iid normal distribution with a mean of 0 and some shared, stand-level variance, $\sigma^2_s$: $b_s \thicksim N(0, \sigma^2_s)$
 + $\epsilon_t$ is the observation-level random effect (the residual error term).  Since plots are the level of observation in my scenario, this is essentially the effect of each plot measurement on the response.  These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, $\sigma^2$: $\epsilon_t \thicksim N(0, \sigma^2)$

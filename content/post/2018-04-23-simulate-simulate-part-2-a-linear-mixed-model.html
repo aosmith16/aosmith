@@ -16,7 +16,7 @@ description: "In my second simulation example I show how to simulate data from a
 
 
 
-<p>I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation. I’ve seen instances where residual autocorrelation isn’t detectable when I <em>know</em> it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance. Such results are often due to small sample sizes, which even in this era of big data still isn’t so unusual in ecology. I’ve found exploring the effect of sample size on statistical results to be quite eye-opening 👁️.</p>
+<p>I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation. I’ve seen instances where residual autocorrelation isn’t detectable when I <em>know</em> it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance. Such results are often due to small sample sizes, which even in this era of big data still isn’t so unusual in ecology. I’ve found exploring the effect of sample size on statistical results to be quite eye-opening 👁.</p>
 <p>In <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">my first simulation post</a> I showed how to simulate data for a basic linear model. Today I’ll be talking about how to simulate data for a linear mixed model. So I’m still working with normally distributed residuals but will add an additional level of variation.</p>
 <div id="simulate-simulate-dance-to-the-music" class="section level1">
 <h1>Simulate, simulate, dance to the music</h1>
@@ -32,7 +32,7 @@ description: "In my second simulation example I show how to simulate data from a
 <p>I’m using (somewhat sloppy) “regression” style notation instead of experimental design notation, where the <span class="math inline">\(t\)</span> indexes the observations.</p>
 <p><span class="math display">\[y_t = \mu + (b_s)_t + \epsilon_t\]</span></p>
 <ul>
-<li><span class="math inline">\(y_t\)</span> is the observed value for the <span class="math inline">\(t\)</span>th quantitative response variable; <span class="math inline">\(t\)</span> goes from 1 to the number of observations in the dataset. Since plot is the level of observation in this example (i.e., we have a single observation for each plot), <span class="math inline">\(t\)</span> indexes both the number of plots and the number of rows in the dataset.</li>
+<li><span class="math inline">\(y_t\)</span> is the recorded value for the <span class="math inline">\(t\)</span>th observation of the quantitative response variable; <span class="math inline">\(t\)</span> goes from 1 to the number of observations in the dataset. Since plot is the level of observation in this example (i.e., we have a single observation for each plot), <span class="math inline">\(t\)</span> indexes both the number of plots and the number of rows in the dataset.</li>
 <li><span class="math inline">\(\mu\)</span> is the overall mean response</li>
 <li><span class="math inline">\(b_s\)</span> is the (random) effect of the <span class="math inline">\(s\)</span>th stand on the response. <span class="math inline">\(s\)</span> goes from 1 to the total number of stands sampled. The stand-level random effects are assumed to come from an iid normal distribution with a mean of 0 and some shared, stand-level variance, <span class="math inline">\(\sigma^2_s\)</span>: <span class="math inline">\(b_s \thicksim N(0, \sigma^2_s)\)</span></li>
 <li><span class="math inline">\(\epsilon_t\)</span> is the observation-level random effect (the residual error term). Since plots are the level of observation in my scenario, this is essentially the effect of each plot measurement on the response. These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, <span class="math inline">\(\sigma^2\)</span>: <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span></li>
@@ -261,7 +261,7 @@ head(stand_vars)</code></pre>
 <pre><code>## # A tibble: 3 x 5
 ##   stand_num   min  mean median   max
 ##   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
-## 1 5         0.     4.04   3.39 17.6 
+## 1 5         0      4.04   3.39 17.6 
 ## 2 20        0.994  4.03   3.88  9.15
 ## 3 100       1.27   4.04   3.92  8.71</code></pre>
 <p>So how much of the distribution is below 4 for each estimate?</p>

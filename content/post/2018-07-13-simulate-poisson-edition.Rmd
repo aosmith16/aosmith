@@ -1,0 +1,130 @@
+---
+title: 'Simulate! Simulate! - Part3: The Poisson edition'
+author: Ariel Muldoon
+date: '2018-07-13'
+slug: simulate-poisson-edition
+categories:
+  - r
+  - statistics
+tags:
+  - simulation
+  - glmm
+draft: TRUE
+description: "I show how to simulate Poisson data to explore what a quadratic relationship looks like on the scale of the data when fitting a generalized linear model with a log link."
+---
+
+One of the things I like about simulations is that, with practice, simulating data becomes easier and can be an quik way to check your intuition about a model.  
+
+My most recent example is based on a discussion with a student about quadratic effects on the log scale.
+
+First, I never had a great grasp on what the different coefficients in a quadratic relationship were telling me (i.e., how do I interpret them?).  Luckily there is this very nice [FAQ page](https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faqhow-do-i-interpret-the-sign-of-the-quadratic-term-in-a-polynomial-regression/) from Institute for Digital Research and Education at UCLA that goes over this in detail.  This has become my go-to page when I need a review of this (which seems like is every time the topic comes up `r emo::ji("stuck_out_tongue_winking_eye")`).  
+
+But in this case the student was working with a generalized linear mixed model for count data, which was *linear on the log scale*.  If something is quadratic on the log scale, what does the relationship look like on the original scale?
+
+I wasn't certain, although I had a guess.  Logically, if something that is a straight line on the log scale is curved on the data scale then something that is curved on the log scale should be *more* curved on the original scale.  But how much more curved?  I wasn't sure.
+
+After the student left I threw together a quick simulation to see what a relationship like the one he had estimated would look like on the original scale.  I sent the code along to him and I think we both benefited from seeing the results.     
+
+# The statistical model
+
+Even though I did a single iteration simulation, I think it is still useful to write out the statistical model I used.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations mind-numbing, [jump down to the code](#code-to-simulate-the-quadratic-generalized-linear-model)
+
+I'm going to use a Poisson generalized linear model for my simulation, so the response variable will be counts.
+
+Writing out a generalized linear model is pretty different than the way we do it for the very special case of the normal distribution that most of us probably learned first.  Instead of defining the distribution of the errors like we have before we now directly define the distribution of the response variable.
+
+Here I'll define a respone variable that comes from the Poisson distribuiton.
+
+$$y_t \thicksim Poisson(\lambda_t)$$  
+
++ $y_t$ is the recorded count for the $t$th observation of the discrete response variable.  
++ $\lambda_t$ is the unobserved true mean of the Poisson distribution for the $t$th observation.  The Poisson distribution is a single parameter distribution, where the variance is exactly equal the mean.
+
+We assume that the relationship between the *mean* of the response and any explanatory variables is linear on the log scale.  This can be described as using a *log link*, since this is the function that "links" the mean to the linear predictor.  This is a big change for the linear models I learned originally, where we described the relationship between the *response variable* and the explanatory variables.
+
+Today the model is a quadratic model for a single, continuous explanatory variable.
+
+$$log(\lambda_t) = \beta_0 + \beta_1*x_t + \beta_2*x^2_t$$  
+
++ $x_t$ is the recorded value of the $t$th observation of the continuous explanatory variable  
++ $x^2_t$ is the square of $x_t$  
++ $\beta_0$, $\beta_1$, and $\beta_2$ are parameters (intercepts and slope coefficients) of the linear model  
+
+If you are new to generalized linear models you should take note of the absence of epsilon in the linear predictor.
+
+It's important to note that by exponentiating both sides of the above equation we can calculate the mean on the original scale instead of the log scale.
+
+$$\lambda_t = exp(\beta_0 + \beta_1*x_t + \beta_2*x^2_t)$$
+
+# Code to simulate the quadratic generalized linear model
+
+The first thing I will do is define my true parameter values.  I'm simulating a relationship between x and y that is similar to what the student's results so I'll set the intercept and the linear coefficient ($\beta_0$ and $\beta_1$, respectively) both to 0.5 and the quadratic coefficient ($\beta_2$) to 5.   
+
+```{r}
+b0 = .5
+b1 = .5
+b2 = 5
+```
+
+Then I need a simulated explantory variable that I'll call `x`.  I decided to make this a continuous variable between 0 and 1 so I made random draws from a uniform distribution with a minimum of 0 and a maximum of 1 via `runif()`.  I arbitrarily to use 100 observsations for this simulation.
+
+I'll set my seed prior to generating random numbers so you'll see the same result if you run this code.
+
+```{r}
+set.seed(16)
+x = runif(100, min = 0, max = 1)
+head(x)
+```
+
+Once I have my parameters set and an explanatory variable I can calculate $\lambda_t$ based on the linear model.  I use the equation in the statistical model to figure out how to write the code.  Because I want to calculate the means I use the equation after exponentiating both sides as I pointed out above.
+
+So I'll simulate $\lambda_t$ via
+
+$$\lambda_t = exp(0.5 + 0.5*x_t + 5*x^2_t)$$
+```{r}
+lambda = exp(b0 + b1*x + b2*x^2)
+```
+
+The step above simulates the *mean* of the distribution, not the response variable.  These values are continuous, not discrete.
+
+```{r}
+head(lambda)
+```
+
+Now that I have a vector of means I can use it to generate counts from the Poisson distribution for each value of `lambda`.  I do this via `rpois()` with the vector of means.  Each count is drawn from a Poisson distribution with the mean defined from `lambda`. 
+
+The next bit of code is based on the distribution we defined in the statistical model.  
+
+Remember that we defined `y` as: 
+
+$$y_t \thicksim Poisson(\lambda_t)$$
+I've seen this called "adding Poisson noise" to the mean to create the response variable.
+
+We'll simulate 100 counts to match the 100 means that we have in `lambda`.
+
+```{r}
+y = rpois(100, lambda = lambda) 
+```
+
+Unlike `lambda`, the `y` variable is a discrete count.
+
+```{r}
+head(y)
+```
+
+Now we have simulated our response and our explanatory variable and so can take a look at what the relationship between `x` and `y`, which was the goal of all of this.    
+
+Here is what things look like on the log scale (the scale of the model).  I was interested to see that, while the relationship was curved up as expected by the quadratic coefficient I set, the curve was really quite shallow.
+ 
+```{r}
+plot(x, log(y) )
+```
+
+So how do things look on the original scale?  The curve is now quite extreme, much more than I realized it would be.  
+
+This was good to see, though, as it matched pretty well with an added variable plot the student had made.  He had been concerned that he had made his plot incorrectly and this helped reassure him that this sort of thing wasn't unusual when working with quadratic relationships on the log scale.
+
+```{r}
+plot(x, y)
+```
+
