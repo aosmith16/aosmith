@@ -69,7 +69,7 @@ head(x) # First six values of x</code></pre>
 <p>Now that I have a vector of means I can use it to generate a count for each value of <code>lambda</code> based on the Poisson distribution. I do this via <code>rpois()</code>.</p>
 <p>The next bit of code is based on the distribution defined in the statistical model. Remember that we defined <code>y</code> as:</p>
 <p><span class="math display">\[y_t \thicksim Poisson(\lambda_t)\]</span>
-I’ve seen this called “adding Poisson noise” to the mean to create the response variable.</p>
+It is this step where we add “Poisson errors” to the mean to generate the response variable. For a fixed x variable, the variation for each simulated <code>y</code> value around the mean is based on the Poisson variance. For linear model simulations we usually add variability to the mean by simulating the errors directly from a normal distribution with a mean of 0. Since the variance is based on the mean in the Poisson distribution, adding the variability isn’t so obvious. I’ve seen this referred to as adding “Poisson noise”, but “Poisson errors” may be a better term.</p>
 <p>I randomly draw 100 counts, one for each of the 100 means stored in <code>lambda</code>.</p>
 <pre class="r"><code>y = rpois(100, lambda = lambda) </code></pre>
 <p>Unlike <code>lambda</code>, the <code>y</code> variable is a discrete count. This is the response variable that will be used in analysis.</p>

@@ -97,7 +97,7 @@ Now that I have a vector of means I can use it to generate a count for each valu
 The next bit of code is based on the distribution defined in the statistical model.  Remember that we defined `y` as: 
 
 $$y_t \thicksim Poisson(\lambda_t)$$
-I've seen this called "adding Poisson noise" to the mean to create the response variable.
+It is this step where we add "Poisson errors" to the mean to generate the response variable.  For a fixed x variable, the variation for each simulated `y` value around the mean is based on the Poisson variance.  For linear model simulations we usually add variability to the mean by simulating the errors directly from a normal distribution with a mean of 0.  Since the variance is based on the mean in the Poisson distribution, adding the variability isn't so obvious.  I've seen this referred to as adding "Poisson noise", but "Poisson errors" may be a better term.  
 
 I randomly draw 100 counts, one for each of the 100 means stored in `lambda`.
 
