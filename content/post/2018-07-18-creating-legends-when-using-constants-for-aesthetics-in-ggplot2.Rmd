@@ -1,5 +1,5 @@
 ---
-title: Creating legends when using constants for aesthetics in ggplot2
+title: Creating legends when mapping constants to aesthetics in ggplot2
 author: Ariel Muldoon
 date: '2018-07-18'
 slug: legends-constants-for-aesthetics-in-ggplot2
@@ -8,22 +8,22 @@ categories:
 tags:
   - ggplot2
 draft: TRUE
-description: "Getting a legend when aesthetics are constant in a layer can be confusing.  I go through an example to show a situation where this might occur, the common mistakes, and the way to get the desired legend."
+description: 'Getting a legend in ggplot2 when the aesthetic is a constant in multiple layers can be confusing.  I go through an example to show a situation where this issuce could come up, how to get a legend in such a case, and then how to "prettify" that legend.'
 ---
 
-The general way that plotting in **ggplot2** works it that if you want to map an aesthetic to a variable and get a legend you do it inside `aes()`.  If you want to set an aesthetic to a constant,like changing the color of all points, you do it outside `aes()`.  
+In general in **ggplot2**, if you want to map an aesthetic to a variable and get a legend you do it inside `aes()`.  If you want to set an aesthetic to a constant, like changing the color of all points, you do it outside `aes()`.
 
-However, there are situations where you are going to set an aesthetic for a layer to a constant but you also want a legend.  Sometimes the "simplest" answer might be to get your dataset into a long format to better work with **ggplot2**.  I've been seeing this a lot on Stack Overflow this summer and though it worth a mini-post.
+However, there are situations where you might want to set an aesthetic for a layer to a constant but you also want a legend for that aesthetic.  One common alternative is to put your dataset into a long format to take advantage of the strengths of **ggplot2**, but that doesn't always work or can be a complicated task if your plot is complicated.  I'll show another approach here.
 
 # The setup
 
-A couple common situations where we might want legends without mapping an aesthetic to a variable are
-1. Adding the mean as a line or symbol and wanting a legend to define it
-2. Adding results from different fitted models
+A couple common situations where we might want legends without mapping an aesthetic to a variable are  
+1. Adding the mean as a line or symbol and wanting a legend to define it  
+2. Adding lines based on different fitted models
 
-I'll focus on the latter.  I'm going to be using the ubiquitous `mtcars` dataset because it's easy. `r emo::ji("laughing")`
+I'll focus on the latter.  I'm going to be using the ubiquitous `mtcars` dataset because, well, it's easy. `r emo::ji("laughing")`
 
-# Making a plot using constant aesthetics
+# Making a plot with aesthetics as constant
 
 I'll start by loading the **ggplot2** package.
 
@@ -31,11 +31,111 @@ I'll start by loading the **ggplot2** package.
 library(ggplot2) # v. 3.0.0
 ```
 
+I'm going to make a plot of the relationship between `mpg` and `hp`, adding three fitted lines from three different linear models.  I will use a linear, a quadratic and a cubic model.  I use `geom_smooth()` to make the fitted regression lines, and add a separate `geom_smooth()` layer for each model.
+
+You'll see I set a different `color` per fitted line (but I could have used `linetype`). Since I'm setting these colors as constants they are outside `aes()`.
+
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, color = "black") +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "red") +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, color = "blue")
+```
+
+It would be nice to know which line came from which model, and adding a legend is one way to do that.  The most common approach I see when folks first hit this problem is to try adding the appropriate `scale_*()` function to the plot above in hopes of getting a legend.  
+
+Along those lines I'll add `scale_color_manual()` to my plot.
+
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, color = "black") +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "red") +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, color = "blue") +
+     scale_color_manual(values = c("black", "red", "blue") )
+```
+
+But nothing changes.  Unfortunately, no matter how hard I throw `scale_color_manual()` at the plot, I won't get a legend.  
+
+From the documentation, the manual scale functions *allow you to specify your own set of mappings from levels in the data to aesthetic values.*  You can *change* the mappings but not *constsruct* them.  In **ggplot2**, mapping are constructed by `aes()`.  Aesthetics therefore must be inside `aes()` to get a legend.
+
 # Adding a legend by moving aesthetics into aes()
 
-# Using scale_color_identity()
+I'll put `color` inside of `aes()` within each layer to construct color mappings.  This adds a legend to the plot.
 
-# Using scale_color_manual()
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, aes(color = "black") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "red") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "blue") )
+```
 
+A legend is now present, but the colors have changed.  The values are no longer recognized as colors since `aes()` but treats these as string constants.  To get the colors we want we have to turn to one of the `scale_color_*()` functions.
 
-See what I would consider some of the canonical questions and answers on this from Stack Overflow [here](https://stackoverflow.com/questions/10349206/add-legend-to-ggplot2-line-plot)and [here](https://stackoverflow.com/questions/17148679/construct-a-manual-legend-for-a-complicated-plot).  (I'm sure there are others, but these are two that I've been linking to as duplicates recently. `r emo::ji("smiley_cat")`) 
+# Using scale_color_identity() to recognize color strings
+
+One way to force `ggplot` to recognize the strings as colors when they are inside `aes()` is to use `scale_color_identity()`.  To get a legend with an identity scale you use `guide = "legend"`.  (The current default is to not show a legend for identity scales.)
+
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, aes(color = "black") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "red") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "blue") ) +
+     scale_color_identity(guide = "legend")
+```
+
+The colors are correct but the legend still leaves a lot to be desired.  The name of the legend isn't useful, the order is alphabetical instead of by model complexity, and the labels are the colors instead of descriptive names that describe each model.
+
+The legend name can be changed via `name`, the order can be changes via `breaks` and the names can be changed via `labels` in `scale_color_identity()`.  The order of the `labels` must be in the same order as the `breaks`.
+
+Now the `scale_color_identity()` has gotten pretty complicated.  I've found this to be pretty standard when mapping aesthetics to string constants.
+
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, aes(color = "black") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "red") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "blue") ) +
+     scale_color_identity(name = "Model fit",
+                          breaks = c("black", "red", "blue"),
+                          labels = c("Linear", "Quadratic", "Cubic"),
+                          guide = "legend")
+```
+
+# Descriptive strings and scale_color_manual()
+
+An alternative (but not necessarily simpler `r emo::ji("smile")`) approach is to use more informative string names for the labels and then work with `scale_color_manual()` to get the legend cleaned up.  
+
+Here is the plot using descriptive names that describe each model with `color` instead of the color names.
+
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, aes(color = "Linear") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "Quadratic") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "Cubic") )
+```
+
+This has nicer labels, but other problems persist, similar to the above `scale_color_identity()` example.  The legend name isn't informative, the order is again alphabetical instead of by model complexity, and the colors need to be changed if we really want black, red, and blue lines.
+
+For the first two issues I will again use `name` and `breaks` to get things named and in the desired order.  
+
+Colors are set via the `values` argument in `scale_color_manual()`.  This should be a vector of color names.  This vector of colors needs to be either in the same order as the `breaks` or given as a named vector.  The latter is "safest" since it is invariant to changing the order of the legend so I'll show that here.
+
+```{r}
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = "lm", se = FALSE, aes(color = "Linear") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "Quadratic") ) +
+     geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "Cubic") ) +
+     scale_color_manual(name = "Model fit",
+                        breaks = c("Linear", "Quadratic", "Cubic"),
+                        values = c("Cubic" = "blue", "Quadratic" = "red", "Linear" = "black") )
+```
+
+# Other examples
+
+You can see what I would consider some of the canonical questions and answers on this from Stack Overflow [here](https://stackoverflow.com/questions/10349206/add-legend-to-ggplot2-line-plot)and [here](https://stackoverflow.com/questions/17148679/construct-a-manual-legend-for-a-complicated-plot).  (I'm sure there are others, but these are two that I've been linking to as duplicates recently. `r emo::ji("smiley_cat")`) 
