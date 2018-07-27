@@ -27,7 +27,7 @@ Simulation to the rescue!  I decided to simulate some data to see what a relatio
 
 # The statistical model
 
-Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#code-to-simulate-the-quadratic-generalized-linear-model)
+Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#simulate-code)
 
 The statistical model for generalized linear model looks pretty different than the statistical model of the very special case when we assume normality.  Since so many of us (like me!) learned that special case first, this different approach takes some getting used to.  
 
