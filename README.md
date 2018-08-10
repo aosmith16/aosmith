@@ -1,2 +1,2 @@
 # aosmith
-Blog for Ariel Muldoon, writing at "Very statisticious"
+Blogging website for Ariel Muldoon, writing at "Very statisticious": aosmith.rbind.io
