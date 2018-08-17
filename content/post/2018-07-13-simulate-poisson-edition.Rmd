@@ -29,7 +29,7 @@ I wasn't sure.  Logically I would say that if something that is a straight line 
 
 Simulation to the rescue!  I decided to simulate some data to see what a relationship like the one the student had estimated could look like on the original scale.     
 
-# The statistical model
+# [The statistical model](#the-statistical-model)
 
 Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#simulate-code)
 
