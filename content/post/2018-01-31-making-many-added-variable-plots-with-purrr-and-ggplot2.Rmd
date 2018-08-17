@@ -13,6 +13,10 @@ draft: FALSE
 description: "In this post I show one approach for making added variable plots from a model with many continuous explanatory variables.  Since this is done for every variable in the model, I show how to automate the process via functions from package purrr." 
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 Last week two of my consulting meetings ended up on the same topic:  making added variable plots.
 
 In both cases, the student had a linear model of some flavor that had several continuous explanatory variables.  They wanted to plot the estimated relationship between each variable in the model and the response.  This could easily lead to a lot of copying and pasting of code, since they want to do the same thing for every explanatory variable in the model.  I worked up some example code showing an approach on how one might automate the task in R with functions and loops, and thought I'd generalize it for a blog post.

@@ -9,6 +9,10 @@ draft: FALSE
 description: "Where I discuss simulations, why I love them, and get started on a simulation series with a simple two-group linear model simulation."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 Confession:  I love simulations.  
 
 In simulations you get to define everything about a model and then see how that model behaves over the long run.  It's like getting the luxury of taking many samples instead of only the one real one we have resources for in an actual study.  

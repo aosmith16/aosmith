@@ -41,24 +41,24 @@ library(dplyr) # v. 0.7.5</code></pre>
 )</code></pre>
 <p>Here’s the top 15 rows of this dataset.</p>
 <pre class="r"><code>head(dat, 15)</code></pre>
-<pre><code>## # A tibble: 15 x 4
-##     unit     x     y  time
-##    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;
-##  1     1  5.22  7.25     1
-##  2     1  9.14 11.3      2
-##  3     1  5.22  7.10     3
-##  4     1  9.95 10.8      4
-##  5     1  5.45  5.27     5
-##  6     1  9.09  8.06     6
-##  7     1  9.69  9.73     7
-##  8     1  8.10  8.35     8
-##  9     1  7.53  9.49     9
-## 10     1  7.93  9.65    10
-## 11     2  9.98 12.6      1
-## 12     2  6.46  8.23     2
-## 13     2  8.67  9.04     3
-## 14     2  6.36  7.58     4
-## 15     2  8.62  9.66     5</code></pre>
+<pre><code># # A tibble: 15 x 4
+#     unit     x     y  time
+#    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;
+#  1     1  5.22  7.25     1
+#  2     1  9.14 11.3      2
+#  3     1  5.22  7.10     3
+#  4     1  9.95 10.8      4
+#  5     1  5.45  5.27     5
+#  6     1  9.09  8.06     6
+#  7     1  9.69  9.73     7
+#  8     1  8.10  8.35     8
+#  9     1  7.53  9.49     9
+# 10     1  7.93  9.65    10
+# 11     2  9.98 12.6      1
+# 12     2  6.46  8.23     2
+# 13     2  8.67  9.04     3
+# 14     2  6.36  7.58     4
+# 15     2  8.62  9.66     5</code></pre>
 <p>The dataset I made has 9 sample units, all with the full time series of length 10. I want to have three units with samples taken only every fourth sampling time and three with samples on only the first and last sampling time. The last three units will have samples at every time.</p>
 <p>I use <code>filter()</code> twice to remove rows from some of the sample units.</p>
 <pre class="r"><code>dat = dat %&gt;%
@@ -66,24 +66,24 @@ library(dplyr) # v. 0.7.5</code></pre>
      filter(!unit %in% 4:6 | time %in% c(1, 10) )</code></pre>
 <p>Now you can see the time series is no longer even in every sample unit.</p>
 <pre class="r"><code>head(dat, 15)</code></pre>
-<pre><code>## # A tibble: 15 x 4
-##     unit     x     y  time
-##    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;
-##  1     1  5.22  7.25     1
-##  2     1  9.95 10.8      4
-##  3     1  9.69  9.73     7
-##  4     1  7.93  9.65    10
-##  5     2  9.98 12.6      1
-##  6     2  6.36  7.58     4
-##  7     2  6.51  7.91     7
-##  8     2  6.79  7.34    10
-##  9     3  6.71  8.52     1
-## 10     3  8.64 10.1      4
-## 11     3  9.00  7.74     7
-## 12     3  9.49  9.91    10
-## 13     4  5.20  3.25     1
-## 14     4  9.52 11.3     10
-## 15     5  9.26 10.8      1</code></pre>
+<pre><code># # A tibble: 15 x 4
+#     unit     x     y  time
+#    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;
+#  1     1  5.22  7.25     1
+#  2     1  9.95 10.8      4
+#  3     1  9.69  9.73     7
+#  4     1  7.93  9.65    10
+#  5     2  9.98 12.6      1
+#  6     2  6.36  7.58     4
+#  7     2  6.51  7.91     7
+#  8     2  6.79  7.34    10
+#  9     3  6.71  8.52     1
+# 10     3  8.64 10.1      4
+# 11     3  9.00  7.74     7
+# 12     3  9.49  9.91    10
+# 13     4  5.20  3.25     1
+# 14     4  9.52 11.3     10
+# 15     5  9.26 10.8      1</code></pre>
 </div>
 <div id="fit-model-and-extract-residuals" class="section level1">
 <h1>Fit model and extract residuals</h1>
@@ -106,28 +106,28 @@ library(dplyr) # v. 0.7.5</code></pre>
 <p>Since the units are considered to be independent of each other, the maximum lag to check for autocorrelation should be based on the maximum number of observations in a group. Below is one way to check on group size. Because I simulated these data I already know that the longest time series has 10 observations, but when working with real data this sort of check would be standard.</p>
 <pre class="r"><code>dat %&gt;%
     count(unit)</code></pre>
-<pre><code>## # A tibble: 9 x 2
-##    unit     n
-##   &lt;int&gt; &lt;int&gt;
-## 1     1     4
-## 2     2     4
-## 3     3     4
-## 4     4     2
-## 5     5     2
-## 6     6     2
-## 7     7    10
-## 8     8    10
-## 9     9    10</code></pre>
+<pre><code># # A tibble: 9 x 2
+#    unit     n
+#   &lt;int&gt; &lt;int&gt;
+# 1     1     4
+# 2     2     4
+# 3     3     4
+# 4     4     2
+# 5     5     2
+# 6     6     2
+# 7     7    10
+# 8     8    10
+# 9     9    10</code></pre>
 <p>Printing out the result wouldn’t be useful for a large number of groups, so here’s an alternative to look at just the maximum group size.</p>
 <pre class="r"><code>dat %&gt;%
     count(unit) %&gt;%
     filter(n == max(n) )</code></pre>
-<pre><code>## # A tibble: 3 x 2
-##    unit     n
-##   &lt;int&gt; &lt;int&gt;
-## 1     7    10
-## 2     8    10
-## 3     9    10</code></pre>
+<pre><code># # A tibble: 3 x 2
+#    unit     n
+#   &lt;int&gt; &lt;int&gt;
+# 1     7    10
+# 2     8    10
+# 3     9    10</code></pre>
 </div>
 <div id="order-the-dataset-by-time" class="section level1">
 <h1>Order the dataset by time</h1>
@@ -147,30 +147,30 @@ library(dplyr) # v. 0.7.5</code></pre>
     complete(time = 1:20) </code></pre>
 <p>Here is an example of what the first group looks like in the newly expanded dataset. It has rows added for the times that weren’t sampled along with 10 rows of <code>NA</code> at the end.</p>
 <pre class="r"><code>filter(dat_expand, unit == 1)</code></pre>
-<pre><code>## # A tibble: 20 x 5
-## # Groups:   unit [1]
-##     unit  time     x     y     res
-##    &lt;int&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
-##  1     1     1  5.22  7.25   0.889
-##  2     1     2 NA    NA     NA    
-##  3     1     3 NA    NA     NA    
-##  4     1     4  9.95 10.8  - 0.746
-##  5     1     5 NA    NA     NA    
-##  6     1     6 NA    NA     NA    
-##  7     1     7  9.69  9.73 - 1.57 
-##  8     1     8 NA    NA     NA    
-##  9     1     9 NA    NA     NA    
-## 10     1    10  7.93  9.65   0.290
-## 11     1    11 NA    NA     NA    
-## 12     1    12 NA    NA     NA    
-## 13     1    13 NA    NA     NA    
-## 14     1    14 NA    NA     NA    
-## 15     1    15 NA    NA     NA    
-## 16     1    16 NA    NA     NA    
-## 17     1    17 NA    NA     NA    
-## 18     1    18 NA    NA     NA    
-## 19     1    19 NA    NA     NA    
-## 20     1    20 NA    NA     NA</code></pre>
+<pre><code># # A tibble: 20 x 5
+# # Groups:   unit [1]
+#     unit  time     x     y     res
+#    &lt;int&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+#  1     1     1  5.22  7.25   0.889
+#  2     1     2 NA    NA     NA    
+#  3     1     3 NA    NA     NA    
+#  4     1     4  9.95 10.8   -0.746
+#  5     1     5 NA    NA     NA    
+#  6     1     6 NA    NA     NA    
+#  7     1     7  9.69  9.73  -1.57 
+#  8     1     8 NA    NA     NA    
+#  9     1     9 NA    NA     NA    
+# 10     1    10  7.93  9.65   0.290
+# 11     1    11 NA    NA     NA    
+# 12     1    12 NA    NA     NA    
+# 13     1    13 NA    NA     NA    
+# 14     1    14 NA    NA     NA    
+# 15     1    15 NA    NA     NA    
+# 16     1    16 NA    NA     NA    
+# 17     1    17 NA    NA     NA    
+# 18     1    18 NA    NA     NA    
+# 19     1    19 NA    NA     NA    
+# 20     1    20 NA    NA     NA</code></pre>
 </div>
 <div id="plot-autocorrelation-function-of-appropriately-spaced-residuals" class="section level1">
 <h1>Plot autocorrelation function of appropriately-spaced residuals</h1>
@@ -193,18 +193,18 @@ library(dplyr) # v. 0.7.5</code></pre>
        unnest(lag) %&gt;%
        group_by(lag) %&gt;%
        summarise(n = n() ) )</code></pre>
-<pre><code>## # A tibble: 9 x 2
-##     lag     n
-##   &lt;int&gt; &lt;int&gt;
-## 1     1    27
-## 2     2    24
-## 3     3    30
-## 4     4    18
-## 5     5    15
-## 6     6    18
-## 7     7     9
-## 8     8     6
-## 9     9     9</code></pre>
+<pre><code># # A tibble: 9 x 2
+#     lag     n
+#   &lt;int&gt; &lt;int&gt;
+# 1     1    27
+# 2     2    24
+# 3     3    30
+# 4     4    18
+# 5     5    15
+# 6     6    18
+# 7     7     9
+# 8     8     6
+# 9     9     9</code></pre>
 <p>Here’s the ACF plot with 95% CI added via <code>lines()</code>.</p>
 <pre class="r"><code>acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
 lines(1:9,-qnorm(1-.025)/sqrt(nall$n), lty = 2)

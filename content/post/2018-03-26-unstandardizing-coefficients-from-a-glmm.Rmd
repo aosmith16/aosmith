@@ -13,6 +13,10 @@ draft: FALSE
 description: "Unstandardizing coefficients in order to interpret them on the original scale can be needed when explanatory variables were standardized to help with model convergence when fitting generalized linear mixed models.  Here I show one approach to unstandardizing for a generalized linear mixed model fit with lme4." 
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 Winter term grades are in and I can once again scrape together some time to write blog posts! `r emo::ji("tada")` 
 
 The last post I did about making [added variable plots](https://aosmith.rbind.io/2018/01/31/added-variable-plots/) led me to think about other "get model results" topics, such as the one I'm talking about today: unstandardizing coefficients.  

@@ -24,7 +24,7 @@ description: "Unstandardizing coefficients in order to interpret them on the ori
 <h1>R packages</h1>
 <p>Model fitting will be done via <strong>lme4</strong>, which is where I’ve most often needed to do this. Data manipulation tools from <strong>dplyr</strong> will be useful for getting results tidied up. I’ll also use helper functions from <strong>purrr</strong> to loop through variables and <strong>broom</strong> for the tidy extraction of fixed-effects coefficients from the model.</p>
 <pre class="r"><code>library(lme4) # v. 1.1-15</code></pre>
-<pre><code>## Loading required package: Matrix</code></pre>
+<pre><code># Loading required package: Matrix</code></pre>
 <pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
 library(purrr) # 0.2.4
 library(broom) # 0.4.3</code></pre>
@@ -33,12 +33,12 @@ library(broom) # 0.4.3</code></pre>
 <h1>The dataset</h1>
 <p>The dataset I’ll use is named <code>cbpp</code>, and comes with <strong>lme4</strong>. It is a dataset that has a response variable that is counted proportions, so the data will be analyzed via a binomial generalized linear mixed model.</p>
 <pre class="r"><code>glimpse(cbpp)</code></pre>
-<pre><code>## Observations: 56
-## Variables: 4
-## $ herd      &lt;fct&gt; 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5...
-## $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
-## $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
-## $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...</code></pre>
+<pre><code># Observations: 56
+# Variables: 4
+# $ herd      &lt;fct&gt; 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5...
+# $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
+# $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
+# $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...</code></pre>
 <p>This dataset has no continuous explanatory variables in it, so I’ll add some to demonstrate standardizing/unstandardizing. I create three new variables with very different ranges.</p>
 <pre class="r"><code>set.seed(16)
 
@@ -47,15 +47,15 @@ cbpp = mutate(cbpp, y1 = rnorm(56, 500, 100),
               y3 = runif(56, 10000, 20000) )
 
 glimpse(cbpp)</code></pre>
-<pre><code>## Observations: 56
-## Variables: 7
-## $ herd      &lt;fct&gt; 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5...
-## $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
-## $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
-## $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...
-## $ y1        &lt;dbl&gt; 547.6413, 487.4620, 609.6216, 355.5771, 614.7829, 45...
-## $ y2        &lt;dbl&gt; 0.87758754, 0.33596115, 0.11495285, 0.26466003, 0.99...
-## $ y3        &lt;dbl&gt; 14481.07, 11367.88, 14405.16, 18497.73, 17955.66, 10...</code></pre>
+<pre><code># Observations: 56
+# Variables: 7
+# $ herd      &lt;fct&gt; 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5...
+# $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
+# $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
+# $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...
+# $ y1        &lt;dbl&gt; 547.6413, 487.4620, 609.6216, 355.5771, 614.7829, 45...
+# $ y2        &lt;dbl&gt; 0.87758754, 0.33596115, 0.11495285, 0.26466003, 0.99...
+# $ y3        &lt;dbl&gt; 14481.07, 11367.88, 14405.16, 18497.73, 17955.66, 10...</code></pre>
 </div>
 <div id="analysis" class="section level1">
 <h1>Analysis</h1>
@@ -64,14 +64,14 @@ glimpse(cbpp)</code></pre>
 <p>Here is my initial generalized linear mixed model, using the three continuous explanatory variables as fixed effects and “herd” as the random effect. A warning message indicates that standardizing might be necessary.</p>
 <pre class="r"><code>fit1 = glmer( cbind(incidence, size - incidence) ~ y1 + y2 + y3 + (1|herd),
               data = cbpp, family = binomial)</code></pre>
-<pre><code>## Warning: Some predictor variables are on very different scales: consider
-## rescaling</code></pre>
-<pre><code>## Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl = control
-## $checkConv, : Model failed to converge with max|grad| = 0.947357 (tol =
-## 0.001, component 1)</code></pre>
-<pre><code>## Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
-##  - Rescale variables?;Model is nearly unidentifiable: large eigenvalue ratio
-##  - Rescale variables?</code></pre>
+<pre><code># Warning: Some predictor variables are on very different scales: consider
+# rescaling</code></pre>
+<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
+# control$checkConv, : Model failed to converge with max|grad| = 0.947357
+# (tol = 0.001, component 1)</code></pre>
+<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#  - Rescale variables?;Model is nearly unidentifiable: large eigenvalue ratio
+#  - Rescale variables?</code></pre>
 </div>
 <div id="standardizing-the-variables" class="section level2">
 <h2>Standardizing the variables</h2>
@@ -80,18 +80,18 @@ glimpse(cbpp)</code></pre>
 <pre class="r"><code>cbpp = mutate_at(cbpp, vars( y1:y3 ), funs(s = as.numeric( scale(.) ) ) )
 
 glimpse(cbpp)</code></pre>
-<pre><code>## Observations: 56
-## Variables: 10
-## $ herd      &lt;fct&gt; 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5...
-## $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
-## $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
-## $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...
-## $ y1        &lt;dbl&gt; 547.6413, 487.4620, 609.6216, 355.5771, 614.7829, 45...
-## $ y2        &lt;dbl&gt; 0.87758754, 0.33596115, 0.11495285, 0.26466003, 0.99...
-## $ y3        &lt;dbl&gt; 14481.07, 11367.88, 14405.16, 18497.73, 17955.66, 10...
-## $ y1_s      &lt;dbl&gt; 0.34007250, -0.32531152, 1.02536895, -1.78352139, 1....
-## $ y2_s      &lt;dbl&gt; 1.4243017, -0.4105502, -1.1592536, -0.6520950, 1.837...
-## $ y3_s      &lt;dbl&gt; -0.2865770, -1.3443309, -0.3123665, 1.0781427, 0.893...</code></pre>
+<pre><code># Observations: 56
+# Variables: 10
+# $ herd      &lt;fct&gt; 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5...
+# $ incidence &lt;dbl&gt; 2, 3, 4, 0, 3, 1, 1, 8, 2, 0, 2, 2, 0, 2, 0, 5, 0, 0...
+# $ size      &lt;dbl&gt; 14, 12, 9, 5, 22, 18, 21, 22, 16, 16, 20, 10, 10, 9,...
+# $ period    &lt;fct&gt; 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3...
+# $ y1        &lt;dbl&gt; 547.6413, 487.4620, 609.6216, 355.5771, 614.7829, 45...
+# $ y2        &lt;dbl&gt; 0.87758754, 0.33596115, 0.11495285, 0.26466003, 0.99...
+# $ y3        &lt;dbl&gt; 14481.07, 11367.88, 14405.16, 18497.73, 17955.66, 10...
+# $ y1_s      &lt;dbl&gt; 0.34007250, -0.32531152, 1.02536895, -1.78352139, 1....
+# $ y2_s      &lt;dbl&gt; 1.4243017, -0.4105502, -1.1592536, -0.6520950, 1.837...
+# $ y3_s      &lt;dbl&gt; -0.2865770, -1.3443309, -0.3123665, 1.0781427, 0.893...</code></pre>
 </div>
 <div id="standardized-model" class="section level2">
 <h2>Standardized model</h2>
@@ -110,18 +110,18 @@ glimpse(cbpp)</code></pre>
 <pre class="r"><code>coef_st = tidy(fit2, effects = &quot;fixed&quot;,
      conf.int = TRUE,
      conf.method = &quot;profile&quot;)</code></pre>
-<pre><code>## Computing profile confidence intervals ...</code></pre>
+<pre><code># Computing profile confidence intervals ...</code></pre>
 <pre class="r"><code>coef_st</code></pre>
-<pre><code>##          term   estimate std.error  statistic      p.value     conf.low
-## 1 (Intercept) -2.0963512 0.2161353 -9.6992521 3.037166e-22 -2.565692724
-## 2        y1_s  0.2640116 0.1395533  1.8918334 5.851318e-02 -0.009309633
-## 3        y2_s  0.1031655 0.1294722  0.7968153 4.255583e-01 -0.151459144
-## 4        y3_s  0.1569910 0.1229460  1.2769107 2.016338e-01 -0.086291865
-##    conf.high
-## 1 -1.6536063
-## 2  0.5472589
-## 3  0.3635675
-## 4  0.4033177</code></pre>
+<pre><code>#          term   estimate std.error  statistic      p.value     conf.low
+# 1 (Intercept) -2.0963512 0.2161353 -9.6992521 3.037166e-22 -2.565692724
+# 2        y1_s  0.2640116 0.1395533  1.8918334 5.851318e-02 -0.009309633
+# 3        y2_s  0.1031655 0.1294722  0.7968153 4.255583e-01 -0.151459144
+# 4        y3_s  0.1569910 0.1229460  1.2769107 2.016338e-01 -0.086291865
+#    conf.high
+# 1 -1.6536063
+# 2  0.5472589
+# 3  0.3635675
+# 4  0.4033177</code></pre>
 </div>
 <div id="calculate-standard-deviations-for-each-variable" class="section level2">
 <h2>Calculate standard deviations for each variable</h2>
@@ -130,46 +130,46 @@ glimpse(cbpp)</code></pre>
 <p>The output from <code>map()</code> returns a list, which can be stacked into a long format data.frame via <code>utils::stack()</code>. This results in a two column data.frame, with a column for the standard deviation (called <code>values</code>) and a column with the variable names (called <code>ind</code>).</p>
 <pre class="r"><code>map( select(cbpp, y1:y3), sd) %&gt;% 
      stack()</code></pre>
-<pre><code>##         values ind
-## 1   90.4430192  y1
-## 2    0.2951881  y2
-## 3 2943.2098667  y3</code></pre>
+<pre><code>#         values ind
+# 1   90.4430192  y1
+# 2    0.2951881  y2
+# 3 2943.2098667  y3</code></pre>
 <p>The variables in my model and in my output end with <code>_s</code> , so I’ll need to add that suffix to the variable names in the “standard deviations” dataset prior to joining the two data.frames together.</p>
 <pre class="r"><code>sd_all = map( select(cbpp, y1:y3), sd) %&gt;% 
      stack() %&gt;%
      mutate(ind = paste(ind, &quot;s&quot;, sep = &quot;_&quot;) )
 
 sd_all</code></pre>
-<pre><code>##         values  ind
-## 1   90.4430192 y1_s
-## 2    0.2951881 y2_s
-## 3 2943.2098667 y3_s</code></pre>
+<pre><code>#         values  ind
+# 1   90.4430192 y1_s
+# 2    0.2951881 y2_s
+# 3 2943.2098667 y3_s</code></pre>
 </div>
 <div id="joining-the-standard-deviations-to-the-coefficients-table" class="section level2">
 <h2>Joining the standard deviations to the coefficients table</h2>
 <p>Once the names of the variables match between the datasets I can join the “standard deviations” data.frame to the “coefficients” data.frame. I’m not unstandardizing the intercept at this point, so I’ll use <code>inner_join()</code> to keep only rows that have a match in both data.frames. Notice that the columns I’m joining by have different names in the two data.frames.</p>
 <pre class="r"><code>coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) )</code></pre>
-<pre><code>##   term  estimate std.error statistic    p.value     conf.low conf.high
-## 1 y1_s 0.2640116 0.1395533 1.8918334 0.05851318 -0.009309633 0.5472589
-## 2 y2_s 0.1031655 0.1294722 0.7968153 0.42555829 -0.151459144 0.3635675
-## 3 y3_s 0.1569910 0.1229460 1.2769107 0.20163378 -0.086291865 0.4033177
-##         values
-## 1   90.4430192
-## 2    0.2951881
-## 3 2943.2098667</code></pre>
+<pre><code>#   term  estimate std.error statistic    p.value     conf.low conf.high
+# 1 y1_s 0.2640116 0.1395533 1.8918334 0.05851318 -0.009309633 0.5472589
+# 2 y2_s 0.1031655 0.1294722 0.7968153 0.42555829 -0.151459144 0.3635675
+# 3 y3_s 0.1569910 0.1229460 1.2769107 0.20163378 -0.086291865 0.4033177
+#         values
+# 1   90.4430192
+# 2    0.2951881
+# 3 2943.2098667</code></pre>
 <p>With everything in one data.frame I can easily divide <code>estimate</code>, <code>conf.low</code> and <code>conf.high</code> by the standard deviation in <code>values</code> via <code>mutate_at()</code>. I will round the results, as well, although I’m ignoring the vast differences in the variable range when I do this rounding.</p>
 <pre class="r"><code>coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
      mutate_at( vars(estimate, conf.low, conf.high), funs(round( ./values, 4) ) )</code></pre>
-<pre><code>##   term estimate std.error statistic    p.value conf.low conf.high
-## 1 y1_s   0.0029 0.1395533 1.8918334 0.05851318  -0.0001    0.0061
-## 2 y2_s   0.3495 0.1294722 0.7968153 0.42555829  -0.5131    1.2316
-## 3 y3_s   0.0001 0.1229460 1.2769107 0.20163378   0.0000    0.0001
-##         values
-## 1   90.4430192
-## 2    0.2951881
-## 3 2943.2098667</code></pre>
+<pre><code>#   term estimate std.error statistic    p.value conf.low conf.high
+# 1 y1_s   0.0029 0.1395533 1.8918334 0.05851318  -0.0001    0.0061
+# 2 y2_s   0.3495 0.1294722 0.7968153 0.42555829  -0.5131    1.2316
+# 3 y3_s   0.0001 0.1229460 1.2769107 0.20163378   0.0000    0.0001
+#         values
+# 1   90.4430192
+# 2    0.2951881
+# 3 2943.2098667</code></pre>
 <p>I’ll get rid of the extra variables via <code>select()</code>, so I end up with the unstandardized coefficients and confidence interval limits along with the variable name. I could also get the variable names cleaned up, possibly removing the suffix and/or capitalizing and adding units, etc., although I don’t do that with these fake variables today.</p>
 <pre class="r"><code>coef_unst = coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
@@ -177,33 +177,33 @@ sd_all</code></pre>
      select(-(std.error:p.value), -values)
 
 coef_unst</code></pre>
-<pre><code>##   term estimate conf.low conf.high
-## 1 y1_s   0.0029  -0.0001    0.0061
-## 2 y2_s   0.3495  -0.5131    1.2316
-## 3 y3_s   0.0001   0.0000    0.0001</code></pre>
+<pre><code>#   term estimate conf.low conf.high
+# 1 y1_s   0.0029  -0.0001    0.0061
+# 2 y2_s   0.3495  -0.5131    1.2316
+# 3 y3_s   0.0001   0.0000    0.0001</code></pre>
 </div>
 <div id="estimates-from-the-unstandardized-model" class="section level2">
 <h2>Estimates from the unstandardized model</h2>
 <p>Note that the estimated coefficients are the same from the model where I manually unstandardize the coefficients (above) and the model fit using unstandardized variables.</p>
 <pre class="r"><code>round( fixef(fit1)[2:4], 4)</code></pre>
-<pre><code>##     y1     y2     y3 
-## 0.0029 0.3495 0.0001</code></pre>
+<pre><code>#     y1     y2     y3 
+# 0.0029 0.3495 0.0001</code></pre>
 <p>Given that the estimates are the same, couldn’t we simply go back and fit the unstandardized model and ignored the warning message? Unfortunately, the convergence issues can cause problems when trying to calculate profile likelihood confidence intervals, so the simpler approach doesn’t always work.</p>
 <p>In this case there are a bunch of warnings (not shown), and the profile likelihood confidence interval limits aren’t successfully calculated for some of the coefficients.</p>
 <pre class="r"><code>tidy(fit1, effects = &quot;fixed&quot;,
      conf.int = TRUE,
      conf.method = &quot;profile&quot;)</code></pre>
-<pre><code>## Computing profile confidence intervals ...</code></pre>
-<pre><code>##          term      estimate    std.error  statistic      p.value
-## 1 (Intercept) -4.582545e+00 1.094857e+00 -4.1855190 2.845153e-05
-## 2          y1  2.919191e-03 1.520407e-03  1.9200071 5.485700e-02
-## 3          y2  3.495238e-01 4.370778e-01  0.7996834 4.238943e-01
-## 4          y3  5.334512e-05 4.049206e-05  1.3174218 1.876973e-01
-##        conf.low    conf.high
-## 1            NA           NA
-## 2            NA           NA
-## 3            NA           NA
-## 4 -2.931883e-05 0.0001370332</code></pre>
+<pre><code># Computing profile confidence intervals ...</code></pre>
+<pre><code>#          term      estimate    std.error  statistic      p.value
+# 1 (Intercept) -4.582545e+00 1.094857e+00 -4.1855190 2.845153e-05
+# 2          y1  2.919191e-03 1.520407e-03  1.9200071 5.485700e-02
+# 3          y2  3.495238e-01 4.370778e-01  0.7996834 4.238943e-01
+# 4          y3  5.334512e-05 4.049206e-05  1.3174218 1.876973e-01
+#        conf.low    conf.high
+# 1            NA           NA
+# 2            NA           NA
+# 3            NA           NA
+# 4 -2.931883e-05 0.0001370332</code></pre>
 </div>
 </div>
 <div id="further-important-work" class="section level1">

@@ -53,8 +53,8 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
      scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
                             name = element_blank(),
                             labels = c(&quot;Container&quot;, &quot;Bare root&quot;) )</code></pre>
-<pre><code>## Scale for &#39;linetype&#39; is already present. Adding another scale for
-## &#39;linetype&#39;, which will replace the existing scale.</code></pre>
+<pre><code># Scale for &#39;linetype&#39; is already present. Adding another scale for
+# &#39;linetype&#39;, which will replace the existing scale.</code></pre>
 <p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Back to the drawing board (and some time online), it turns out the answer is to reverse the legend within <strong>ggplot2</strong>. There is a “reverse” argument in the guide_legend() function. This function can be used either inside a scale_*() function with the “guides” argument or within guides().</p>
 <p>In this particular case, the scale_linetype_manual() line can be changed to incorporate guide_legend().</p>

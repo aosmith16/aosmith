@@ -12,6 +12,10 @@ tags:
 description: "I talk about why I'm seeing more students who have many datasets to read in and combine and then go through an example to show one way to approach the problem."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 At least once a year I meet with a graduate student who has many separate datasets that need to be combined into a single file.  The data are usually from a series of data loggers (e.g., iButtons or RFID readers) that record data remotely over a specified time period. The researcher periodically downloads the data from each data logger and then redeploys it for further data collection.  
 
 I'm going to set up the background for my particular use case before jumping into the R code to perform this sort of task.  **Go straight to "List all files to read in" if you want to get right into R code.**

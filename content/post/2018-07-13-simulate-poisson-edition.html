@@ -58,14 +58,14 @@ b2 = 5</code></pre>
 <pre class="r"><code>set.seed(16)
 x = runif(100, min = 0, max = 1)
 head(x) # First six values of x</code></pre>
-<pre><code>## [1] 0.6831101 0.2441174 0.4501114 0.2294351 0.8635079 0.3112003</code></pre>
+<pre><code># [1] 0.6831101 0.2441174 0.4501114 0.2294351 0.8635079 0.3112003</code></pre>
 <p>Once I have my parameters set and an explanatory variable created I can calculate <span class="math inline">\(\lambda_t\)</span>. This is where I find the statistical model to be really handy, as it directly shows me how to write the code. Because I want to calculate the means on the original scale and not the log of the means I use the model equation after exponentiating both sides.</p>
 <p>I’ll simulate the 100 means via</p>
 <p><span class="math display">\[\lambda_t = exp(0.5 + 0.5*x_t + 5*x^2_t)\]</span></p>
 <pre class="r"><code>lambda = exp(b0 + b1*x + b2*x^2)</code></pre>
 <p>The step above simulates the <em>mean</em> of each value of the response variable. These values are continuous, not discrete counts.</p>
 <pre class="r"><code>head(lambda)</code></pre>
-<pre><code>## [1]  23.920881   2.509354   5.686283   2.405890 105.634346   3.126231</code></pre>
+<pre><code># [1]  23.920881   2.509354   5.686283   2.405890 105.634346   3.126231</code></pre>
 <p>Now that I have a vector of means I can use it to generate a count for each value of <code>lambda</code> based on the Poisson distribution. I do this via <code>rpois()</code>.</p>
 <p>The next bit of code is based on the distribution defined in the statistical model. Remember that we defined <code>y</code> as:</p>
 <p><span class="math display">\[y_t \thicksim Poisson(\lambda_t)\]</span>
@@ -74,7 +74,7 @@ It is this step where we add “Poisson errors” to the mean to generate the re
 <pre class="r"><code>y = rpois(100, lambda = lambda) </code></pre>
 <p>Unlike <code>lambda</code>, the <code>y</code> variable is a discrete count. This is the response variable that will be used in analysis.</p>
 <pre class="r"><code>head(y)</code></pre>
-<pre><code>## [1]  25   4   5   4 114   2</code></pre>
+<pre><code># [1]  25   4   5   4 114   2</code></pre>
 </div>
 <div id="results" class="section level1">
 <h1>Results!</h1>

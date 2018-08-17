@@ -11,6 +11,10 @@ draft: FALSE
 description: "A quick example of reversing the legend order in a ggplot2 plot, which is done via guide_legend() instead of by changing the order of the levels in the dataset."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 It's always nice to get good questions in a workshop. It can help everybody, including the instructor, get a bit of extra learnin' in.
 
 Every spring I give a **ggplot2** workshop for graduate students in my college.  The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() `r emo::ji("dart")` ). 

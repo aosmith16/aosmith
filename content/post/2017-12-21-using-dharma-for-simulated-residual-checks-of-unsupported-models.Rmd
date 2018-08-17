@@ -8,6 +8,10 @@ tags: [glmm, dharma, simulation]
 description: "Checking for model fit from generalized linear mixed models (GLMM) can be challenging.  The DHARMa package helps with this by giving simulated residuals but doesn't work with all model types.  I show how to use tools in DHARMa to extend it for use with unsupported models fit with glmmTMB() and zeroinfl()."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 # Why use simulations for model checking?
 
 One of the difficult things about working with generalized linear models (GLM) and generalized linear mixed models (GLMM) is figuring out how to interpret residual plots.  We don't really expect residual plots from a GLMM to look like one from a linear model, sure, but how do we tell when something looks "bad"?

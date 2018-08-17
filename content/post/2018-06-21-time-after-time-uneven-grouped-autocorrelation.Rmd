@@ -13,6 +13,10 @@ draft: FALSE
 description: "Checking for autocorrelation must be done carefully when some observations are missing from a time series or the time series is measured for independent groups.  I show an approach where I pad the dataset with NA via tidyr::complete() to fill in any missed sampling times and make sure groups are considered independent prior to calculating the autocorrelation function."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 I first learned how to check for autocorrelation via autocorrelation function (ACF) plots in R in a class on time series  However, the examples we worked on were all single, long term time series with no missing values and no groups.  I figured out later that calculating the ACF when the sampling through time is uneven or there are distinct time series for independent sample units takes a bit more thought.  It's easy to mistakenly ignore such structure, which then makes it difficult to determine what sort and how much autocorrelation may be present. 
 
 I first ran into this problem myself when I was analyzing data from a [rotating panel study design](http://methods.sagepub.com/reference/encyclopedia-of-survey-research-methods/n500.xml).  In the data I was working with, some units were sampled every year, some sampled every 3rd year, some every 9th year, etc.  So sampling was annual, but not all sample units had observations from every year.  In addition, the sample units were considered independent replicates of each time series, so any autocorrelation of concern would be *within* sample unit autocorrelation. 

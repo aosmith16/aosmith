@@ -12,6 +12,10 @@ draft: FALSE
 description: "In this post I delve into the details of the R functions I've been using in my simulation examples, focusing on the replicate() function and the map family of functions from the purrr package.  I spend a little time showing the parallels between the replicate() function and a for() loop."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 I've done a couple of posts so far on simulations, [here](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) and [here](https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/), where I demonstrate how to build a function for simulating data from a defined linear model and then explore long-run behavior of models fit to the simulated datasets.  The focus of those posts was on the general simulation process, and I didn't go into much detail on the specific R code.  In this post I'll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function `replicate()` and the *map* family of functions from package **purrr**.
 
 # The replicate() function

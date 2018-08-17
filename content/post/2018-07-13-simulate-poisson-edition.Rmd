@@ -13,6 +13,10 @@ draft: FALSE
 description: "Extending my simulation examples into the world of generalized linear models, I simulate Poisson data to explore what a quadratic relationship looks like on the scale of the data when fitting a generalized linear model with a log link."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 One of the things I like about simulations is that, with practice, they can be a quick way to check your intuition about a model or relationship.  
 
 My most recent example is based on a discussion with a student about quadratic effects.

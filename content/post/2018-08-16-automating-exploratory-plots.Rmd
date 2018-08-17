@@ -122,7 +122,7 @@ The work above works well for only a few response variables.  But it still invol
 
 It is possible to loop through both vectors of variables.  Because we want a plot for each combination of variables, this is a job for a *nested* loop.  This means I will do one `map()` loop inside another.
 
-The code gets more complicated.  If using the formula coding like I did above, I found it takes more work to understand how to refer to the variable in the outer loop within the inner loop.  [The answers to this question on Stack Overflow](https://stackoverflow.com/questions/48847613/purrr-map-equivalent-of-nested-for-loop) were useful for this (including some of the comments to answers).  One approach is to avoid the formula coding all together and use anonymous functions for either or both inner and outer loops.
+The code gets more complicated.  If using the formula coding like I did above, I found it takes more work to understand how to refer to the variable in the outer loop within the inner loop.  The answers to [this question](https://stackoverflow.com/questions/48847613/purrr-map-equivalent-of-nested-for-loop) on Stack Overflow were useful for this (including some of the comments to answers).  One approach is to avoid the formula coding all together and use anonymous functions for either or both inner and outer loops.
 
 I loop first through the response variables and make graphs with all of the explanatory variables for each one with the nested inner loop.  This puts the output, a nested list, in a convenient order.
 
@@ -133,15 +133,21 @@ all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x))
 ```
 
-The output is a list of lists.  Each sublist is all the plots for a single response variable (remember, I planned things this way).  Because I set the names, both the inner and outer lists have names.  For example, if I want to see all the plots for the `grad` response variable I can look at only those.
+The output is a list of lists.  Each sublist is all the plots for a single response variable (remember, I planned things this way).  Because I set the names on the two vectors, both the inner and outer lists have names.  
 
-```{r, message = FALSE, fig.height = 4, fig.width = 6}
+For example, if I want to see all the plots for the `grad` response variable I can print that sublist by name.  (I'm going to show only two of four `grad` plots here to save space.)
+
+```{r, eval = FALSE}
 all_plots$grad
+```
+
+```{r, echo = FALSE, message = FALSE, message = FALSE, fig.height = 4, fig.width = 6}
+all_plots$grad[1:2]
 ```
 
 If I want to see a single plot, I can also use the names to extract it.
 
-```{r}
+```{r, message = FALSE}
 all_plots$grad$long
 ```
 
@@ -151,29 +157,77 @@ I find the names convenien, but I can always extract via position, as well.  Her
 all_plots[[3]][[3]]
 ```
 
-# [Saving the plots](#saving-the-plots)
+## [Saving the plots](#saving-the-plots)
 
 Once you have all the graphs, you can print them to your console by running the list name to look at them.  But if you want to puruse them at your leisure or send them to a collaborator you'll want to save them.  This next section is dedicated to exploring some of the ways you can do this.
 
+## [Saving all plots to one PDF](#saving-all-plots-to-one-pdf)
+
+If you want to save every plot as a separate page in a PDF, you can do so with the `pdf()` function.  The code below shows that the plot must be initialized, then all plots put in it, and then the device turned off.  If you skip the last step you won't be able to open the output document.  
+
+This is a coarse way to save everything, but also allows you to easily page through all the plots and revisit as necessary.  I've found this useful when I had many exploratory plots that I wanted to share with collaborators.
+
+In this example code I save the file I name `all_scatterplots` into the working directory.
+
 ```{r, eval = FALSE}
-pdf()
+pdf("all_scatterplots.pdf")
 all_plots
 dev.off()
 ```
 
+## [Saving groups of plots together](#saving-groups-of-plots-together)
+
+Another option, for organization, is to save each group of plots to a separate list.  This may make sense in this case where there are separate response variables to think about.
+
+To save each sublist separately we need to loop through `all_plots` and save it into a separate file.  The list names can be used in the plot names.  
+
+The functions in **purrr** that start with `i` are special functions that loop through a list and the names of the list simultaneously, which is handy for a case like this where we have names to identify the plots.
+
+The `walk()` function is part of the `map` family of functions uses the function only for the side effect.  This is what we want for saving plots, since our goal is not to output a new list but simply save the one we have.
+
+Combining the `i` and the `walk` gives as the `iwalk()` function.  In the formula function interface, `.y` refers to the names of the list and `.x` to the list elements.  I create the plot file names using the list name combined with "scatterplots.pdf".
+
+```{r, eval = FALSE}
+iwalk(all_plots, ~{
+     pdf(paste(.y, "scatterplots.pdf", sep = "_") )
+     print(.x)
+     dev.off()
+})
+```
+
+## [Saving all plots separately](#saving-all-plots-separately)
+
+We'd need to use the names in both the outer and inner lists to appropriately identify each plot.  I decided to this by looping through `all_plots` and the names of the list via `imap()` to create names.  This time I'm going to save these as PNG files.
+
+The result will be a list of lists still, so I flatten the list into a single list via `flatten()`.  If I use `flatten()` earlier I lose the names in the outer list.  This process of combining names will be simplified once [the proposed `flatten_names()` function](https://github.com/tidyverse/purrr/issues/525) is added to **purrr**.
+
 ```{r}
 plotnames = imap(all_plots, ~paste0(.y, "_", names(.x), ".png")) %>%
      flatten()
+plotnames
 ```
+
+With the file names created I can loop through all the plots and the file names simultaneously and save things via `ggsave()`.  The height and width of each output file can be set.
+
+I flatten the nested list of plots to loop through it and the file names simultaneously in `walk2()` and save each plot in a separate file.
 
 ```{r, eval = FALSE}
-walk2(flatten(list2), plotnames, ~ggsave(filename = .y, plot = .x, 
+walk2(flatten(all_plots), plotnames, ~ggsave(filename = .y, plot = .x, 
                                          height = 7, width = 7))
-                    
-
-
-
-cowplot::plot_grid(plotlist = list2[[1]])
-map(list2, ~cowplot::plot_grid(plotlist = .x))
 ```
 
+## [Stitching plots together in groups](#stitching-plots-together-in-groups)
+
+Another way to get all the plots together, depending on how many you have per response variable, is to stitch them into one plot.  This is like faceting except we didn't reshape our dataset to use faceting.  I like **cowplot** for this, as a list of plots can be passed via the `plotlist` argument.
+
+Here's what that looks like for the first response variable, `elev`.
+
+```{r, message = FALSE}
+cowplot::plot_grid(plotlist = all_plots[[1]])
+```
+
+We can use a loop to do this for all the sublists, shown below, which could then be saved in any of the way shown above.
+
+```{r, message = FALSE}
+map(all_plots, ~cowplot::plot_grid(plotlist = .x))
+```

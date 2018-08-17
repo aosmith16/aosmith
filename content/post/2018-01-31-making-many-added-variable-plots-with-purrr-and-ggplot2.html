@@ -38,34 +38,34 @@ library(broom) # v. 0.4.3</code></pre>
 <p>The model I fit uses a log transformation for the response variable, so predictions and confidence interval limits will need to be back-transformed prior to plotting to show the relationship between the variables on the response on the original scale.</p>
 <pre class="r"><code>fit1 = lm( log(mpg) ~ disp + hp + drat + wt, data = mtcars)
 summary(fit1)</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = log(mpg) ~ disp + hp + drat + wt, data = mtcars)
-## 
-## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -0.16449 -0.08240 -0.03421  0.08048  0.26221 
-## 
-## Coefficients:
-##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  3.5959909  0.2746352  13.094 3.29e-13 ***
-## disp        -0.0001296  0.0004715  -0.275  0.78553    
-## hp          -0.0014709  0.0005061  -2.906  0.00722 ** 
-## drat         0.0445959  0.0575916   0.774  0.44545    
-## wt          -0.1719512  0.0470572  -3.654  0.00110 ** 
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## Residual standard error: 0.1136 on 27 degrees of freedom
-## Multiple R-squared:  0.8733, Adjusted R-squared:  0.8546 
-## F-statistic: 46.54 on 4 and 27 DF,  p-value: 9.832e-12</code></pre>
+<pre><code># 
+# Call:
+# lm(formula = log(mpg) ~ disp + hp + drat + wt, data = mtcars)
+# 
+# Residuals:
+#      Min       1Q   Median       3Q      Max 
+# -0.16449 -0.08240 -0.03421  0.08048  0.26221 
+# 
+# Coefficients:
+#               Estimate Std. Error t value Pr(&gt;|t|)    
+# (Intercept)  3.5959909  0.2746352  13.094 3.29e-13 ***
+# disp        -0.0001296  0.0004715  -0.275  0.78553    
+# hp          -0.0014709  0.0005061  -2.906  0.00722 ** 
+# drat         0.0445959  0.0575916   0.774  0.44545    
+# wt          -0.1719512  0.0470572  -3.654  0.00110 ** 
+# ---
+# Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+# 
+# Residual standard error: 0.1136 on 27 degrees of freedom
+# Multiple R-squared:  0.8733,  Adjusted R-squared:  0.8546 
+# F-statistic: 46.54 on 4 and 27 DF,  p-value: 9.832e-12</code></pre>
 </div>
 <div id="the-explanatory-variables" class="section level1">
 <h1>The explanatory variables</h1>
 <p>The approach I’m going to take is to loop through the explanatory variables in the model, create datasets for prediction, get the predictions, and make the plots. I’ll end with one added variable plot per variable.</p>
 <p>I could write out a vector of variable names to loop through manually, but I prefer to pull them out of the model. In the approach I use the first variable in the output is the response variable. I don’t need the response variable for what I’m doing, so I remove it.</p>
 <pre class="r"><code>( mod_vars = all.vars( formula(fit1) )[-1] )</code></pre>
-<pre><code>## [1] &quot;disp&quot; &quot;hp&quot;   &quot;drat&quot; &quot;wt&quot;</code></pre>
+<pre><code># [1] &quot;disp&quot; &quot;hp&quot;   &quot;drat&quot; &quot;wt&quot;</code></pre>
 </div>
 <div id="a-function-for-making-a-prediction-dataset" class="section level1">
 <h1>A function for making a prediction dataset</h1>
@@ -79,13 +79,13 @@ summary(fit1)</code></pre>
 }</code></pre>
 <p>Here’s what the result of the function looks like for a single focus variable, “disp” (showing first six rows).</p>
 <pre class="r"><code>head( preddat_fun(mtcars, mod_vars, &quot;disp&quot;) )</code></pre>
-<pre><code>##                   disp  hp  drat    wt
-## Mazda RX4          160 123 3.695 3.325
-## Mazda RX4 Wag      160 123 3.695 3.325
-## Datsun 710         108 123 3.695 3.325
-## Hornet 4 Drive     258 123 3.695 3.325
-## Hornet Sportabout  360 123 3.695 3.325
-## Valiant            225 123 3.695 3.325</code></pre>
+<pre><code>#                   disp  hp  drat    wt
+# Mazda RX4          160 123 3.695 3.325
+# Mazda RX4 Wag      160 123 3.695 3.325
+# Datsun 710         108 123 3.695 3.325
+# Hornet 4 Drive     258 123 3.695 3.325
+# Hornet Sportabout  360 123 3.695 3.325
+# Valiant            225 123 3.695 3.325</code></pre>
 </div>
 <div id="making-a-prediction-dataset-for-each-variable" class="section level1">
 <h1>Making a prediction dataset for each variable</h1>
@@ -95,27 +95,27 @@ summary(fit1)</code></pre>
      set_names() %&gt;%
      map( ~preddat_fun(mtcars, mod_vars, .x) )
 str(pred_dats)</code></pre>
-<pre><code>## List of 4
-##  $ disp:&#39;data.frame&#39;:    32 obs. of  4 variables:
-##   ..$ disp: num [1:32] 160 160 108 258 360 ...
-##   ..$ hp  : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
-##   ..$ drat: num [1:32] 3.7 3.7 3.7 3.7 3.7 ...
-##   ..$ wt  : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
-##  $ hp  :&#39;data.frame&#39;:    32 obs. of  4 variables:
-##   ..$ hp  : num [1:32] 110 110 93 110 175 105 245 62 95 123 ...
-##   ..$ disp: num [1:32] 196 196 196 196 196 ...
-##   ..$ drat: num [1:32] 3.7 3.7 3.7 3.7 3.7 ...
-##   ..$ wt  : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
-##  $ drat:&#39;data.frame&#39;:    32 obs. of  4 variables:
-##   ..$ drat: num [1:32] 3.9 3.9 3.85 3.08 3.15 2.76 3.21 3.69 3.92 3.92 ...
-##   ..$ disp: num [1:32] 196 196 196 196 196 ...
-##   ..$ hp  : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
-##   ..$ wt  : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
-##  $ wt  :&#39;data.frame&#39;:    32 obs. of  4 variables:
-##   ..$ wt  : num [1:32] 2.62 2.88 2.32 3.21 3.44 ...
-##   ..$ disp: num [1:32] 196 196 196 196 196 ...
-##   ..$ hp  : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
-##   ..$ drat: num [1:32] 3.7 3.7 3.7 3.7 3.7 ...</code></pre>
+<pre><code># List of 4
+#  $ disp:&#39;data.frame&#39;: 32 obs. of  4 variables:
+#   ..$ disp: num [1:32] 160 160 108 258 360 ...
+#   ..$ hp  : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
+#   ..$ drat: num [1:32] 3.7 3.7 3.7 3.7 3.7 ...
+#   ..$ wt  : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
+#  $ hp  :&#39;data.frame&#39;: 32 obs. of  4 variables:
+#   ..$ hp  : num [1:32] 110 110 93 110 175 105 245 62 95 123 ...
+#   ..$ disp: num [1:32] 196 196 196 196 196 ...
+#   ..$ drat: num [1:32] 3.7 3.7 3.7 3.7 3.7 ...
+#   ..$ wt  : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
+#  $ drat:&#39;data.frame&#39;: 32 obs. of  4 variables:
+#   ..$ drat: num [1:32] 3.9 3.9 3.85 3.08 3.15 2.76 3.21 3.69 3.92 3.92 ...
+#   ..$ disp: num [1:32] 196 196 196 196 196 ...
+#   ..$ hp  : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
+#   ..$ wt  : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
+#  $ wt  :&#39;data.frame&#39;: 32 obs. of  4 variables:
+#   ..$ wt  : num [1:32] 2.62 2.88 2.32 3.21 3.44 ...
+#   ..$ disp: num [1:32] 196 196 196 196 196 ...
+#   ..$ hp  : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
+#   ..$ drat: num [1:32] 3.7 3.7 3.7 3.7 3.7 ...</code></pre>
 </div>
 <div id="calculate-model-predictions" class="section level1">
 <h1>Calculate model predictions</h1>
@@ -130,17 +130,17 @@ str(pred_dats)</code></pre>
                  pred = exp(.fitted) ) )</code></pre>
 <p>Here is what the structure of the list elements look like now (showing only the first list element).</p>
 <pre class="r"><code>str(preds$disp)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    32 obs. of  10 variables:
-##  $ .rownames: chr  &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
-##  $ disp     : num  160 160 108 258 360 ...
-##  $ hp       : num  123 123 123 123 123 123 123 123 123 123 ...
-##  $ drat     : num  3.7 3.7 3.7 3.7 3.7 ...
-##  $ wt       : num  3.33 3.33 3.33 3.33 3.33 ...
-##  $ .fitted  : num  2.99 2.99 2.99 2.97 2.96 ...
-##  $ .se.fit  : num  0.0367 0.0367 0.0574 0.0309 0.0713 ...
-##  $ lower    : num  18.4 18.4 17.8 18.4 16.8 ...
-##  $ upper    : num  21.3 21.3 22.4 20.8 22.3 ...
-##  $ pred     : num  19.8 19.8 20 19.6 19.3 ...</code></pre>
+<pre><code># &#39;data.frame&#39;: 32 obs. of  10 variables:
+#  $ .rownames: chr  &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
+#  $ disp     : num  160 160 108 258 360 ...
+#  $ hp       : num  123 123 123 123 123 123 123 123 123 123 ...
+#  $ drat     : num  3.7 3.7 3.7 3.7 3.7 ...
+#  $ wt       : num  3.33 3.33 3.33 3.33 3.33 ...
+#  $ .fitted  : num  2.99 2.99 2.99 2.97 2.96 ...
+#  $ .se.fit  : num  0.0367 0.0367 0.0574 0.0309 0.0713 ...
+#  $ lower    : num  18.4 18.4 17.8 18.4 16.8 ...
+#  $ upper    : num  21.3 21.3 22.4 20.8 22.3 ...
+#  $ pred     : num  19.8 19.8 20 19.6 19.3 ...</code></pre>
 </div>
 <div id="a-function-for-plotting" class="section level1">
 <h1>A function for plotting</h1>
@@ -168,16 +168,16 @@ str(pred_dats)</code></pre>
 <p>The very last step is to make all the plots. Because we want to loop through three different lists (the prediction datasets, the variables, and the axis labels), this can be a done via <code>pmap()</code> from <strong>purrr</strong>. <code>pmap()</code> loops through all three lists simultaneously.</p>
 <pre class="r"><code>all_plots = pmap( list(preds, mod_vars, xlabs), pred_plot)
 all_plots</code></pre>
-<pre><code>## $disp</code></pre>
+<pre><code># $disp</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-<pre><code>## 
-## $hp</code></pre>
+<pre><code># 
+# $hp</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-12-2.png" width="672" /></p>
-<pre><code>## 
-## $drat</code></pre>
+<pre><code># 
+# $drat</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-12-3.png" width="672" /></p>
-<pre><code>## 
-## $wt</code></pre>
+<pre><code># 
+# $wt</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-12-4.png" width="672" /></p>
 <div id="using-the-plots" class="section level2">
 <h2>Using the plots</h2>

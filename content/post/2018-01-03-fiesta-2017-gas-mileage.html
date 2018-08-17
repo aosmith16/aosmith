@@ -29,13 +29,13 @@ Figure 1: The dog wonders if the gas mileage will be good enough
 <pre class="r"><code>library(googlesheets) # v 0.2.2
 library(skimr) # v. 1.0.1
 library(dplyr) # v. 0.7.4</code></pre>
-<p>The workbook has a sheet for every year of ownership (into the future! 😄) plus service records.</p>
+<p>The workbook has a sheet for every year of ownership (into the future! 😆) plus service records.</p>
 <pre class="r"><code>gs_title(&quot;Fiesta mpg&quot;)</code></pre>
 <pre><code>## Sheet successfully identified: &quot;Fiesta mpg&quot;</code></pre>
 <pre><code>##                   Spreadsheet title: Fiesta mpg
 ##                  Spreadsheet author: skylarkguy
-##   Date of googlesheets registration: 2018-01-25 22:53:27 GMT
-##     Date of last spreadsheet update: 2018-01-24 02:26:57 GMT
+##   Date of googlesheets registration: 2018-08-17 01:01:45 GMT
+##     Date of last spreadsheet update: 2018-08-16 01:56:05 GMT
 ##                          visibility: private
 ##                         permissions: rw
 ##                             version: new
@@ -69,35 +69,35 @@ library(dplyr) # v. 0.7.4</code></pre>
 <pre><code>## # A tibble: 6 x 6
 ##   date      gallons  cost mileage mpggage mpgcalc
 ##   &lt;chr&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 1/2/2017     9.78  24.0     359    38.3    36.8
-## 2 1/10/2017    8.87  22.2     330    38.2    37.2
-## 3 1/17/2017   10.4   25.9      NA    39.2     0  
-## 4 1/20/2017    7.15  17.7     297    40.6    41.6
-## 5 1/24/2017    7.96  19.7     311    40.4    39.1
-## 6 1/30/2017    9.60  23.6     386    41.1    40.2</code></pre>
+## 1 1/2/2017     9.78  24.0    359.    38.3    36.8
+## 2 1/10/2017    8.87  22.2    330.    38.2    37.2
+## 3 1/17/2017   10.4   25.9     NA     39.2     0  
+## 4 1/20/2017    7.15  17.7    297.    40.6    41.6
+## 5 1/24/2017    7.96  19.7    311.    40.4    39.1
+## 6 1/30/2017    9.60  23.6    386.    41.1    40.2</code></pre>
 <p>Here’s my first chance to use functions from package <strong>skimr</strong> to get a quick summary of the variables in the dataset. (I’ve removed the spark histograms since I haven’t gotten them to play nicely in HTML.)</p>
 <pre class="r"><code>skim(fiesta2017)</code></pre>
 <pre><code>## Skim summary statistics
 ##  n obs: 64 
 ##  n variables: 6 
 ## 
-## Variable type: character 
-##   variable missing complete  n min max empty n_unique
-## 1     date       0       64 64   8  10     0       62
+## -- Variable type:character ---------------------------------------------------
+##  variable missing complete  n min max empty n_unique
+##      date       0       64 64   8  10     0       62
 ## 
-## Variable type: numeric 
-##   variable missing complete  n   mean    sd    min    p25 median    p75
-## 1     cost       0       64 64  23.75  3.68  12.23  22.65  24.05  26.39
-## 2  gallons       0       64 64   8.83  1.33   5.01   8.13   9.13   9.81
-## 3  mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
-## 4  mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
-## 5  mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
-##      max
-## 1  30.82
-## 2  10.63
-## 3 653.7 
-## 4  96.2 
-## 5  46.8</code></pre>
+## -- Variable type:numeric -----------------------------------------------------
+##  variable missing complete  n   mean    sd     p0    p25    p50    p75
+##      cost       0       64 64  23.75  3.68  12.23  22.65  24.05  26.39
+##   gallons       0       64 64   8.83  1.33   5.01   8.13   9.13   9.81
+##   mileage       1       63 64 362.11 66.85 194.9  327.95 373.4  397.9 
+##   mpgcalc       0       64 64  40.67  8.87   0     39.1   40.35  41.7 
+##   mpggage       0       64 64  41.23  1.55  37.9   40.3   41.2   42.2 
+##    p100
+##   30.82
+##   10.63
+##  653.7 
+##   96.2 
+##   46.8</code></pre>
 <p>I’ll need to convert <code>date</code> to a date and remove that missing value from <code>mileage</code> before proceeding (looks like we forget to enter the mileage on one gas stop).</p>
 <pre class="r"><code>fiesta2017 = fiesta2017 %&gt;%
      mutate(date = as.Date(date, format = &quot;%m/%d/%Y&quot;) ) %&gt;%
@@ -107,14 +107,14 @@ library(dplyr) # v. 0.7.4</code></pre>
 <pre><code>## # A tibble: 1 x 6
 ##   date       gallons  cost mileage mpggage mpgcalc
 ##   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 2017-06-05    6.80  22.4     654    43.3    96.2</code></pre>
+## 1 2017-06-05    6.80  22.4    654.    43.3    96.2</code></pre>
 <p>Turns out something weird happened on June 5th. There are two data points, one that looks pretty standard and the other that is impossibly high for <code>mpgcalc</code>.</p>
 <pre class="r"><code>filter(fiesta2017, date == as.Date(&quot;2017-06-05&quot;) )</code></pre>
 <pre><code>## # A tibble: 2 x 6
 ##   date       gallons  cost mileage mpggage mpgcalc
 ##   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 2017-06-05    8.12  23.6     327    41.9    40.3
-## 2 2017-06-05    6.80  22.4     654    43.3    96.2</code></pre>
+## 1 2017-06-05    8.12  23.6    327     41.9    40.3
+## 2 2017-06-05    6.80  22.4    654.    43.3    96.2</code></pre>
 <p>I’ll have to remove the odd data point as I’m not sure what the mistake is (changing the mileage to <code>3</code> instead of <code>6</code> seems a reasonable guess but that still led to something impossibly large).</p>
 <pre class="r"><code>fiesta2017 = filter(fiesta2017, mpgcalc &lt;= 50)</code></pre>
 </div>
@@ -143,7 +143,7 @@ library(dplyr) # v. 0.7.4</code></pre>
 <pre><code>## # A tibble: 1 x 6
 ##   date       gallons  cost mileage mpggage mpgcalc
 ##   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
-## 1 2017-10-03    8.37  25.6     401    46.8    48.0</code></pre>
+## 1 2017-10-03    8.37  25.6    401.    46.8      48</code></pre>
 <p><strong>Compare observed mpg vs car-estimated mpg</strong></p>
 <p>It’s fun to watch how the estimated mpg is affected by conditions while I’m driving (e.g., AC, defrost, wind), but it looks like whatever that algorithm is tends to overestimate the gas mileage. But not always!</p>
 <pre class="r"><code>ggplot(fiesta2017, aes(date, mpgcalc) ) +

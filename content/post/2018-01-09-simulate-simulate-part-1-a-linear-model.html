@@ -57,45 +57,45 @@ b1 = -2
 sd = 2</code></pre>
 <p>I need to create the variable I’ll call “group” to use as the explanatory variable when fitting a model in R. I use <code>rep()</code> a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I’m working in. Here I’ll repeat each level of <code>group</code> 10 times (<code>nrep</code>).</p>
 <pre class="r"><code>( group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep) )</code></pre>
-<pre><code>##  [1] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot;
-##  [8] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;
-## [15] &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;</code></pre>
+<pre><code>#  [1] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group1&quot;
+#  [8] &quot;group1&quot; &quot;group1&quot; &quot;group1&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;
+# [15] &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot; &quot;group2&quot;</code></pre>
 <p>Next I’ll simulate the random errors. Remember I defined these above as <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span>. To simulate these I’ll take random draws from a normal distribution with a mean of 0 and standard deviation of 2 (note that <code>rnorm()</code> in takes the standard deviation as input, not the variance). Every observation has a random error, so I need to make 20 draws total (<code>ngroup*nrep</code>).</p>
 <pre class="r"><code>( eps = rnorm(ngroup*nrep, 0, sd) )</code></pre>
-<pre><code>##  [1]  0.9528268 -0.2507600  2.1924324 -2.8884581  2.2956586 -0.9368241
-##  [7] -2.0119012  0.1271254  2.0499452  1.1462840  3.6943642  0.2238667
-## [13] -1.4920746  3.3164273  1.4434411 -3.3261610  1.1518191  0.9455202
-## [19] -1.0854633  2.2553741</code></pre>
+<pre><code>#  [1]  0.9528268 -0.2507600  2.1924324 -2.8884581  2.2956586 -0.9368241
+#  [7] -2.0119012  0.1271254  2.0499452  1.1462840  3.6943642  0.2238667
+# [13] -1.4920746  3.3164273  1.4434411 -3.3261610  1.1518191  0.9455202
+# [19] -1.0854633  2.2553741</code></pre>
 <p>Now I have the fixed estimates of parameters, the variable <code>group</code> on which to base the indicator variable, and the simulated errors drawn from the defined distribution. That’s all the pieces I need to calculate my response variable.</p>
 <p>The statistical model</p>
 <p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{&#39;&#39;group&#39;&#39;})} + \epsilon_t\]</span></p>
 <p>is my guide for how to combine these pieces to create the simulated response variable, <span class="math inline">\(y_t\)</span>. Notice I create the indicator variable in R with <code>group == &quot;group2&quot;</code> and call the simulated response variable <code>growth</code>.</p>
 <pre class="r"><code>( growth = b0 + b1*(group == &quot;group2&quot;) + eps )</code></pre>
-<pre><code>##  [1]  5.952827  4.749240  7.192432  2.111542  7.295659  4.063176  2.988099
-##  [8]  5.127125  7.049945  6.146284  6.694364  3.223867  1.507925  6.316427
-## [15]  4.443441 -0.326161  4.151819  3.945520  1.914537  5.255374</code></pre>
+<pre><code>#  [1]  5.952827  4.749240  7.192432  2.111542  7.295659  4.063176  2.988099
+#  [8]  5.127125  7.049945  6.146284  6.694364  3.223867  1.507925  6.316427
+# [15]  4.443441 -0.326161  4.151819  3.945520  1.914537  5.255374</code></pre>
 <p>It’s not necessary for this simple case, but I often store the variables I will use in fitting the model in a dataset to help keep things organized. This becomes more important when working with more variables. I’ll skip this step today.</p>
 <p>Once the response and explanatory variables have been created, it’s time for model fitting. I can fit the two group linear model with <code>lm()</code>.</p>
 <pre class="r"><code>growthfit = lm(growth ~ group)
 summary(growthfit)</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = growth ~ group)
-## 
-## Residuals:
-##    Min     1Q Median     3Q    Max 
-## -4.039 -1.353  0.336  1.603  2.982 
-## 
-## Coefficients:
-##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)   5.2676     0.6351   8.294 1.46e-07 ***
-## groupgroup2  -1.5549     0.8982  -1.731    0.101    
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## Residual standard error: 2.008 on 18 degrees of freedom
-## Multiple R-squared:  0.1427, Adjusted R-squared:  0.0951 
-## F-statistic: 2.997 on 1 and 18 DF,  p-value: 0.1005</code></pre>
+<pre><code># 
+# Call:
+# lm(formula = growth ~ group)
+# 
+# Residuals:
+#    Min     1Q Median     3Q    Max 
+# -4.039 -1.353  0.336  1.603  2.982 
+# 
+# Coefficients:
+#             Estimate Std. Error t value Pr(&gt;|t|)    
+# (Intercept)   5.2676     0.6351   8.294 1.46e-07 ***
+# groupgroup2  -1.5549     0.8982  -1.731    0.101    
+# ---
+# Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+# 
+# Residual standard error: 2.008 on 18 degrees of freedom
+# Multiple R-squared:  0.1427,  Adjusted R-squared:  0.0951 
+# F-statistic: 2.997 on 1 and 18 DF,  p-value: 0.1005</code></pre>
 </div>
 <div id="make-a-function-for-the-simulation" class="section level1">
 <h1>Make a function for the simulation</h1>
@@ -113,22 +113,22 @@ summary(growthfit)</code></pre>
 <p>I test the function, using the same seed, to make things are working as expected and that I get the same results as above.</p>
 <pre class="r"><code>set.seed(16)
 twogroup_fun()</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = growth ~ group)
-## 
-## Coefficients:
-## (Intercept)  groupgroup2  
-##       5.268       -1.555</code></pre>
+<pre><code># 
+# Call:
+# lm(formula = growth ~ group)
+# 
+# Coefficients:
+# (Intercept)  groupgroup2  
+#       5.268       -1.555</code></pre>
 <p>If I want to change some element of the simulation, I can. Here’s a simulation from the same model but with a smaller standard deviation.</p>
 <pre class="r"><code>twogroup_fun(sigma = 1)</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = growth ~ group)
-## 
-## Coefficients:
-## (Intercept)  groupgroup2  
-##       5.313       -2.476</code></pre>
+<pre><code># 
+# Call:
+# lm(formula = growth ~ group)
+# 
+# Coefficients:
+# (Intercept)  groupgroup2  
+#       5.313       -2.476</code></pre>
 </div>
 <div id="repeat-the-simulation-many-times" class="section level1">
 <h1>Repeat the simulation many times</h1>
@@ -145,12 +145,12 @@ twogroup_fun()</code></pre>
 <pre class="r"><code>library(broom)</code></pre>
 <p>This returns the information on coefficients and tests of those coefficients in a tidy format that is easy to work with.</p>
 <pre class="r"><code>tidy(growthfit)</code></pre>
-<pre><code>##          term  estimate std.error statistic      p.value
-## 1 (Intercept)  5.267633 0.6351230  8.293878 1.460563e-07
-## 2 groupgroup2 -1.554922 0.8981996 -1.731154 1.005290e-01</code></pre>
+<pre><code>#          term  estimate std.error statistic      p.value
+# 1 (Intercept)  5.267633 0.6351230  8.293878 1.460563e-07
+# 2 groupgroup2 -1.554922 0.8981996 -1.731154 1.005290e-01</code></pre>
 <p>I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models. For a linear model we can extract an estimate of the residual standard deviation from the <code>summary()</code> output. This can be squared to get the variance as needed.</p>
 <pre class="r"><code>summary(growthfit)$sigma</code></pre>
-<pre><code>## [1] 2.008435</code></pre>
+<pre><code># [1] 2.008435</code></pre>
 </div>
 <div id="simulation-results" class="section level1">
 <h1>Simulation results</h1>
@@ -183,7 +183,7 @@ library(ggplot2)</code></pre>
      map_dbl(~summary(.x)$sigma) %&gt;%
      {. &lt; 2} %&gt;%
      mean()</code></pre>
-<pre><code>## [1] 0.539</code></pre>
+<pre><code># [1] 0.539</code></pre>
 <p><strong>Statistical results</strong></p>
 <p>If the goal of a simulation is to get an idea of the statistical power of a test we could look at the proportion of times the null hypothesis was rejected given a fixed alpha level (often 0.05, but of course it can be something else).</p>
 <p>Here the proportion of models that correctly rejected the null hypothesis, given that we know it’s not true, is just over 56%. That’s an estimate of statistical power.</p>
@@ -193,7 +193,7 @@ library(ggplot2)</code></pre>
      pull(p.value) %&gt;%
      {. &lt;  0.05} %&gt;%
      mean()</code></pre>
-<pre><code>## [1] 0.563</code></pre>
+<pre><code># [1] 0.563</code></pre>
 <p>Those are the basics that I generally pull out of models, but any output from the model is fair game. For linear models you could pull out <span class="math inline">\(R^2\)</span> or the overall F-test, etc.</p>
 </div>
 <div id="where-to-go-from-here" class="section level1">
