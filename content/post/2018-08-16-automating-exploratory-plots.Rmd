@@ -1,7 +1,7 @@
 ---
 title: Automating exploratory plots with ggplot2 and purrr
 author: Ariel Muldoon
-date: '2018-08-16'
+date: '2018-08-20'
 slug: automating-exploratory-plots
 categories:
   - r
