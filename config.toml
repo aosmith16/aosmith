@@ -22,7 +22,7 @@ disqusShortname = "aosmith-rbind-io"
 googleAnalytics = ""
 pluralizeListTitles = false
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
-paginate = 7
+paginate = 20
 math = true
 
 [taxonomies]
