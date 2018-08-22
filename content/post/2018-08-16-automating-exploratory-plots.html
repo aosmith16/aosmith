@@ -153,7 +153,7 @@ dev.off()</code></pre>
 <p>Combining the <code>i</code> and the <code>walk</code> gives us the <code>iwalk()</code> function. In the formula interface, <code>.x</code> refers to the list elements and <code>.y</code> refers to the names of the list. You can see I create the plot file names using the list name combined with “scatterplots.pdf”, using <code>_</code> as the separator.</p>
 <p>The code below makes three files, one for each response variable, with four plots each. The files are named “elev_scatterplots.pdf”, “resp_scatterplots.pdf”, and “grad_scatterplots.pdf”.</p>
 <pre class="r"><code>iwalk(all_plots, ~{
-     pdf(paste(.y, &quot;scatterplots.pdf&quot;, sep = &quot;_&quot;) )
+     pdf(paste0(.y, &quot;_scatterplots.pdf&quot;) )
      print(.x)
      dev.off()
 })</code></pre>

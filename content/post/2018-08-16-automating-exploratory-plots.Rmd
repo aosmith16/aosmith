@@ -211,7 +211,7 @@ The code below makes three files, one for each response variable, with four plot
 
 ```{r, eval = FALSE}
 iwalk(all_plots, ~{
-     pdf(paste(.y, "scatterplots.pdf", sep = "_") )
+     pdf(paste0(.y, "_scatterplots.pdf") )
      print(.x)
      dev.off()
 })
