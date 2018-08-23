@@ -47,8 +47,8 @@ description: "Extending my simulation examples into the world of generalized lin
 <p>Notice we can calculate the mean on the original scale instead of the log scale by exponentiating both sides of the above equation. This will be important when we get to writing code to simulate data.</p>
 <p><span class="math display">\[\lambda_t = exp(\beta_0 + \beta_1*x_t + \beta_2*x^2_t)\]</span></p>
 </div>
-<div id="simulate-code" class="section level1">
-<h1>Simulate code</h1>
+<div id="simulation-code" class="section level1">
+<h1><a href="#simulation-code">Simulation code</a></h1>
 <p>The first thing I will do in this simulation is define my true parameter values. I’m simulating a relationship between x and y that is similar to the student’s results so I’ll set the intercept and the linear coefficient (<span class="math inline">\(\beta_0\)</span> and <span class="math inline">\(\beta_1\)</span>, respectively) both to 0.5 and the quadratic coefficient (<span class="math inline">\(\beta_2\)</span>) to 5.</p>
 <pre class="r"><code>b0 = .5
 b1 = .5

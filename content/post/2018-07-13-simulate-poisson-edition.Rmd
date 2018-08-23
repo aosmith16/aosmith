@@ -60,7 +60,7 @@ Notice we can calculate the mean on the original scale instead of the log scale 
 
 $$\lambda_t = exp(\beta_0 + \beta_1*x_t + \beta_2*x^2_t)$$
 
-# Simulate code
+# [Simulation code](#simulation-code)
 
 The first thing I will do in this simulation is define my true parameter values.  I'm simulating a relationship between x and y that is similar to the student's results so I'll set the intercept and the linear coefficient ($\beta_0$ and $\beta_1$, respectively) both to 0.5 and the quadratic coefficient ($\beta_2$) to 5.   
 
