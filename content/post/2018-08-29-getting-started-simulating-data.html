@@ -1,0 +1,512 @@
+---
+title: 'Getting started simulating data in R: some helpful functions and how to use
+  them'
+author: Ariel Muldoon
+date: '2018-08-29'
+slug: getting-started-simulating-data
+categories:
+  - r
+tags:
+  - data
+  - simulation
+  - teaching
+draft: FALSE
+description: "Here is the written version of a talk I gave at the Eugene R Users Group."
+---
+
+
+
+<p>I’ve been trying to participate a little more in the R community outside of my narrow professional world, so when the co-organizer of the <a href="https://www.meetup.com/meetup-group-cwPiAlnB/">Eugene R Users Group</a> invited me to come talk at one of their meet-ups I agreed (even though it involved public speaking! 😱).</p>
+<p>I started out thinking I’d talk about doing simulations. But could I do that in 45 minutes? Maybe not. After much pondering I ended up settling on the topic of how we start a simulation: by making data in R.</p>
+<p>Possibly out of habit from making written versions of labs and workshops as resources for students, I created a written version of the talk. You can see the <a href="https://github.com/aosmith16/simulation-helper-functions/blob/master/functions_for_simulations_detailed.pdf">full PDF version</a> at <a href="https://github.com/aosmith16/simulation-helper-functions">the GitHub repository</a> I made for the talk materials.</p>
+<p>I’ve copied the R markdown code below, as well, for a “blog” version, although this ends up being quite long for a blog post. 😄</p>
+<div id="overview" class="section level1">
+<h1>Overview</h1>
+<p>There are many reasons we might want to simulate data in R, and I find being able to simulate data to be incredibly useful in my day-to-day work. But how does someone get started simulating data?</p>
+<p>Today I’m going to take a closer look at some of the R functions that are useful to get to know when simulating data. These functions are all from base R packages, not in add-on packages, so some of them may already familiar to you.</p>
+<p>Here’s what we’ll do today:</p>
+<ol style="list-style-type: decimal">
+<li>Simulate quantitative variables via random number generation with <code>rnorm()</code>, <code>runif()</code> and <code>rpois()</code>.</li>
+<li>Generate character variables that represent groups via <code>rep()</code>. We’ll explore how to create character vectors with different repeating patterns.</li>
+<li>Create data with both quantitative and categorical variables, making use of functions from the first two steps above.</li>
+<li>Learn to use <code>replicate()</code> to repeat the data simulation process many times.</li>
+</ol>
+</div>
+<div id="generating-random-numbers" class="section level1">
+<h1>Generating random numbers</h1>
+<p>An easy way to generate numeric data is to pull random numbers from some distribution. This can be done via the functions for generating random deviates. These functions always start with <code>r</code> (for “random”).</p>
+<p>The basic distributions that I use the most for generating random numbers are the normal (<code>rnorm()</code>) and uniform (<code>runif()</code>) distributions. We’ll look at those today, plus the Poisson (<code>rpois()</code>) distribution for generating discrete counts.</p>
+<p>There are many other distributions available as part of the <strong>stats</strong> package (e.g., binomial, F, log normal, beta, exponential, Gamma) and, as you can imagine, even more available in add-on packages. I recently needed to generate data from the Tweedie distribution to test a modeling tool, which I could do via package <strong>tweedie</strong>.</p>
+<p>The <code>r</code> functions for a chosen distribution all work basically the same way. We define how many random numbers we want to generate in the first argument (<code>n</code>) and then define the parameters for the distribution we want to draw from. This is easier to see with practice, so let’s get started.</p>
+<div id="rnorm-to-generate-random-numbers-from-the-normal-distribution" class="section level2">
+<h2>rnorm() to generate random numbers from the normal distribution</h2>
+<p>I use <code>rnorm()</code> a lot, sometimes with good reason and other times when I need some numbers and I really don’t care too much about what they are. 😜</p>
+<p>There are three arguments to <code>rnorm()</code>. From the <code>Usage</code> section of the documentation:</p>
+<blockquote>
+<p>rnorm(n, mean = 0, sd = 1)</p>
+</blockquote>
+<p>The <code>n</code> argument is the number of observations we want to generate. The <code>mean</code> and <code>sd</code> arguments show what the default values of the parameters are (note that <code>sd</code> is the <em>standard deviation</em>, not the variance). Not all <code>r</code> functions have defaults to the parameter arguments like this.</p>
+<p>To get 5 random numbers from a <span class="math inline">\(Normal(0, 1)\)</span> (aka the <em>standard</em> normal) distribution we can write code like:</p>
+<pre class="r"><code>rnorm(5)</code></pre>
+<pre><code>[1] -1.6067071 -1.5068818  0.2098584 -0.9313993 -1.0283762</code></pre>
+<p>There are a couple things about this code and the output to discuss.</p>
+<p>First, the code did get me 5 numbers, which is what I wanted. However, the code itself isn’t particularly clear. What I might refer to as lazy coding on my part can look pretty mysterious to someone reading my code (or to my future self reading my code). Since I used the default values for <code>mean</code> and <code>sd</code>, it’s not clear exactly what distribution I drew the numbers from.</p>
+<div id="writing-out-arguments-in-for-clearer-code" class="section level3">
+<h3>Writing out arguments in for clearer code</h3>
+<p>Here’s clearer code to do the same thing, where I write out the mean and standard deviation arguments explicitly even though I’m using the default values. It is certainly not necessary to always be this careful, but I don’t think I’ve run into a situation were it was bad to have clear code.</p>
+<pre class="r"><code>rnorm(n = 5, mean = 0, sd = 1)</code></pre>
+<pre><code>[1] -0.1728609 -0.2055838 -0.1123403  0.5365955  1.1206571</code></pre>
+</div>
+<div id="setting-the-random-seed-for-reproducible-random-numbers" class="section level3">
+<h3>Setting the random seed for reproducible random numbers</h3>
+<p>Second, if we run this code again we’ll get different numbers. To get reproducible random numbers we need to <em>set the seed</em> via <code>set.seed()</code>.</p>
+<p>Making sure someone else will be able to exactly reproduce your results when running the same code can be desirable in teaching. It is also is useful when making an example dataset to demonstrate a coding issue, like if you were asking a code question on Stack Overflow.</p>
+<p>You’ll also see me set the seed when I’m making a function for a simulation and I want to make sure it works correctly. Otherwise in most simulations we don’t actually want or need to set the seed.</p>
+<p>If we set the seed prior to running <code>rnorm()</code>, we can reproduce the values we generate.</p>
+<pre class="r"><code>set.seed(16)
+rnorm(n = 5, mean = 0, sd = 1)</code></pre>
+<pre><code>[1]  0.4764134 -0.1253800  1.0962162 -1.4442290  1.1478293</code></pre>
+<p>If we set the seed back to the same number and run the code again, we get the same values.</p>
+<pre class="r"><code>set.seed(16)
+rnorm(n = 5, mean = 0, sd = 1)</code></pre>
+<pre><code>[1]  0.4764134 -0.1253800  1.0962162 -1.4442290  1.1478293</code></pre>
+</div>
+<div id="change-parameters-in-rnorm" class="section level3">
+<h3>Change parameters in rnorm()</h3>
+<p>For getting a quick set of numbers it’s easy to use the default parameter values in <code>rnorm()</code> but we can certainly change the values to something else. For example, when I’m exploring long-run behavior of variance estimated from linear models I will want to vary the standard deviation values.</p>
+<p>The <code>sd</code> argument shows the <em>standard deviation</em> of the normal distribution. So drawing from a <span class="math inline">\(Normal(0, 4)\)</span> can be done by setting <code>sd</code> to 2. (I repeat this info because I find it confusing sometimes. 😁)</p>
+<pre class="r"><code>rnorm(n = 5, mean = 0, sd = 2)</code></pre>
+<pre><code>[1] -0.9368241 -2.0119012  0.1271254  2.0499452  1.1462840</code></pre>
+<p>I’ve seen others change the mean and standard deviation to create a variable that is within some specific range, as well. For example, if the mean is large and the standard deviation small in relation to the mean we can generate strictly positive numbers. (I usually use <code>runif()</code> for this, which we’ll see below.)</p>
+<pre class="r"><code>rnorm(n = 5, mean = 50, sd = 20)</code></pre>
+<pre><code>[1] 86.94364 52.23867 35.07925 83.16427 64.43441</code></pre>
+</div>
+<div id="using-vectors-of-values-for-the-parameter-arguments" class="section level3">
+<h3>Using vectors of values for the parameter arguments</h3>
+<p>We can pull random numbers from multiple different normal distributions simultaneously if we use a vector for the parameter arguments. This could be useful, for example, for simulating data with different group means but the same variance. We might want to use something like this if we were making data that we would analyze using an ANOVA.</p>
+<p>I’ll keep the standard deviation at 1 but will draw data from three distribution centered at three different locations: one at 0, one at 5, and one at 20. I request 10 total draws by changing <code>n</code> to 10.</p>
+<p>Note the repeating pattern: the function iteratively draws one value from each distribution until the total number requested is reached. This can lead to imbalance in the sample size per distribution.</p>
+<pre class="r"><code>rnorm(n = 10, mean = c(0, 5, 20), sd = 1)</code></pre>
+<pre><code> [1] -1.6630805  5.5759095 20.4727601 -0.5427317  6.1276871 18.3522024
+ [7] -0.3141739  4.8173184 21.4704785 -0.8658988</code></pre>
+<p>A vector can also be passed to <code>sd</code>. Here both the means and standard deviations vary among the three distributions used to generate values.</p>
+<pre class="r"><code>rnorm(n = 10, mean = c(0, 5, 20), sd = c(1, 5, 20) )</code></pre>
+<pre><code> [1]  1.5274670 10.2708903 40.6014202  0.8401609  6.0848235  6.5494885
+ [7]  0.1325985  4.6453633  1.1460906 -1.0220310</code></pre>
+<p>Things are different for the <code>n</code> argument. If a vector is passed to <code>n</code>, the <em>length</em> of that vector is taken to be the number required (see <code>Arguments</code> section of documentation for details).</p>
+<p>Here’s an example. Since the vector for <code>n</code> is length 3, we only get 3 values. This has caught me before, as I would expect this code to give me different numbers per group instead of ignoring the information in the vector.</p>
+<pre class="r"><code>rnorm(n = c(2, 10, 10), mean = c(0, 5, 20), sd = c(1, 5, 20) )</code></pre>
+<pre><code>[1]  0.2805551  7.7239168 22.6173950</code></pre>
+</div>
+</div>
+<div id="example-of-using-the-simulated-numbers-from-rnorm" class="section level2">
+<h2>Example of using the simulated numbers from rnorm()</h2>
+<p>Up to this point we’ve printed the results of each simulation. In reality we’d want to save our vectors as objects in R to use them for some further task.</p>
+<p>For example, maybe we want to simulate two unrelated variables and then look to see how correlated they appear to be. This can be a fun exercise to demonstrate how variables can appear to be related by chance even when we know they are not, especially at small sample sizes.</p>
+<p>Let’s generate two quantitative vectors of length 10, which I’ll name <code>x</code> and <code>y</code>, and plot the results. I’m using the defaults for <code>mean</code> and <code>sd</code>.</p>
+<p>This particular example doesn’t show much of a pattern, but if you take this code and run it may times you’ll see some pretty surprising relationships.</p>
+<pre class="r"><code>x = rnorm(n = 10, mean = 0, sd = 1)
+y = rnorm(n = 10, mean = 0, sd = 1)
+plot(y ~ x)</code></pre>
+<p><img src="/post/2018-08-29-getting-started-simulating-data_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>
+<div id="runif-pulls-from-the-uniform-distribution" class="section level2">
+<h2>runif() pulls from the uniform distribution</h2>
+<p>Pulling random numbers from other distributions is extremely similar to using <code>rnorm()</code>, so we’ll go through them more quickly.</p>
+<p>I’ve started using <code>runif()</code> pretty regularly, especially when I want to easily generate numbers that are strictly positive but continuous. The uniform distribution is a continuous distribution, with numbers uniformly distributed between some minimum and maximum.</p>
+<p>From <code>Usage</code> we can see that by default we pull random numbers between 0 and 1. The first argument, as with all of these <code>r</code> functions, is the number of deviates we want to randomly generate:</p>
+<blockquote>
+<p>runif(n, min = 0, max = 1)</p>
+</blockquote>
+<p>Let’s generate 5 numbers between 0 and 1.</p>
+<pre class="r"><code>runif(n = 5, min = 0, max = 1)</code></pre>
+<pre><code>[1] 0.9994220 0.9432766 0.2496042 0.6482484 0.1125788</code></pre>
+<p>What if we want to generate 5 numbers between 50 and 100? We change the values for the parameter arguments.</p>
+<pre class="r"><code>runif(n = 5, min = 50, max = 100)</code></pre>
+<pre><code>[1] 81.56680 66.91604 82.70027 64.29244 54.17023</code></pre>
+</div>
+<div id="example-of-using-the-simulated-numbers-from-runif" class="section level2">
+<h2>Example of using the simulated numbers from runif()</h2>
+<p>I like using <code>runif()</code> for making explanatory variables that have realistic ranges. In multiple regression, having explanatory variables with different magnitudes affects interpretation of regression coefficients.</p>
+<p>Let’s generate some data with the response variable (<code>y</code>) pulled from a standard normal distribution and then an explanatory variable with values between 1 and 2. The two variables are unrelated.</p>
+<p>You see I’m still writing out my argument names for clarity, but you may be getting a sense how easy it would be to start cutting corners to avoid the extra typing.</p>
+<pre class="r"><code>set.seed(16)
+y = rnorm(n = 100, mean = 0, sd = 1)
+x1 = runif(n = 100, min = 1, max = 2)
+head(x1)</code></pre>
+<pre><code>[1] 1.957004 1.082791 1.710816 1.326998 1.995723 1.449522</code></pre>
+<p>Now let’s simulate a second explanatory variable with values between 200 and 300. This variable is also unrelated to the other two.</p>
+<pre class="r"><code>x2 = runif(n = 100, min = 200, max = 300)
+head(x2)</code></pre>
+<pre><code>[1] 220.0617 263.4875 209.6036 245.3125 265.1869 257.4817</code></pre>
+<p>We can fit a multiple regression linear model via <code>lm()</code>. In this case, the coefficient for the second variable, which has a larger magnitude, is smaller than the first (although neither are actually related to <code>y</code>). The change in <code>y</code> for a “1-unit increase” in <code>x</code> depends on the units of <code>x</code>.</p>
+<pre class="r"><code>lm(y ~ x1 + x2)</code></pre>
+<pre><code>
+Call:
+lm(formula = y ~ x1 + x2)
+
+Coefficients:
+(Intercept)           x1           x2  
+   0.380887     0.104941    -0.001908  </code></pre>
+</div>
+<div id="discrete-counts-with-rpois" class="section level2">
+<h2>Discrete counts with rpois()</h2>
+<p>Let’s look at one last function for generating random numbers, this time for generating discrete integers (including 0) from a Poisson distribution with <code>rpois()</code>.</p>
+<p>I use <code>rpois()</code> for generating counts for creating data to be fit with generalized linear models. This function has also helped me gain a better understanding of the shape of Poisson distributions with different means.</p>
+<p>The Poisson distribution is a single parameter distribution. The function looks like:</p>
+<blockquote>
+<p>rpois(n, lambda)</p>
+</blockquote>
+<p>The single parameter argument, <code>lambda</code>, is the mean. It has no default setting so must always be defined by the user.</p>
+<p>Let’s generate five values from a Poisson distribution with a mean of 2.5. Note that <em>mean</em> of the Poisson distribution can be any non-negative value (i.e., it doesn’t have to be an integer) even though the observed values will be discrete integers.</p>
+<pre class="r"><code>rpois(n = 5, lambda = 2.5)</code></pre>
+<pre><code>[1] 2 1 4 1 2</code></pre>
+</div>
+<div id="example-of-using-the-simulated-numbers-from-rpois" class="section level2">
+<h2>Example of using the simulated numbers from rpois()</h2>
+<p>Let’s explore the Poisson distribution a little more, seeing how the distribution changes when the mean of the distribution changes. Being able to look at how the Poisson distribution changes with the mean via simulation helped me understand the distribution better, including why it so often does a poor job modeling ecological count data.</p>
+<p>We’ll draw 100 values from a Poisson distribution with a mean of 5. We’ll name this vector <code>y</code> and take a look at a summary of those values.</p>
+<pre class="r"><code>y = rpois(100, lambda = 5)</code></pre>
+<p>The vector of values we simulated here fall between 1 and 11.</p>
+<pre class="r"><code>summary(y)</code></pre>
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1.00    3.00    5.00    4.83    6.00   11.00 </code></pre>
+<p>There is mild right-skew when we draw a histogram of the values.</p>
+<pre class="r"><code>hist(y)</code></pre>
+<p><img src="/post/2018-08-29-getting-started-simulating-data_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p>Let’s do the same thing for a Poisson distribution with a mean of 100. The range of values is pretty narrow; there are no values even remotely close to 0.</p>
+<pre class="r"><code>y = rpois(100, lambda = 100)
+summary(y)</code></pre>
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  76.00   94.75  102.00  101.31  108.00  124.00 </code></pre>
+<p>And the distribution is now pretty symmetric.</p>
+<pre class="r"><code>hist(y)</code></pre>
+<p><img src="/post/2018-08-29-getting-started-simulating-data_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<p>An alternative to the Poisson distribution for discrete integers is the negative binomial distribution. Packages <strong>MASS</strong> has a function called <code>rnegbin()</code> for random number generation from the negative binomial distribution.</p>
+</div>
+</div>
+<div id="generate-character-vectors-with-rep" class="section level1">
+<h1>Generate character vectors with rep()</h1>
+<p>Quantitative variables are great, but in simulations we’re often going to need categorical variables, as well.</p>
+<p>In my own work these are usually sort of “grouping” or “treatment” variable, with multiple individuals/observations per group/treatment. This means I need to have repetitions of each character value. The <code>rep()</code> function is one way to avoid having to write out an entire vector manually. It’s for <em>replicating elements of vectors and lists</em>.</p>
+<div id="using-letters-and-letters" class="section level2">
+<h2>Using letters and LETTERS</h2>
+<p>The first argument of <code>rep()</code> is the vector to be repeated. One option is to write out the character vector you want to repeat. You can also get a simple character vector through the use of <code>letters</code> or <code>LETTERS</code>. These are <em>built in constants</em> in R. <code>letters</code> is the 26 lowercase letters of the Roman alphabet and <code>LETTERS</code> is the 26 uppercase letters.</p>
+<p>Letters can be pulled out via the extract brackets (<code>[</code>). I use these built-in constants for pure convenience when I need to make a basic categorical vector and it doesn’t matter what form those categories take. I find it more straightforward to type out the word and brackets than a vector of characters (complete with all those pesky quotes and such 😆).</p>
+<p>Here’s the first two <code>letters</code>.</p>
+<pre class="r"><code>letters[1:2]</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;b&quot;</code></pre>
+<p>And the last 17 <code>LETTERS</code>.</p>
+<pre class="r"><code>LETTERS[10:26]</code></pre>
+<pre><code> [1] &quot;J&quot; &quot;K&quot; &quot;L&quot; &quot;M&quot; &quot;N&quot; &quot;O&quot; &quot;P&quot; &quot;Q&quot; &quot;R&quot; &quot;S&quot; &quot;T&quot; &quot;U&quot; &quot;V&quot; &quot;W&quot; &quot;X&quot; &quot;Y&quot; &quot;Z&quot;</code></pre>
+</div>
+<div id="repeat-each-element-of-a-vector-with-each" class="section level2">
+<h2>Repeat each element of a vector with each</h2>
+<p>There are three arguments that help us repeat the values in the vector in <code>rep()</code> with different patterns: <code>each</code>, <code>times</code>, and <code>length.out</code>. These can be used individually or in combination.</p>
+<p>With <code>each</code> we repeat each unique character in the vector the defined number of times. The replication is done “elementwise”, so the repeats of each unique character are all in a row.</p>
+<p>Let’s repeat two characters three times each. The resulting vector is 6 observations long.</p>
+<p>This is an example of how I might make a grouping variable for simulating data to be used in a two-sample analysis.</p>
+<pre class="r"><code>rep(letters[1:2], each = 3)</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot; &quot;b&quot;</code></pre>
+</div>
+<div id="repeat-a-whole-vector-with-the-times-argument" class="section level2">
+<h2>Repeat a whole vector with the times argument</h2>
+<p>The <code>times</code> argument can be used when we want to repeat the whole vector rather than repeating it elementwise.</p>
+<p>We’ll make a two-group variable again, but this time we’ll change the repeating pattern of the values in the variable.</p>
+<pre class="r"><code>rep(letters[1:2], times = 3)</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;b&quot; &quot;a&quot; &quot;b&quot; &quot;a&quot; &quot;b&quot;</code></pre>
+</div>
+<div id="set-the-output-vector-length-with-the-length.out-argument" class="section level2">
+<h2>Set the output vector length with the length.out argument</h2>
+<p>The <code>length.out</code> argument has <code>rep()</code> repeat the whole vector. However, it repeats the vector only until the defined length is reached. Using <code>length.out</code> is another way to get unbalanced groups.</p>
+<p>Rather than defining the number of repeats like we did with <code>each</code> and <code>times</code> we define the length of the output vector.</p>
+<p>Here we’ll make a two-group variable of length 5. This means the second group will have one less value than the first.</p>
+<pre class="r"><code>rep(letters[1:2], length.out = 5)</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;b&quot; &quot;a&quot; &quot;b&quot; &quot;a&quot;</code></pre>
+</div>
+<div id="repeat-each-element-a-different-number-of-times" class="section level2">
+<h2>Repeat each element a different number of times</h2>
+<p>Unlike <code>each</code> and <code>length.out</code>, we can use <code>times</code> with a vector of values. This allows us to repeat each element of the character vector a different number of times. This is one way to simulate unbalanced groups.</p>
+<p>Using <code>times</code> with a vector repeats each element like <code>each</code> does. I found this a little confusing as it makes it harder to remember which argument repeats “elementwise” and which “vectorwise”. But <code>length.out</code> always repeats “vectorwise”, so that’s something.</p>
+<p>Let’s repeat the first element twice and the second four times.</p>
+<pre class="r"><code>rep(letters[1:2], times = c(2, 4) )</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot; &quot;b&quot; &quot;b&quot;</code></pre>
+</div>
+<div id="combining-each-with-times" class="section level2">
+<h2>Combining each with times</h2>
+<p>As your simulation situation get more complicated, like if you are simulating data from a blocked design or with multiple sizes of experimental units, you may need more complicated patterns for your categorical variable. The <code>each</code> argument can be combined with <code>times</code> to first repeat each value elementwise (via <code>each</code>) and then repeat that whole pattern (via <code>times</code>).</p>
+<p>When using <code>times</code> this way it will only take a single value and not a vector.</p>
+<p>Let’s repeat each value twice, 3 times.</p>
+<pre class="r"><code>rep(letters[1:2], each = 2, times = 3)</code></pre>
+<pre><code> [1] &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot;</code></pre>
+</div>
+<div id="combining-each-with-length.out" class="section level2">
+<h2>Combining each with length.out</h2>
+<p>Similarly we can use <code>each</code> with <code>length.out</code>. This can lead to some imbalance.</p>
+<p>Here we’ll repeat the two values twice each and then repeat that pattern until we hit a total final vector length of 7.</p>
+<pre class="r"><code>rep(letters[1:2], each = 2, length.out = 7)</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot;</code></pre>
+<p>Note you can’t use <code>length.out</code> and <code>times</code> together (if you try, <code>length.out</code> will be given priority and <code>times</code> ignored).</p>
+</div>
+</div>
+<div id="creating-datasets-with-quantiative-and-categorical-variables" class="section level1">
+<h1>Creating datasets with quantiative and categorical variables</h1>
+<p>We now have some tools for creating quantitative data as well as categorical. Which means it’s time to make some datasets! We’ll create several simple ones to get the general idea.</p>
+<div id="simulate-data-with-no-differences-among-two-groups" class="section level2">
+<h2>Simulate data with no differences among two groups</h2>
+<p>Let’s start by simulating data that we would use in a simple two-sample analysis with no difference between groups. We’ll make a total of 6 observations, three in each group.</p>
+<p>We’ll be using the tools we reviewed above but will now name the output and combine them into a data.frame. This last step isn’t always necessary, but can help you keep things organized.</p>
+<p>First we’ll make separate vectors for the continuous and categorical data and then bind them together via <code>data.frame()</code>.</p>
+<p>Notice there is no need to use <code>cbind()</code> here, which is commonly done by R beginners (I know I did!). Instead we can use <code>data.frame()</code> directly.</p>
+<pre class="r"><code>group = rep(letters[1:2], each = 3)
+response = rnorm(n = 6, mean = 0, sd = 1)
+data.frame(group,
+           response)</code></pre>
+<pre><code>  group   response
+1     a  0.4933614
+2     a  0.5234101
+3     a  1.2365975
+4     b  0.3563153
+5     b  0.5748968
+6     b -0.4222890</code></pre>
+<p>When I make a data.frame like this I prefer to make my vectors and the data.frame simultaneously to avoid having a lot of variables cluttering up my R Environment.</p>
+<p>I often teach/blog with all the steps clearly delineated as I think it’s easier when you are starting out, so (as always) use the method that works for you.</p>
+<pre class="r"><code>data.frame(group = rep(letters[1:2], each = 3),
+           response = rnorm(n = 6, mean = 0, sd = 1) )</code></pre>
+<pre><code>  group   response
+1     a  0.4024228
+2     a  0.9585800
+3     a -1.8763844
+4     b -0.2115171
+5     b  1.4374372
+6     b  0.3855285</code></pre>
+<p>Now let’s add another categorical variable to this dataset.</p>
+<p>Say we are in a situation involving two factors, not one. We have a single observations for every combination of the two factors (i.e., the two factors are <em>crossed</em>).</p>
+<p>The second factor, which we’ll call <code>factor</code>, will take on the values “C”, “D”, and “E”.</p>
+<pre class="r"><code>LETTERS[3:5]</code></pre>
+<pre><code>[1] &quot;C&quot; &quot;D&quot; &quot;E&quot;</code></pre>
+<p>We need to repeat the values in a way that every combination of <code>group</code> and <code>factor</code> is present in the dataset exactly one time.</p>
+<p>Remember the <code>group</code> factor is repeated elementwise.</p>
+<pre class="r"><code>rep(letters[1:2], each = 3)</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; &quot;b&quot; &quot;b&quot;</code></pre>
+<p>We need to repeat the three values twice. But what argument do we use in <code>rep()</code> to do so?</p>
+<pre class="r"><code>rep(LETTERS[3:5], ?)</code></pre>
+<p>Does <code>each</code> work?</p>
+<pre class="r"><code>rep(LETTERS[3:5], each = 2)</code></pre>
+<pre><code>[1] &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;E&quot; &quot;E&quot;</code></pre>
+<p>No, if we use <code>each</code> then each element is repeated twice and some of the combinations of <code>group</code> and the new variable will be missing.</p>
+<p>This is a job for the <code>times</code> or <code>length.out</code> arguments, so the whole vector is repeated. We can repeat the whole vector twice using <code>times</code>, or via <code>length.out = 6</code>. I decided to do the former.</p>
+<p>In the result below we can see every combination of the two factors is present once.</p>
+<pre class="r"><code>data.frame(group = rep(letters[1:2], each = 3),
+           factor = rep(LETTERS[3:5], times = 2),
+           response = rnorm(n = 6, mean = 0, sd = 1) )</code></pre>
+<pre><code>  group factor   response
+1     a      C  0.4255576
+2     a      D  0.2903586
+3     a      E -0.3638877
+4     b      C  1.9778117
+5     b      D  1.0869069
+6     b      E -0.5869200</code></pre>
+</div>
+<div id="simulate-data-with-a-difference-among-groups" class="section level2">
+<h2>Simulate data with a difference among groups</h2>
+<p>The dataset above is one with “no difference” among groups. What if we want data where the means are different between groups? Let’s make two groups of three observations where the mean of one group is 5 and the other is 10. The two groups have a shared variance (and so standard deviation) of 1.</p>
+<p>Remembering how <code>rnorm()</code> works with a vector of means is key here. The function draws iteratively from each distribution.</p>
+<pre class="r"><code>response = rnorm(n = 6, mean = c(5, 10), sd = 1)
+response</code></pre>
+<pre><code>[1]  4.413753 12.484499  4.740506 10.273258  5.369074 10.024199</code></pre>
+<p>How do we get the <code>group</code> pattern correct?</p>
+<pre class="r"><code>group = rep(letters[1:2], ?)</code></pre>
+<p>We need to repeat the whole vector three times instead of elementwise.</p>
+<p>To get the groups in the correct order we need to use <code>times</code> or <code>length.out</code> in <code>rep()</code>. With <code>length.out</code> we define the output length of the vector, which is 6. Alternatively we could use <code>times = 3</code> to repeat the whole vector 3 times.</p>
+<pre class="r"><code>group = rep(letters[1:2], length.out = 6)
+group</code></pre>
+<pre><code>[1] &quot;a&quot; &quot;b&quot; &quot;a&quot; &quot;b&quot; &quot;a&quot; &quot;b&quot;</code></pre>
+<p>These can then be combined into a data.frame. Working out this process is another reason why sometimes we build each vector separately prior to combining them into a data.frame.</p>
+<pre class="r"><code>data.frame(group,
+            response)</code></pre>
+<pre><code>  group  response
+1     a  4.413753
+2     b 12.484499
+3     a  4.740506
+4     b 10.273258
+5     a  5.369074
+6     b 10.024199</code></pre>
+</div>
+<div id="multiple-quantitative-variables-with-groups" class="section level2">
+<h2>Multiple quantitative variables with groups</h2>
+<p>For our last dataset we’ll have two groups, with 10 observations per group.</p>
+<pre class="r"><code>rep(LETTERS[3:4], each = 10)</code></pre>
+<pre><code> [1] &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot;
+[18] &quot;D&quot; &quot;D&quot; &quot;D&quot;</code></pre>
+<p>Let’s make a dataset that has two quantitative variables, unrelated to both each other and the groups. One variable ranges from 10 and 15 and one from 100 and 150.</p>
+<p>How many observations should we draw from each uniform distribution?</p>
+<pre class="r"><code>runif(n = ?, min = 10, max = 15)</code></pre>
+<p>We had 2 groups with 10 observations each and 2*10 = 20. So we need to use <code>n = 20</code> in <code>runif()</code>.</p>
+<p>Here is the dataset made in a single step.</p>
+<pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
+           x = runif(n = 20, min = 10, max = 15),
+           y = runif(n = 20, min = 100, max = 150))</code></pre>
+<pre><code>   group        x        y
+1      C 13.20331 126.7004
+2      C 13.91440 137.0772
+3      C 12.72031 134.8689
+4      C 14.27637 122.7582
+5      C 11.72933 118.0189
+6      C 14.59640 108.4544
+7      C 12.81629 142.1792
+8      C 13.45864 104.0355
+9      C 13.94198 107.0199
+10     C 12.15106 145.4622
+11     D 12.01762 117.3381
+12     D 13.66006 121.2900
+13     D 14.78914 145.2424
+14     D 11.70157 120.1363
+15     D 13.25180 139.8288
+16     D 10.76914 106.6282
+17     D 13.97263 147.6383
+18     D 14.91621 112.6612
+19     D 13.53270 104.8965
+20     D 14.40677 119.5231</code></pre>
+<p>What happens if we get the number wrong? If we’re lucky we get an error.</p>
+<pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
+           x = runif(n = 15, min = 10, max = 15),
+           y = runif(n = 15, min = 100, max = 150))</code></pre>
+<p><code>Error in data.frame(group = rep(LETTERS[3:4], each = 10), x = runif(n = 15, : arguments imply differing number of rows: 20, 15</code></p>
+<p>But if we get things wrong and the number we use happens to go into the number we need evenly, R will <em>recycle</em> the vector to the end of the <code>data.frame()</code>.</p>
+<p>This is a hard mistake to catch. If you look carefully through the output below you can see that the continuous variables start to repeat on line 10 because I used <code>n = 10</code> instead of <code>n = 20</code>.</p>
+<pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
+           x = runif(n = 10, min = 10, max = 15),
+           y = runif(n = 10, min = 100, max = 150))</code></pre>
+<pre><code>   group        x        y
+1      C 12.28493 108.3455
+2      C 13.84490 114.8247
+3      C 12.42386 105.1358
+4      C 10.08725 125.1979
+5      C 10.83277 129.6310
+6      C 10.96766 129.4584
+7      C 11.51180 149.2819
+8      C 13.48253 139.2530
+9      C 11.64337 119.6663
+10     C 12.88603 119.8368
+11     D 12.28493 108.3455
+12     D 13.84490 114.8247
+13     D 12.42386 105.1358
+14     D 10.08725 125.1979
+15     D 10.83277 129.6310
+16     D 10.96766 129.4584
+17     D 11.51180 149.2819
+18     D 13.48253 139.2530
+19     D 11.64337 119.6663
+20     D 12.88603 119.8368</code></pre>
+</div>
+</div>
+<div id="repeatedly-simulate-data-with-replicate" class="section level1">
+<h1>Repeatedly simulate data with replicate()</h1>
+<p>The <code>replicate()</code> function is a real workhorse when making repeated simulations. It is a member of the <em>apply</em> family in R, and is specifically made (per the documentation) for the <em>repeated evaluation of an expression (which will usually involve random number generation)</em>.</p>
+<p>We want to repeatedly simulate data that involves random number generation, so that sounds like a useful tool.</p>
+<p>The <code>replicate()</code> function takes three arguments:</p>
+<ul>
+<li><code>n</code>, which is the number of replications to perform. This is to set the number of repeated runs we want.<br />
+</li>
+<li><code>expr</code>, the expression that should be run repeatedly. This is often a function.<br />
+</li>
+<li><code>simplify</code>, which controls the type of output the results of <code>expr</code> are saved into. Use <code>simplify = FALSE</code> to get output saved into a list instead of in an array.</li>
+</ul>
+<div id="simple-example-of-replicate" class="section level2">
+<h2>Simple example of replicate()</h2>
+<p>Let’s say we want to simulate some values from a normal distribution, which we can do using the <code>rnorm()</code> function as above. But now instead of drawing some number of values from a distribution one time we want to do it many times. This could be something we’d do when demonstrating the central limit theorem, for example.</p>
+<p>Doing the random number generation many times is where <code>replicate()</code> comes in. It allows us to run the function in <code>expr</code> exactly <code>n</code> times.</p>
+<p>Here I’ll generate 5 values from a standard normal distribution three times. Notice the addition of <code>simplify = FALSE</code> to get a list as output.</p>
+<p>The output below is a list of three vectors. Each vector is from a unique run of the function, so contains five random numbers drawn from the normal distribution with a mean of 0 and standard deviation of 1.</p>
+<pre class="r"><code>set.seed(16)
+replicate(n = 3, 
+          expr = rnorm(n = 5, mean = 0, sd = 1), 
+          simplify = FALSE )</code></pre>
+<pre><code>[[1]]
+[1]  0.4764134 -0.1253800  1.0962162 -1.4442290  1.1478293
+
+[[2]]
+[1] -0.46841204 -1.00595059  0.06356268  1.02497260  0.57314202
+
+[[3]]
+[1]  1.8471821  0.1119334 -0.7460373  1.6582137  0.7217206</code></pre>
+<p>Note if I don’t use <code>simplify = FALSE</code> I will get a matrix of values instead of a list. Each column in the matrix is the output from one run of the function.</p>
+<p>In this case there will be three columns in the output, one for each run, and 5 rows. This can be a useful output type for some simulations. I focus on list output throughout the rest of this post only because that’s what I have been using recently for simulations.</p>
+<pre class="r"><code>set.seed(16)
+replicate(n = 3, 
+          expr = rnorm(n = 5, mean = 0, sd = 1) )</code></pre>
+<pre><code>           [,1]        [,2]       [,3]
+[1,]  0.4764134 -0.46841204  1.8471821
+[2,] -0.1253800 -1.00595059  0.1119334
+[3,]  1.0962162  0.06356268 -0.7460373
+[4,] -1.4442290  1.02497260  1.6582137
+[5,]  1.1478293  0.57314202  0.7217206</code></pre>
+</div>
+<div id="an-equivalent-for-loop-example" class="section level2">
+<h2>An equivalent for() loop example</h2>
+<p>A <code>for()</code> loop can be used in place of <code>replicate()</code> for simulations. With time and practice I’ve found <code>replicate()</code> to be much more convenient in terms of writing the code. However, in my experience some folks find <code>for()</code> loops intuitive when they are starting out in R. I think it’s because <code>for()</code> loops are more explicit on the looping process: the user can see the values that <code>i</code> takes and the output for each <code>i</code> iteration is saved into the output object because the code is written out explicitly.</p>
+<p>In my example I’ll save the output of each iteration of the loop into a list called <code>list1</code>. I initialize this as an empty list prior to starting the loop. To match what I did with <code>replicate()</code> I do three iterations of the loop (<code>i in 1:3</code>), drawing 5 values via <code>rnorm()</code> each time.</p>
+<p>The result is identical to my <code>replicate()</code> code above. It took a little more code to do it but the process is very clear since it is explicitly written out.</p>
+<pre class="r"><code>set.seed(16)
+list1 = list() # Make an empty list to save output in
+for (i in 1:3) { # Indicate number of iterations with &quot;i&quot;
+    list1[[i]] = rnorm(n = 5, mean = 0, sd = 1) # Save output in list for each iteration
+}
+list1</code></pre>
+<pre><code>[[1]]
+[1]  0.4764134 -0.1253800  1.0962162 -1.4442290  1.1478293
+
+[[2]]
+[1] -0.46841204 -1.00595059  0.06356268  1.02497260  0.57314202
+
+[[3]]
+[1]  1.8471821  0.1119334 -0.7460373  1.6582137  0.7217206</code></pre>
+</div>
+<div id="using-replicate-to-repeatedly-make-a-dataset" class="section level2">
+<h2>Using replicate() to repeatedly make a dataset</h2>
+<p>Earlier we were making datasets with random numbers and some grouping variables. Our code looked like:</p>
+<pre class="r"><code>data.frame(group = rep(letters[1:2], each = 3),
+           response = rnorm(n = 6, mean = 0, sd = 1) )</code></pre>
+<pre><code>  group   response
+1     a -1.6630805
+2     a  0.5759095
+3     a  0.4727601
+4     b -0.5427317
+5     b  1.1276871
+6     b -1.6477976</code></pre>
+<p>We could put this process as the <code>expr</code> argument in <code>replicate()</code> to get many simulated datasets. I would do something like this if I wanted to compare the long-run performance of two different statistical tools using the exact same random datasets.</p>
+<p>I’ll replicate things 3 times again to easily see the output. I still use <code>simplify = FALSE</code> to get things into a list.</p>
+<pre class="r"><code>simlist = replicate(n = 3, 
+          expr = data.frame(group = rep(letters[1:2], each = 3),
+                            response = rnorm(n = 6, mean = 0, sd = 1) ),
+          simplify = FALSE)</code></pre>
+<p>We can see this result is a list of three data.frames.</p>
+<pre class="r"><code>str(simlist)</code></pre>
+<pre><code>List of 3
+ $ :&#39;data.frame&#39;:   6 obs. of  2 variables:
+  ..$ group   : Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 1 1 2 2 2
+  ..$ response: num [1:6] -0.314 -0.183 1.47 -0.866 1.527 ...
+ $ :&#39;data.frame&#39;:   6 obs. of  2 variables:
+  ..$ group   : Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 1 1 2 2 2
+  ..$ response: num [1:6] 1.03 0.84 0.217 -0.673 0.133 ...
+ $ :&#39;data.frame&#39;:   6 obs. of  2 variables:
+  ..$ group   : Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 1 1 2 2 2
+  ..$ response: num [1:6] -0.943 -1.022 0.281 0.545 0.131 ...</code></pre>
+<p>Here is the first one.</p>
+<pre class="r"><code>simlist[[1]]</code></pre>
+<pre><code>  group   response
+1     a -0.3141739
+2     a -0.1826816
+3     a  1.4704785
+4     b -0.8658988
+5     b  1.5274670
+6     b  1.0541781</code></pre>
+</div>
+</div>
+<div id="whats-the-next-step" class="section level1">
+<h1>What’s the next step?</h1>
+<p>I’m ending here, but there’s still more to learn about simulations. For a simulation to explore long-run behavior, some process is going to be repeated many times. We did this via <code>replicate()</code>. The next step would be to extract whatever results are of interest. This latter process is often going to involve some sort of looping.</p>
+<p>By saving our generated variables or data.frames into a list we’ve made it so we can loop via list looping functions like <code>lapply()</code> or <code>purrr::map()</code>. The family of <em>map</em> functions are newer and have a lot of convenient output types that make them pretty useful. If you want to see how that might look for a simulations, you can see a few examples in my blog post <a href="https://aosmith.rbind.io/2018/06/05/a-closer-look-at-replicate-and-purrr/">A closer look at replicate() and purrr::map() for simulations</a>.</p>
+<p>Happy simulating!</p>
+</div>
