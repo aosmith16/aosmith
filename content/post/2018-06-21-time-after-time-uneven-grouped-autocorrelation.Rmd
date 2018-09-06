@@ -113,7 +113,7 @@ If we want to work with the `acf()` function we'll need to make sure that the da
 
 Note that an alternative option for data like this, where we are assuming normally distributed errors, is to work with the **nlme** package.  That package has an `ACF()` function that works on both `gls` and `lme` objects that will respect groupings.
 
-# Decide on a maximum lag via group size
+# [Calculate the maximum lag](#calculate-the-maximum-lag)
 
 Since the units are considered to be independent of each other, the maximum lag to check for autocorrelation should be based on the maximum number of observations in a group.  Below is one way to check on group size.  Because I simulated these data I already know that the longest time series has 10 observations, but when working with real data this sort of check would be standard.
 
@@ -139,7 +139,7 @@ dat = dat %>%
      arrange(unit, time)
 ```
 
-# Pad the dataset with tidyr::complete()
+# [Pad the dataset with NA](#pad-the-dataset-with-na)
 
 When I was working through this problem for the first time, I found these [lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#testing) that showed the basic idea of adding observations in order to get the spacing between groups right.  In my own work I originally achieved this using some joins.  Since then I've found switched to using the `complete()` function from package **tidyr** for this task.  
 

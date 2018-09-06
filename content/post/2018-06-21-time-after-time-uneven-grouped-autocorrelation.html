@@ -101,8 +101,8 @@ library(dplyr) # v. 0.7.5</code></pre>
 <p>If we want to work with the <code>acf()</code> function we’ll need to make sure that the dataset is spaced appropriately. To achieve this we can add empty rows to the dataset for any missing samples. In addition, we need to add rows between sample units so we don’t mistakenly treat them as if they were from the same time series.</p>
 <p>Note that an alternative option for data like this, where we are assuming normally distributed errors, is to work with the <strong>nlme</strong> package. That package has an <code>ACF()</code> function that works on both <code>gls</code> and <code>lme</code> objects that will respect groupings.</p>
 </div>
-<div id="decide-on-a-maximum-lag-via-group-size" class="section level1">
-<h1>Decide on a maximum lag via group size</h1>
+<div id="calculate-the-maximum-lag" class="section level1">
+<h1><a href="#calculate-the-maximum-lag">Calculate the maximum lag</a></h1>
 <p>Since the units are considered to be independent of each other, the maximum lag to check for autocorrelation should be based on the maximum number of observations in a group. Below is one way to check on group size. Because I simulated these data I already know that the longest time series has 10 observations, but when working with real data this sort of check would be standard.</p>
 <pre class="r"><code>dat %&gt;%
     count(unit)</code></pre>
@@ -135,8 +135,8 @@ library(dplyr) # v. 0.7.5</code></pre>
 <pre class="r"><code>dat = dat %&gt;%
      arrange(unit, time)</code></pre>
 </div>
-<div id="pad-the-dataset-with-tidyrcomplete" class="section level1">
-<h1>Pad the dataset with tidyr::complete()</h1>
+<div id="pad-the-dataset-with-na" class="section level1">
+<h1><a href="#pad-the-dataset-with-na">Pad the dataset with NA</a></h1>
 <p>When I was working through this problem for the first time, I found these <a href="http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#testing">lecture notes</a> that showed the basic idea of adding observations in order to get the spacing between groups right. In my own work I originally achieved this using some joins. Since then I’ve found switched to using the <code>complete()</code> function from package <strong>tidyr</strong> for this task.</p>
 <pre class="r"><code>library(tidyr) # v. 0.8.1</code></pre>
 <p>You must have a variable representing the autocorrelation variable in the dataset for this approach to work. (This may seem obvious, but I’ve seen datasets that rely on the order of the dataset rather than having a specific time variable.) In this case that variable is <code>time</code>.</p>
