@@ -93,8 +93,8 @@ library(dplyr) # v. 0.7.5</code></pre>
 <p>I add the residuals to the dataset to keep things organized and to get ready for the next step.</p>
 <pre class="r"><code>dat$res = residuals(fit1)</code></pre>
 </div>
-<div id="problems-with-naively-using-acf-on-the-residuals" class="section level1">
-<h1>Problems with naively using acf() on the residuals</h1>
+<div id="problems-with-naively-using-acf" class="section level1">
+<h1><a href="#problems-with-naively-using-acf">Problems with naively using acf()</a></h1>
 <p>If we hadn’t thought about our spacing issue in our grouped dataset, the next step would be to use the <code>acf()</code> function to check for any residual autocorrelation at various time lags. The <code>acf()</code> function calculates and plots the autocorrelation function of a vector of values. That sounds like what we would want to do; so why do I say this would be naive?</p>
 <p>The <code>acf()</code> function expects values to be in order by time and <em>assumes equal spacing in time</em>. This means the <code>acf()</code> function considers any two observations that are next to each other in the dataset to be 1 lag apart even though it may have been three or more years since the last observation. If we calculate the autocorrelation function directly on the residuals as they are now we would ignore those instances where we didn’t sample for several years.</p>
 <p>In addition, the <code>acf()</code> function doesn’t know we have independent groups. The last observation of one time series comes immediately before the first observation of another, so <code>acf()</code> will be consider these to be one lag apart even though they are unrelated.</p>

@@ -101,7 +101,7 @@ I add the residuals to the dataset to keep things organized and to get ready for
 dat$res = residuals(fit1)
 ```
 
-# Problems with naively using acf() on the residuals
+# [Problems with naively using acf()](#problems-with-naively-using-acf)
 
 If we hadn't thought about our spacing issue in our grouped dataset, the next step would be to use the `acf()` function to check for any residual autocorrelation at various time lags.  The `acf()` function calculates and plots the autocorrelation function of a vector of values.  That sounds like what we would want to do; so why do I say this would be naive?  
 
