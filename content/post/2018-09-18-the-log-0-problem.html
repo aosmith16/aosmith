@@ -15,15 +15,16 @@ description: "Analyzing positive data with 0 values can be challenging, since a 
 
 
 
-<p>I periodically find myself having long conversations with consultees about 0’s. Why? Well, the basic suite of statistical tools many of us learn involves the normal distribution (for the errors) and the log transformation tends to feature prominently for working with right-skewed data. Since <code>log(0)</code> returns <code>-Infinity</code>, a common first reaction I see is to use <code>log(y + c)</code> as the response in place of <code>log(y)</code>, where <code>c</code> is some constant added to the y variable to get rid of the 0 values.</p>
-<p>This isn’t necessarily an incorrect thing to do. However, I think it is important to step back and think about the data and the 0 values more before forging ahead with adding a constant to the data.</p>
+<p>I periodically find myself having long conversations with consultees about 0’s. Why? Well, the basic suite of statistical tools many of us learn first involves the normal distribution (for the errors). The log transformation tends to feature prominently for working with right-skewed data. Since <code>log(0)</code> returns <code>-Infinity</code>, a common first reaction is to use <code>log(y + c)</code> as the response in place of <code>log(y)</code>, where <code>c</code> is some constant added to the y variable to get rid of the 0 values.</p>
+<p>This isn’t necessarily an incorrect thing to do. However, I think it is important to step back and think about the study and those 0 values more before forging ahead with adding a constant to the data.</p>
 <p>Some of the resources I’ve used over the years to hone my thinking on this topic are <a href="https://stat.ethz.ch/pipermail/r-sig-ecology/2009-June/000676.html">this thread</a> on the R-sig-eco mailing list, <a href="https://stats.stackexchange.com/questions/1444/how-should-i-transform-non-negative-data-including-zeros">this Cross Validated question and answers</a>, and <a href="https://robjhyndman.com/hyndsight/transformations/">this blogpost on the Hyndsight blog</a>.</p>
+<p>I will explore the influence of <code>c</code> in <code>log(y + c)</code> via simulation later, so if that’s what you are interested in you can <a href="#generate-log-normal-data-with-0-values">jump to that section</a>.</p>
 <div id="thinking-about-0-values" class="section level1">
 <h1><a href="#thinking-about-0-values">Thinking about 0 values</a></h1>
 <p>Without getting into too much detail, below are some of the things I consider when I have 0 as well as positive values in a response variable.</p>
 <div id="discrete-data" class="section level2">
 <h2>Discrete data</h2>
-<p>We have specific tools for working the discrete data. These distributions allow 0 values, so we can avoid potentially avoid the issue all together.</p>
+<p>We have specific tools for working the discrete data. These distributions allow 0 values, so we can potentially avoid the issue all together.</p>
 <p>Questions to ask yourself:</p>
 <div id="are-the-data-discrete-counts" class="section level3">
 <h3>Are the data discrete counts?</h3>
@@ -31,16 +32,16 @@ description: "Analyzing positive data with 0 values can be challenging, since a 
 </div>
 <div id="are-the-data-proportions" class="section level3">
 <h3>Are the data proportions?</h3>
-<p>If the data are counted proportions, made by dividing a count by some total count, start with binomial-based models.</p>
-<p>Models for discrete data can be extended as needed for a variety of situations (excessive 0 values, overdispersion, etc.). Sometimes things get too complicated and we may go back to normal-based tools but I would say that is the exception, not the rule.</p>
+<p>If the data are counted proportions, made by dividing a count by a total count, start with binomial-based models.</p>
+<p>Models for discrete data can be extended as needed for a variety of situations (excessive 0 values, overdispersion, etc.). Sometimes things get too complicated and we may go back to normal-based tools but this is the exception, not the rule.</p>
 </div>
 </div>
 <div id="continuous-data" class="section level2">
 <h2>Continuous data</h2>
-<p>Positive, continuous data and 0 values are where I find things start to get sticky. The standard distributions that we have available to model positive, right-skewed data (log-normal, Gamma) can’t contain 0. (Note that when we do the transformation log(y) and then used normal-based statistical tools we are working with the <em>log-normal</em> distribution.)</p>
+<p>Positive, continuous data and 0 values are where I find things start to get sticky. The standard distributions that we have available to model positive, right-skewed data (log-normal, Gamma) don’t contain 0. (Note that when we do the transformation log(y) and then used normal-based statistical tools we are working with the <em>log-normal</em> distribution.)</p>
 <div id="are-the-0-values-true-0s" class="section level3">
 <h3>Are the 0 values “true” 0’s?</h3>
-<p>Were the values unquestionably 0 (no ifs, ands, or buts!) or do you consider the 0’s to really represent some very small value?</p>
+<p>Were the values unquestionably 0 (no ifs, ands, or buts!) or do you consider the 0’s to really represent some very small value? Are the 0’s caused by the way you sampled or your measurement tool?</p>
 <p>This is important to consider, and the answer may affect how you proceed with the analysis and whether or not you think adding something and transforming is reasonable. There is a nice discussion of different kinds of 0’s in section 11.3.1 in <a href="http://highstat.com/index.php/mixed-effects-models-and-extensions-in-ecology-with-r">Zuur et al. 2009</a>.</p>
 </div>
 <div id="what-proportion-of-the-data-are-0" class="section level3">
@@ -49,29 +50,29 @@ description: "Analyzing positive data with 0 values can be challenging, since a 
 </div>
 <div id="are-the-0-values-caused-by-censoring" class="section level3">
 <h3>Are the 0 values caused by censoring?</h3>
-<p>Censoring can occur when our measuring tool has a lower limit of detection and every measurement lower than that limit is assigned a value of 0. This is not uncommon when measuring stream chemistry, for example. There are specific models for censored data, like Tobit models.</p>
+<p>Censoring can occur when your measurement tool has a lower limit of detection and every measurement lower than that limit is assigned a value of 0. This is not uncommon when measuring stream chemistry, for example. There are specific models for censored data, like Tobit models.</p>
 </div>
 <div id="are-the-data-continuous-proportions" class="section level3">
 <h3>Are the data continuous proportions?</h3>
-<p>The beta distribution can be used to model continuous proportions. However, the support of the beta distribution contains neither 0’s nor 1’s. Sheesh! You would need to either work with a zero-inflated/one-inflated beta or remap the variable to get rid of 0’s and 1’s.</p>
+<p>The beta distribution can be used to model continuous proportions. However, the support of the beta distribution contains neither 0’s nor 1’s. Sheesh! You would need to either work with a zero-inflated/one-inflated beta or remap the variable to get rid of any 0’s and 1’s.</p>
 </div>
 <div id="do-you-have-a-point-mass-at-0-along-with-positive-continuous-values" class="section level3">
 <h3>Do you have a point mass at 0 along with positive, continuous values?</h3>
-<p>The <a href="https://en.wikipedia.org/wiki/Tweedie_distribution">Tweedie distribution</a> is one relatively new option. I’ve seen this work well for % plant cover measurements, which can often be a bear to work with since the measurements can go from 0 to above 100% and often contain many 0 values.</p>
+<p>The <a href="https://en.wikipedia.org/wiki/Tweedie_distribution">Tweedie distribution</a> is one relatively new option that can work for this situation. For example, I’ve seen this work well for % plant cover measurements, which can often be a bear to work with since the measurements can go from 0 to above 100% and often contain many 0 values.</p>
 <p>Another option I’ve used for “point mass plus positive” data is to think about these as two separate problems that answer different questions. One analysis can answer a question about the probability of presence and a second can be used to model the positive data only. This is a type of <em>hurdle</em> model, which I’ve seen more generally referred to as a mixture model.</p>
 </div>
 </div>
 </div>
 <div id="common-choices-of-c" class="section level1">
 <h1><a href="#common-choices-of-c">Common choices of c</a></h1>
-<p>It may be that after all that hard thinking you end up on the option of adding a constant to shift your distribution away from 0 so you can proceed with a log transformation. I find this is most likely for cases where I consider the 0 values to be some minimal value (not true 0’s) and I have relatively few of them.</p>
+<p>It may be that after all that hard thinking you end up on the option of adding a constant to shift your distribution away from 0 so you can proceed with a log transformation. In my own work I find this is most likely for cases where I consider the 0 values to be some minimal value (not true 0’s) and I have relatively few of them.</p>
 <p>So what should this constant, <code>c</code>, be?</p>
 <p>This choice isn’t minor, as the value you choose can change your results when your goal is estimation. The more 0 values you have the more likely the choice of <code>c</code> matters.</p>
 <p>Some options:</p>
 <ul>
 <li><p>Add 1. I think folks find this attractive because log(1) = 0. However, whether or not 1 is reasonable can depend on the distribution of your data.</p></li>
 <li><p>Add half the minimum non-0 value. This is what I was taught to do in my statistics program, and I’ve heard of others with the same experience. As far as I know this is an unpublished recommendation.</p></li>
-<li><p>Add the square of the first quartile divided by the third quartile. This recommendation reportedly comes from <a href="https://stat.ethz.ch/~stahel/stat-dat-ana/">Stahel 2008</a>; I have never verified this since I unfortunately can’t read German. This approach clearly is relevant only if the first quartile is greater than 0, so you must have fewer than 25% 0 values to use this option.</p></li>
+<li><p>Add the square of the first quartile divided by the third quartile. This recommendation reportedly comes from <a href="https://stat.ethz.ch/~stahel/stat-dat-ana/">Stahel 2008</a>; I have never verified this since I unfortunately can’t read German. 😜 This approach clearly is relevant only if the first quartile is greater than 0, so you must have fewer than 25% 0 values to use this option.</p></li>
 </ul>
 </div>
 <div id="load-r-packages" class="section level1">
@@ -85,10 +86,10 @@ library(ggridges) # v. 0.5.0</code></pre>
 </div>
 <div id="generate-log-normal-data-with-0-values" class="section level1">
 <h1><a href="#generate-log-normal-data-with-0-values">Generate log-normal data with 0 values</a></h1>
-<p>Since the log-normal distribution by definition has no 0 values, I found it wasn’t easy to simulate such data. When I was working on this several years ago I decided that one way to force 0 values was through rounding. This is not the most elegant solution, I’m sure, but I think it works to show how the value of <code>c</code> can influence estimates.</p>
+<p>Since the log-normal distribution by definition has no 0 values, I found it wasn’t easy to simulate such data. When I was working on this several years ago I decided that one way to force 0 values was through rounding. This is not the most elegant solution, I’m sure, but I think it works to show how the choice of <code>c</code> can influence estimates.</p>
 <p>I managed to do this by generating primarily negative data on the log scale and then exponentiating to the data scale. I make my <code>x</code> variable negative, and positively related to <code>y</code>.</p>
-<p>The range of the <code>y</code> variable ends up with many small values but can have some fairly large values, as well.</p>
-<p>I’ll set the seed, set the values of the parameters (intercept and slope), and generate my <code>x</code>. I’m using a sample size of 50.</p>
+<p>The range of the <code>y</code> variable ends up with many small values with a few fairly large values.</p>
+<p>I’ll set the seed, set the values of the parameters (intercept and slope), and generate my <code>x</code> first. I’m using a sample size of 50.</p>
 <pre class="r"><code>set.seed(16)
 beta0 = 0 # intercept
 beta1 = .75 # slope
@@ -98,7 +99,7 @@ n = 50
 
 # Explanatory variable
 x = runif(n, min = -7, max = 0)</code></pre>
-<p>The response variable is calculated from the parameters and the normally distributed random errors, after exponentiating things to the scale of the data. These data can be used in a log-normal model via a log transformation.</p>
+<p>The response variable is calculated from the parameters, <code>x</code>, and the normally distributed random errors, exponentiating to get things on the appropriate scale. These data can be used in a log-normal model via a log transformation.</p>
 <p>You can see the vast majority of the data are below 1, but none are exactly 0.</p>
 <pre class="r"><code>true_y = exp(beta0 + beta1*x + rnorm(n, mean = 0, sd = 2))
 summary(true_y)</code></pre>
@@ -109,8 +110,8 @@ summary(true_y)</code></pre>
 summary(y)</code></pre>
 <pre><code>#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 #   0.000   0.010   0.085   8.656   0.420 377.350</code></pre>
-<p>I fooled around a lot with the parameter values, <code>x</code> variables, and the residual errors to get 0’s in the rounded <code>y</code> most of the time. I wanted some 0 values but not too many, since the quartile method can only be used when there are less than 25% 0 values.</p>
-<p>I checked for this by repeating the process above a number of times during testing. Here’s the number of 0 values for 100 iterations.</p>
+<p>I fooled around a lot with the parameter values, <code>x</code> variables, and the residual errors to get 0’s in the rounded <code>y</code> most of the time. I wanted some 0 values but not too many, since the quartile method for <code>c</code> can only be used when there are less than 25% 0 values.</p>
+<p>I tested my approach by repeating the process above a number of times. Here’s the number of 0 values for 100 iterations. Things look pretty good, although there are some instances where I get too many 0’s.</p>
 <pre class="r"><code>replicate(100, sum( round( exp(beta0 + beta1*runif(n, min = -7, max = 0) + 
                                   rnorm(n, mean = 0, sd = 2)), 2) == 0) )</code></pre>
 <pre><code>#   [1]  6  8  8  4  2  4  7  6  4  7  6 10  9  8  7  4  6 10  8  5  8  6  4
@@ -162,10 +163,10 @@ summary(y)</code></pre>
 </div>
 <div id="a-function-for-fitting-the-models" class="section level1">
 <h1>A function for fitting the models</h1>
-<p>I decided I want to fit these four models to the same data. To do this I’m going to fit all four models within each call to the function.</p>
+<p>I decided I want to fit these four models to the same data so I wanted to fit all four models within each call to my simulation function.</p>
 <p>The <code>beta0</code> and <code>beta1</code> arguments of the functions can technically be changed, but I’m pretty tied into the values I chose for them since I had a difficult time getting enough (but not too many!) 0 values.</p>
-<p>I wanted to make sure that I always had at least one 0 in the rounded <code>y</code> data but that less than 25% of the values were 0 so I included a <code>while()</code> loop. This is key for using the quartile method, which I wanted to do.</p>
-<p>The function returns a list of models. I give each model in the output list a name to help with organization when I start looking at results of many iterations of this.</p>
+<p>To make sure that I always had at least one 0 in the rounded <code>y</code> data but that less than 25% of the values were 0 so I included a <code>while()</code> loop. This is key for using the quartile method in this comparison.</p>
+<p>The function returns a list of models. I give each model in the output list a name to help with organization when I start looking at results.</p>
 <pre class="r"><code>logy_0 = function(beta0 = 0, beta1 = .75, n) {
      x = runif(n, -7, 0) # create expl var between -10 and 0
      true_y = exp(beta0 + beta1*x + rnorm(n, 0, 2))
@@ -246,7 +247,7 @@ head(results)</code></pre>
 # 4 Add 1     x        0.0801    0.0402      1.99 5.18e-2 -6.46e-4    0.161 
 # 5 Add 1/2 ~ (Inte~  -0.908     0.461      -1.97 5.48e-2 -1.84e+0    0.0193
 # 6 Add 1/2 ~ x        0.427     0.120       3.55 8.63e-4  1.85e-1    0.668</code></pre>
-<p>I’m going to focus on only the slopes, so pull those out explicitly.</p>
+<p>I’m going to focus on only the slopes, so I’ll pull those out explicitly.</p>
 <pre class="r"><code>results_sl = filter(results, term == &quot;x&quot;)</code></pre>
 </div>
 <div id="compare-the-options-for-c" class="section level1">
@@ -268,7 +269,7 @@ head(results)</code></pre>
 # 4 True model                 0.750       0.941</code></pre>
 <p>You can see right away that, as we’d expect, the actual model fit to the data prior to rounding does a good job. The confidence interval coverage is close to 0.95 and the median estimate is right at 0.75 (the true value).</p>
 <p>The log(y + 1) models performed extremely poorly. The estimated slope is biased extremely low, on average. None of the 1000 models ever had the true slope in the confidence interval. 😮</p>
-<p>The other two options performed better. The “Quartile method” gives estimates that are, on average, too high. The “Add 1/2 minimum &gt; 0” options underestimates the slope, on average. The confidence interval coverage is not great, but I suspect this is at least partially due to the artificial reduction in variance due to rounding.</p>
+<p>The other two options performed better. The “Quartile method” gives estimates that are, on average, too high while the “Add 1/2 minimum &gt; 0” options underestimates the slope. The confidence interval coverage is not great, but I suspect this is at least partially due to the way I artificially reduced the variance by rounding.</p>
 </div>
 <div id="graph-the-results" class="section level2">
 <h2>Graph the results</h2>
@@ -291,7 +292,7 @@ head(results)</code></pre>
 <div id="what-option-is-best" class="section level1">
 <h1>What option is best?</h1>
 <p>First, one of the main things I discovered is that my method for simulating positive, continuous data plus 0 values is a little kludgy. 😄 For the scenario I did simulate data for, though, adding 1 is clearly a very bad option if you want to get a reasonable estimate of the slope (which is generally my goal when I’m doing an analysis 😉).</p>
-<p>Why did adding 1 perform so badly? Remember that when we do a log transformation we increase the space between values less than 1 on the original scale and decrease the spacing between values above 1. These data were primarily below 1, so when we added 1 to the data we totally changed the spacing of the data after log transformation. Adding 1 prior to a log transformation is going to make the most sense if our minimum non-0 value is 1 or higher (at least for estimation).</p>
-<p>The other two options both performed OK in this specific scenario. Another avenue I think might be important to explore is how the number of 0 values in the distribution has an impact on the results. The choice between options could depend on that. Also, remember, the “Quartile method” only works at all if fewer than 25% of the data are 0’s.</p>
-<p>You may have noticed that statisticians generally dislike anti-conservative methods, so my guess is many (most?) statisticians would choose the conservative option (“Add 1/2 minimum &gt; 0”) to be on the safe side. However, even if this pattern of over- and under-estimation holds more generally in other scenarios, the choice between the options should likely be based on the gravity of missing a relationship due to underestimation compared to the gravity of overstating a relationship rather than on purely statistical concerns.</p>
+<p>Why did adding 1 perform so badly? Remember that when we do a log transformation we increase the space between values less than 1 on the original scale and decrease the space between values above 1. The data I created were primarily below 1, so by adding 1 to the data I totally changed the spacing of the data after log transformation. Using 1 as <code>c</code> is going to make the most sense if our minimum non-0 value is 1 or higher (at least for estimation).</p>
+<p>The other two options both performed OK in this specific scenario. You may have noticed that statisticians generally dislike anti-conservative methods, so my guess is many (most?) statisticians would choose the conservative option (“Add 1/2 minimum &gt; 0”) to be on the safe side. However, even if this pattern of over- and under-estimation holds more generally in other scenarios, the choice between these options should likely be based on the gravity of missing a relationship due to underestimation compared to the gravity of overstating a relationship rather than on purely statistical concerns.</p>
+<p>Another avenue I think might be important to explore is how the number of 0 values in the distribution has an impact on the results. The choice between <code>c</code> options could depend on that. (Plus, of course, the “Quartile method” only works at all if fewer than 25% of the data are 0’s).</p>
 </div>
