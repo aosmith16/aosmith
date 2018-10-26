@@ -1,0 +1,77 @@
+---
+title: 'Analysis essentials: An example directory structure for an analysis using R'
+author: Ariel Muldoon
+date: '2018-10-26'
+slug: an-example-directory-structure
+categories:
+  - statistics
+  - r
+tags:
+  - analysis
+draft: TRUE
+description: "I go through an example of the directory structure I used to organize my data, analysis scripts, and outputs for a recent collaborative analysis I did using R."
+---
+
+
+
+<p>When I was in my last quarter of my statistics MS I remember going to one of my professors and saying something along the lines of <em>“I definitely know a lot about certain statistical approaches, but if someone hands me a dataset I’m not sure I know where to start.”</em> I was missing the practical skills involved in doing an analysis, which is so much more than statistical methodology.</p>
+<p>There are a lot of practical skills involved in doing an analysis that are essential but that I rarely (never?) see included in the curriculum, statistics or otherwise. These are skills like how to organize your data, approaches for QAQC, and setting up a naming algorithm for files. We all need to to these things, but too often we end up on our own figuring things out.</p>
+<p>There have been some nice papers that have come out recently that I keep in my back pocket to give to students when they need them, such as <a href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005510">Good enough practices in scientific computing</a> by Wilson et al. and <a href="https://peerj.com/preprints/3183/">Data organization in spreadsheets</a> by Broman and Woo. We need more papers on these kinds of topics!</p>
+<p>In this post I go over something something that took me a long time to 1., realize was pretty darn important and 2., actually use, which is organizing a directory of my data, scripts, and output when doing any analysis. I refer to this as setting up my <em>directory structure</em>.</p>
+<p>Some of this can be generalized to any set of analysis tools, but the tools I use are specifically related to using R for the analysis.</p>
+<div id="the-root-directory" class="section level1">
+<h1><a href="#the-root-directory">The root directory</a></h1>
+<p>The first thing I do is create a folder that is going to hold all the files for the analysis. This folder is called the <em>root directory</em> because it is going to be at the top level of the hierarchy of folders used for analysis. Since this was a discrete set of analyses that I was going to do one time, this relatively simple set-up worked well for me.</p>
+<p>I use <a href="https://support.rstudio.com/hc/en-us/articles/200526207-Using-Projects">RStudio Projects</a> for my analyses, and I create a project file (ending in <code>.Rproj</code>) in my root directory. RStudio Projects are mostly for convenience, since they make it easy to go back to my analysis where I left off, but doing this also helps me use relative file paths in my work.</p>
+<p>If I switch to a different computer while working the analysis project (like when I work at home), I move the root directory and not only individual files.</p>
+</div>
+<div id="relative-file-paths" class="section level1">
+<h1><a href="#relative-file-paths">Relative file paths</a></h1>
+<p>Not so many years ago, I was laboriously writing out my file path for setting the working directory in <code>setwd()</code> or otherwise hard-coding file paths. And then I’d work at home one day and have to manually update all those file paths.</p>
+<p>All my scripts had code like</p>
+<pre class="r"><code># Directory when at work, uncomment as needed
+setwd(&quot;N:/Atwork/filepath/tomyfiles&quot;)
+# Directory when at home, uncomment as needed
+# setwd(&quot;C:/Users/Owner/Documents/Athome/forsomereason/thisfilepath/isreallylong&quot;)</code></pre>
+<p>When you can’t even collaborate with yourself efficiently you know there has to be a better way.</p>
+<p>Enter the <strong>here</strong> package. This package contains the <code>here()</code> function, which finds the root directory based on some simple heuristics. One of these involves finding the folder in the hierarchy that contains the <code>.Rproj</code> file. Storing my <code>.Rproj</code> file in my root directory allows me to write all file paths relative to that directory.</p>
+<p>Nowadays I don’t set a working directory at all, but instead read and write files using the <code>here()</code> function.</p>
+<p>For example, I can read data in from a folder called “Data” within my root directory. This code works on any computer I move the directory to, no matter that the absolute file path has changed.</p>
+<pre class="r"><code>dat = read.csv(here::here(&quot;Data&quot;, &quot;mydata.csv&quot;))</code></pre>
+<p>Similarly I can write code to save a final plot in a folder called “Plots”.</p>
+<pre class="r"><code>ggsave(file = &quot;myplot1.png&quot;, path = here::here(&quot;Plots&quot;))</code></pre>
+<p>Package <strong>here</strong> is great for simple directory structures like mine. For more complicated ones you may need the advanced options available in package <strong>rprojroot</strong>.</p>
+<p>(If you’re not convinced relative file paths are useful, see <a href="https://www.tidyverse.org/articles/2017/12/workflow-vs-script/">Jenny Bryan’s blog post</a> about project-oriented workflows.)</p>
+</div>
+<div id="data-folder" class="section level1">
+<h1>Data folder</h1>
+<p>One of the my standard sub-folders within my root directory is the “Data” folder. I store the data for analysis in this folder. I keep both original datasets from the domain expert and any cleaned versions that I create here. I read datasets into R for exploration and analysis as I demonstrated above via the <strong>here</strong> package.</p>
+</div>
+<div id="exploration-folder" class="section level1">
+<h1>Exploration folder</h1>
+<p>I always spend a considerable amount of time doing what a mentor of mine called “becoming one with the dataset” 🧘. This work includes making many different data summaries and as well as making a <em>lot</em> of exploratory graphics. I store the files for this work in the “Exploration” folder.</p>
+<p>These days I do my R coding work for projects like this exclusively within R markdown (<code>.Rmd</code>) files instead of R scripts. The exploration files, in particular, I write so that I can easily share them with not only my future self but also my domain-expert collaborators. This means I have to be extremely strict with myself about going back and writing lucid comments detailing my understanding of the project as a whole, of individual variables, and things I notice as I explore the data. I will talk more about my approach to using R markdown files for exploration and analysis in a future “Analysis essentials” post so (even though I’m tempted) I won’t go into any more detail here.</p>
+<p>For this particular project I was doing separate analyses for data collected at different sites. Given the domain expert considered each site separately, I used distinct files to explore the data at each of the four sites.</p>
+<p>I adopted a naming algorithm involving dates and site names following some of the suggestions in Jenny Bryan’s <a href="https://speakerdeck.com/jennybc/how-to-name-files">“naming things” slides</a>. For example, my R markdown file names looked like <code>2017-06_watershed_revisited_explore_site1_do.Rmd</code>, and I had HTML output files with the same names that I could send to my collaborator for review.</p>
+</div>
+<div id="analysis-folder" class="section level1">
+<h1>Analysis folder</h1>
+<p>The “Analysis” sub-folder is where I stored the R code files for the statistical analyses. I again used R markdown files, this time with comments and discussion primarily written for my future self (these end up looking suspiciously like comments I make for collaborators other than my future self 😜). Having the HTML output files means I can easily go back and see what I did and why along with the output without having to re-run my code.</p>
+<p>I also put specific scripts for making publication-ready graphics of the raw data for the manuscript in this folder. Code for plots of statistical results was contained in the analysis files.</p>
+<p>In this particular project I had some analyses that ended up being extremely time-consuming to run. I saved those model objects into the “Analysis” folder as <code>.Rdata</code> files so I wouldn’t have to re-run the models later to extract output, etc. Looking back now it might have been nice to save this in a sub-folder within “Analysis”.</p>
+<p>I wrote up a final description of the statistical methods for my collaborator, which I also saved in this folder.</p>
+</div>
+<div id="plots-folder" class="section level1">
+<h1>Plots folder</h1>
+<p>I store all “publication-ready” plots in this folder. I’ve found it’s easier to have plots stored separately, otherwise the “Analysis” folder gets so busy things are hard to find.</p>
+</div>
+<div id="results-folder" class="section level1">
+<h1>Results folder</h1>
+<p>I didn’t use the “Results” folder much for this project because I wasn’t asked to make any tables of statistical results. I did save final estimates as CSV files here so we would have these in an easy-to-use format if needed.</p>
+<p>In past projects I used this folder (possibly with a different name, like “Tables”) as a place to save publication-ready tables I made using R.</p>
+</div>
+<div id="miscellaneous-files" class="section level1">
+<h1>Miscellaneous files</h1>
+<p>Some files don’t fit within the 5 sub-folders I describe above, and those files ended up floating around in my root directory. These files range from publications I tracked down to figure out the analysis approach of a previous study in the same location to drafts of the manuscript that I reviewed. I see now I probably should have had at least one additional sub-folder to help with the organization of these sorts of files.</p>
+<p>I finished this project a year ago and had to revisit things this week to pull out some example code for a consulting client. I was definitely able to quickly find the code I was looking for; that’s a pretty successful directory structure in my book.</p>
+</div>
