@@ -12,9 +12,9 @@ draft: FALSE
 description: "I go through an example of the directory structure I used to organize my data, analysis scripts, and outputs for a recent collaborative analysis I did using R."
 ---
 
-There are a lot of practical skills involved in doing an analysis that are essential but that I rarely (never?) see included in the curriculum, statistics or otherwise.  These are skills like how to organize your data, how to approach QAQC, and how to set up a naming algorithm for files.  We all need to to these things, but too often we end up learning these skills by muddling through on our own.
+There are a lot of practical skills involved in doing an analysis that are essential but that I rarely (never?) see included in the curriculum, statistics or otherwise.  These are skills like how to organize your data, how to approach QAQC, and how to set up a naming algorithm for files.  We all need to do these things, but too often we end up learning these skills by muddling through on our own.
 
-There have been some nice papers relevant to this analysis essentials topic that have come out recently that I've found really useful.  See, for example, [Good enough practices in scientific computing](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005510) by Wilson et al. and [Data organization in spreadsheets](https://peerj.com/preprints/3183/) by Broman and Woo.  I'm glad to see folks thinking about these things! 
+There have been some nice papers relevant to the topic of what I'm calling "analysis essentials" that have come out recently and I've found to be really useful.  See, for example, [Good enough practices in scientific computing](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005510) by Wilson et al. and [Data organization in spreadsheets](https://peerj.com/preprints/3183/) by Broman and Woo.  I'm glad to see folks thinking about these things! 
 
 In this post I go over something that took me a long time to 1., realize was pretty darn important and 2., actually use, which is organizing a directory of my data, scripts, and output when doing an analysis.  I refer to this as setting up my *directory structure*.
 
@@ -71,11 +71,11 @@ One of the standard sub-folders I create within my root directory for an analysi
 
 I always spend a considerable amount of time doing what a mentor of mine called "becoming one with the dataset" `r emo::ji("person_in_lotus_position")`.  This work includes making many different data summaries as well as making a *lot* of exploratory graphics.  I stored the files for this task in the "Exploration" sub-folder.
 
-These days I do my R coding work for projects like this exclusively within R markdown (`.Rmd`) files instead of R scripts.  The exploration files, in particular, I write so that I can easily share them with not only my future self but also my domain-expert collaborators.  This means I have to be extremely strict with myself about going back and writing lucid comments detailing my understanding of the project as a whole, of individual variables, and things I notice as I explore the data.  I will talk more about my approach to using R markdown files for exploration and analysis in a future "Analysis essentials" post so I won't go into any more detail here.
+These days I do my R coding work for projects like this exclusively within R markdown (`.Rmd`) files instead of R scripts.  The exploration files, in particular, I write so that I can easily share them with not only my future self but also my domain-expert collaborators.  This means I have to be extremely strict with myself about going back and writing lucid comments detailing my understanding of the project as a whole, of individual variables, and things I notice as I explore the data.  I will talk more about my approach to using R markdown files for exploration and analysis in a future "analysis essentials" post so I won't go into any more detail here.
 
-For this particular project I was doing separate analyses for data collected at different sites.  I used distinct files to explore the data at each of five sites, which is one of the reasons I made a separate sub-folder to store all of these.
+For this particular project I was doing separate analyses for data collected at different sites.  I used distinct files to explore the data at each of five sites, which is one of the reasons I made a separate sub-folder to store these in.
 
-I adopted a naming algorithm involving dates and site names following some of the suggestions in Jenny Bryan's ["naming things" slides](https://speakerdeck.com/jennybc/how-to-name-files).  For example, my R markdown file names looked like `2017-06_watershed_revisited_explore_site1_do.Rmd`, and I had HTML output files with the same names that I could send to my collaborator for review.  
+I adopted a naming algorithm involving dates and site names following some of the suggestions in Jenny Bryan's ["naming things" slides](https://speakerdeck.com/jennybc/how-to-name-files).  For example, my R markdown file names looked like `2017-06_watershed_revisited_explore_site1_do.Rmd`, and I had HTML output files with the same names that I could send to my collaborator for review.  (This project involved dissolved oxygen and temperature data, which is why it looks like I made the odd choice to end my file names with the word "do". `r emo::ji("rofl")`)
 
 Much of the time data exploration also involves data cleaning.  However, data cleaning was not part of my role in this particular project and so I did not have any specific files or folders dedicated to it.
 
@@ -83,7 +83,7 @@ Much of the time data exploration also involves data cleaning.  However, data cl
 
 The "Analysis" sub-folder is where I stored the R code files for the statistical analysis.  I again used R markdown files, this time with comments and discussion primarily written for my future self (these end up looking suspiciously like comments I make for collaborators other than my future self `r emo::ji("stuck_out_tongue_winking_eye")`).  Having the HTML output files means I can easily go back and see what I did and why along with the output without having to re-run any code.  I did separate analyses per site for two distinct research questions so I ended up with a fair number of analysis scripts.
 
-I put specific scripts for making publication-ready graphics of the raw data for the manuscript in this folder, as well.  Code for plots of statistical results was contained within the analysis script.  
+I put specific scripts for making publication-ready graphics of the raw data for the manuscript in this folder, as well.  Code for plots of statistical results was contained within the analysis scripts.  
 
 In this particular project I had some analyses that ended up being extremely time-consuming to run.  I saved those model objects into the "Analysis" folder as `.Rdata` files so I wouldn't have to re-run the models later to extract output, etc.  Looking back now it might have been nice to save these in a sub-folder within "Analysis" to avoid some clutter.
 
@@ -95,12 +95,12 @@ I store all "publication-ready" plots in this sub-folder.  I've found it's easie
 
 # Results folder
 
-I didn't use the "Results" sub-folder much for this project because I wasn't asked to make any tables of statistical results.  I did save final estimates from some models as CSV files here so we would have these in an easy-to-use format if needed.
+I didn't use the "Results" sub-folder much for this project because I wasn't asked to make any final tables of statistical results.  I did save final estimates from some models as CSV files here so we would have these in an easy-to-use format if needed.
 
 In past projects I used this folder (possibly with a different name, like "Tables") as a place to save publication-ready tables I made using R.
 
 # Miscellaneous files
 
-Some files didn't fit within the 5 sub-folders I describe above, and those files ended up floating around in my root directory.  These files range from publications I tracked down while deciding on a statistical approach to drafts of the manuscript that I reviewed.  I see now I probably should have had at least one additional sub-folder to help with the organization.
+Some files didn't fit within the 5 sub-folders I describe above, and those files ended up floating around in my root directory.  These files range from publications I tracked down while deciding on a statistical approach to drafts of the manuscript that I reviewed.  I see now I probably should have had at least one additional sub-folder to help with the organization of these.
 
 I finished this project a year ago and had to revisit things this week to pull out some example plotting code for a consulting client.  This is one of the reasons to get the files organized; I was able to quickly find the code I was looking for and send it along. 
