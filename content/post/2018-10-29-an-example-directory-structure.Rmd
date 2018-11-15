@@ -12,6 +12,10 @@ draft: FALSE
 description: "I go through an example of the directory structure I used to organize my data, analysis scripts, and outputs for a recent collaborative analysis I did using R."
 ---
 
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
 There are a lot of practical skills involved in doing an analysis that are essential but that I rarely (never?) see included in the curriculum, statistics or otherwise.  These are skills like how to organize your data, how to approach QAQC, and how to set up a naming algorithm for files.  We all need to do these things, but too often we end up learning these skills by muddling through on our own.
 
 There have been some nice papers relevant to the topic of what I'm calling "analysis essentials" that have come out recently and I've found to be really useful.  See, for example, [Good enough practices in scientific computing](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005510) by Wilson et al. and [Data organization in spreadsheets](https://peerj.com/preprints/3183/) by Broman and Woo.  I'm glad to see folks thinking about these things! 
