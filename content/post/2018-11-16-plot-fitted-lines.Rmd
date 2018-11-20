@@ -41,14 +41,14 @@ I created a dataset to use for fitting models and used `dput()` to copy and past
      # (although I didn't set seed so making again will be different)
 dat = data.frame(block = rep(LETTERS[1:10], each = 4),
                  grp = rep(letters[1:4], times = 10),
-                 x1 = runif(40, 4, 16),
-                 x2 = runif(40, 100, 200))
+                 x1 = runif(40, min = 4, max = 16),
+                 x2 = runif(40, min = 100, max = 200))
 
 dat$resp = with(dat, 2*(grp == "a") + 20*(grp == "b") +
                      -10*(grp == "c") + 4*(grp == "d") +
                      10*x1 + -.25*x2 +
-                     rep(rnorm(10, 0, 1), each = 4) +
-                     rnorm(40, 0, 2))
+                     rep(rnorm(10, mean = 0, sd = 1), each = 4) +
+                     rnorm(40, mean = 0, sd = 2))
 
 dat = mutate_if(dat, is.numeric, round, digits = 1)
 

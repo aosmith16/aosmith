@@ -52,7 +52,7 @@ To be honest, she was pretty skeptical that it made sense to use a programming l
 
 Her skepticism continues to be a good reminder to me of what it feels like to be a beginner in a programming language, where you don't quite trust that the program is doing what you want it to and you don't exactly fully understand the code.  The manual approach you already know how to do can look pretty darn attractive by comparison.
 
-# List all files to read in
+# [List all files to read in](#list-all-files-to-read-in)
 
 When reading in many files, my first two tasks are:  
 
@@ -86,7 +86,7 @@ The `list.files` function returns a vector of file paths.
                         recursive = TRUE) )
 ```
 
-# Practice reading in one file
+# [Practice reading in one file](#practice-reading-in-one-file)
 
 I find things go more smoothly if I work out the file-reading process with a single file before I try to read a bunch of files.  It's an easy step to want to skip because it feels more efficient to do "everything at once".  I've never found that to actually be the case. `r emo::ji("tongue")`
 
@@ -198,7 +198,7 @@ Here's what the test dataset looks like now.
 test
 ```
 
-# Make a function to read all the files
+# [Make a function to read all the files](#make-a-function-to-read-all-the-files)
 
 Once the process is worked out for one file, I can "functionize" it (i.e., make a function).  This allows me to apply the exact same procedure to every dataset as it is read in.  
 
@@ -227,7 +227,7 @@ read_fun(allfiles[1])
 
 Looks good!
 
-# Read all the files
+# [Read all the files](#read-all-the-files)
 
 All that's left to do now is to loop through all the file paths in `allfiles`, read and modify each one with my function, and stack them together into a single dataset.  This can be done in base R with a `for` or `lapply` loop.  If using either of those options, the final concatenation step can be done via `rbind` in `do.call`.  
 

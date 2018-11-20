@@ -41,7 +41,7 @@ description: "I talk about why I'm seeing more students who have many datasets t
 <p>Her skepticism continues to be a good reminder to me of what it feels like to be a beginner in a programming language, where you don’t quite trust that the program is doing what you want it to and you don’t exactly fully understand the code. The manual approach you already know how to do can look pretty darn attractive by comparison.</p>
 </div>
 <div id="list-all-files-to-read-in" class="section level1">
-<h1>List all files to read in</h1>
+<h1><a href="#list-all-files-to-read-in">List all files to read in</a></h1>
 <p>When reading in many files, my first two tasks are:</p>
 <ul>
 <li>Getting a list of files to read<br />
@@ -63,15 +63,15 @@ description: "I talk about why I'm seeing more students who have many datasets t
                         pattern = &quot;AB.csv|ab.csv&quot;,
                         full.names = TRUE,
                         recursive = TRUE) )</code></pre>
-<pre><code># [1] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block1/Siteone/SIT1_17_12_21_5.2_AB.csv&quot;
-# [2] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block1/Siteone/sit1_17_12_31_2.2_ab.csv&quot;
-# [3] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block1/Siteone/SIT1_17_12_9_5.2_AB.csv&quot; 
-# [4] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_10_3.2_AB.csv&quot;
-# [5] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_21_3.2_AB.csv&quot;
-# [6] &quot;C:/Users/Owner/Documents/Aosmith/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_31_5.2_AB.csv&quot;</code></pre>
+<pre><code># [1] &quot;N:/docs/Blog/aosmith/static/data/Block1/Siteone/SIT1_17_12_21_5.2_AB.csv&quot;
+# [2] &quot;N:/docs/Blog/aosmith/static/data/Block1/Siteone/sit1_17_12_31_2.2_ab.csv&quot;
+# [3] &quot;N:/docs/Blog/aosmith/static/data/Block1/Siteone/SIT1_17_12_9_5.2_AB.csv&quot; 
+# [4] &quot;N:/docs/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_10_3.2_AB.csv&quot;
+# [5] &quot;N:/docs/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_21_3.2_AB.csv&quot;
+# [6] &quot;N:/docs/Blog/aosmith/static/data/Block2/Sitenew/SIT1_17_12_31_5.2_AB.csv&quot;</code></pre>
 </div>
 <div id="practice-reading-in-one-file" class="section level1">
-<h1>Practice reading in one file</h1>
+<h1><a href="#practice-reading-in-one-file">Practice reading in one file</a></h1>
 <p>I find things go more smoothly if I work out the file-reading process with a single file before I try to read a bunch of files. It’s an easy step to want to skip because it feels more efficient to do “everything at once”. I’ve never found that to actually be the case. 👅</p>
 <p>I’ll practice with the first file listed in <code>allfiles</code>. The top 6 lines of the raw data file is all extraneous header information, which will be skipped via <code>&quot;skip&quot;</code>. There are no column headers (<code>&quot;header&quot;</code>) in the file, so those need to be added (<code>&quot;col.names&quot;</code>).</p>
 <pre class="r"><code>( test = read.csv(allfiles[1], 
@@ -93,10 +93,10 @@ description: "I talk about why I'm seeing more students who have many datasets t
 <p>Since some information is located within the file path string, splitting the file path up into separate pieces seems like a reasonable first step. This can be done via <code>str_split</code> using <code>&quot;/&quot;</code> as the symbol to split on. As there is only a single character string to split for each dataset, it is convenient to return a matrix instead of a list via <code>simplify = TRUE</code>.</p>
 <p>The result is a matrix containing strings in each column.</p>
 <pre class="r"><code>( allnames = str_split( allfiles[1], pattern = &quot;/&quot;, simplify = TRUE) )</code></pre>
-<pre><code>#      [,1] [,2]    [,3]    [,4]        [,5]      [,6]   [,7]      [,8]    
-# [1,] &quot;C:&quot; &quot;Users&quot; &quot;Owner&quot; &quot;Documents&quot; &quot;Aosmith&quot; &quot;Blog&quot; &quot;aosmith&quot; &quot;static&quot;
-#      [,9]   [,10]    [,11]     [,12]                     
-# [1,] &quot;data&quot; &quot;Block1&quot; &quot;Siteone&quot; &quot;SIT1_17_12_21_5.2_AB.csv&quot;</code></pre>
+<pre><code>#      [,1] [,2]   [,3]   [,4]      [,5]     [,6]   [,7]     [,8]     
+# [1,] &quot;N:&quot; &quot;docs&quot; &quot;Blog&quot; &quot;aosmith&quot; &quot;static&quot; &quot;data&quot; &quot;Block1&quot; &quot;Siteone&quot;
+#      [,9]                      
+# [1,] &quot;SIT1_17_12_21_5.2_AB.csv&quot;</code></pre>
 <p>The “Block” information is always the third column if counting from the end (it’s the 10th in this case if counting from the beginning). It’s “safer” (i.e., less likely to fail on a different computer) to count from the last column and work backwards here; on a different computer the full file paths may change length but the directory containing the files to read will be the same.</p>
 <p>To extract the third column from the end I take the total number of columns and subtract 2.</p>
 <pre class="r"><code>allnames[, ncol(allnames) - 2]</code></pre>
@@ -144,7 +144,7 @@ test</code></pre>
 # 5   19          10 Block1 Siteone    5     AB</code></pre>
 </div>
 <div id="make-a-function-to-read-all-the-files" class="section level1">
-<h1>Make a function to read all the files</h1>
+<h1><a href="#make-a-function-to-read-all-the-files">Make a function to read all the files</a></h1>
 <p>Once the process is worked out for one file, I can “functionize” it (i.e., make a function). This allows me to apply the exact same procedure to every dataset as it is read in.</p>
 <p>The function I create below takes a single argument: the file path of the dataset. The function reads the file and then adds all the desired columns. It returns the modified dataset.</p>
 <pre class="r"><code>read_fun = function(path) {
@@ -170,7 +170,7 @@ test</code></pre>
 <p>Looks good!</p>
 </div>
 <div id="read-all-the-files" class="section level1">
-<h1>Read all the files</h1>
+<h1><a href="#read-all-the-files">Read all the files</a></h1>
 <p>All that’s left to do now is to loop through all the file paths in <code>allfiles</code>, read and modify each one with my function, and stack them together into a single dataset. This can be done in base R with a <code>for</code> or <code>lapply</code> loop. If using either of those options, the final concatenation step can be done via <code>rbind</code> in <code>do.call</code>.</p>
 <p>These days I’ve been using the <code>map</code> functions from package <strong>purrr</strong> for this, mostly because the <code>map_dfr</code> variant conveniently binds everything together by rows for me.</p>
 <pre class="r"><code>library(purrr) # v. 0.2.3</code></pre>
