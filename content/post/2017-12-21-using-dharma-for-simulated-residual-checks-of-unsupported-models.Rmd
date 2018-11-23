@@ -121,7 +121,7 @@ Remember I've only done 10 simulations here, so this particular set of plots don
 plotSimulatedResiduals(sim_res_nbz)
 ```
 
-# Simulations for models without a simulate() function
+# [Simulations for models without a simulate() function](#simulations-for-models-without-a-simulate-function)
 
 The `simulate` function did most of the heavy lifting for me in the `glmmTMB` example.  Not all models have a `simulate` function, though.  This doesn't mean I can't use **DHARMa**, but it does mean I have to put more effort in up front.
 
