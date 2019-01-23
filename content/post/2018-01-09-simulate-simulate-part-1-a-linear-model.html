@@ -27,14 +27,14 @@ description: "Where I discuss simulations, why I love them, and get started on a
 <p>A simulation for a linear model is based on the statistical model. The statistical model is an equation that describes the processes we believe gave rise to the observed response variable. It includes parameters to describe the assumed effect of explanatory variables on the response variable as well as a description of any distributions associated with processes we assume are random variation. (There is more in-depth coverage of the statistical model in Stroup’s 2013 <a href="https://books.google.com/books/about/Generalized_Linear_Mixed_Models.html?id=GcGrySpkXRMC">Generalized Linear Mixed Models</a> book if you are interested and have access to it.)</p>
 <p>So the statistical model is where we write down the exact assumptions we are making when we fit a linear model to a set of data.</p>
 <p>Here is an example of a linear model for two groups. I wrote the statistical model to match the form of the default summary output from a model fit with <code>lm()</code> in R.</p>
-<p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{&#39;&#39;group&#39;&#39;})} + \epsilon_t\]</span></p>
+<p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{group2})} + \epsilon_t\]</span></p>
 <ul>
 <li><span class="math inline">\(y_t\)</span> is the observed values for the quantitative response variable; <span class="math inline">\(t\)</span> goes from 1 to the number of observations in the dataset<br />
 </li>
 <li><span class="math inline">\(\beta_0\)</span> is the mean response variable when the group is “group1”</li>
 <li><span class="math inline">\(\beta_1\)</span> is the difference in mean response between the groups, “group2” minus “group1”.<br />
 </li>
-<li>The indicator variable, <span class="math inline">\(I_{(group_t=\textit{&#39;&#39;group2&#39;&#39;})}\)</span>, is 1 when the group is “group2” and 0 otherwise, as <span class="math inline">\(\beta_1\)</span> only affects the response variable for observations in “group2”</li>
+<li>The indicator variable, <span class="math inline">\(I_{(group_t=\textit{group2})}\)</span>, is 1 when the group is “group2” and 0 otherwise, as <span class="math inline">\(\beta_1\)</span> only affects the response variable for observations in “group2”</li>
 <li><span class="math inline">\(\epsilon_t\)</span> is the random variation present for each observation that is not explained by the group variable. These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, <span class="math inline">\(\sigma^2\)</span>: <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span></li>
 </ul>
 </div>
@@ -68,7 +68,7 @@ sd = 2</code></pre>
 # [19] -1.0854633  2.2553741</code></pre>
 <p>Now I have the fixed estimates of parameters, the variable <code>group</code> on which to base the indicator variable, and the simulated errors drawn from the defined distribution. That’s all the pieces I need to calculate my response variable.</p>
 <p>The statistical model</p>
-<p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{&#39;&#39;group&#39;&#39;})} + \epsilon_t\]</span></p>
+<p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{group2})} + \epsilon_t\]</span></p>
 <p>is my guide for how to combine these pieces to create the simulated response variable, <span class="math inline">\(y_t\)</span>. Notice I create the indicator variable in R with <code>group == &quot;group2&quot;</code> and call the simulated response variable <code>growth</code>.</p>
 <pre class="r"><code>( growth = b0 + b1*(group == &quot;group2&quot;) + eps )</code></pre>
 <pre><code>#  [1]  5.952827  4.749240  7.192432  2.111542  7.295659  4.063176  2.988099
@@ -145,9 +145,11 @@ twogroup_fun()</code></pre>
 <pre class="r"><code>library(broom)</code></pre>
 <p>This returns the information on coefficients and tests of those coefficients in a tidy format that is easy to work with.</p>
 <pre class="r"><code>tidy(growthfit)</code></pre>
-<pre><code>#          term  estimate std.error statistic      p.value
-# 1 (Intercept)  5.267633 0.6351230  8.293878 1.460563e-07
-# 2 groupgroup2 -1.554922 0.8981996 -1.731154 1.005290e-01</code></pre>
+<pre><code># # A tibble: 2 x 5
+#   term        estimate std.error statistic     p.value
+#   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;
+# 1 (Intercept)     5.27     0.635      8.29 0.000000146
+# 2 groupgroup2    -1.55     0.898     -1.73 0.101</code></pre>
 <p>I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models. For a linear model we can extract an estimate of the residual standard deviation from the <code>summary()</code> output. This can be squared to get the variance as needed.</p>
 <pre class="r"><code>summary(growthfit)$sigma</code></pre>
 <pre><code># [1] 2.008435</code></pre>

@@ -39,12 +39,12 @@ So the statistical model is where we write down the exact assumptions we are mak
 
 Here is an example of a linear model for two groups.  I wrote the statistical model to match the form of the default summary output from a model fit with `lm()` in R.
 
-$$y_t = \beta_0 + \beta_1*I_{(group_t=\textit{''group''})} + \epsilon_t$$
+$$y_t = \beta_0 + \beta_1*I_{(group_t=\textit{group2})} + \epsilon_t$$
 
 + $y_t$ is the observed values for the quantitative response variable; $t$ goes from 1 to the number of observations in the dataset  
 + $\beta_0$ is the mean response variable when the group is "group1"
 + $\beta_1$ is the difference in mean response between the groups, "group2" minus "group1".  
-+ The indicator variable, $I_{(group_t=\textit{''group2''})}$, is 1 when the group is "group2" and 0 otherwise, as $\beta_1$ only affects the response variable for observations in "group2"
++ The indicator variable, $I_{(group_t=\textit{group2})}$, is 1 when the group is "group2" and 0 otherwise, as $\beta_1$ only affects the response variable for observations in "group2"
 + $\epsilon_t$ is the random variation present for each observation that is not explained by the group variable.  These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, $\sigma^2$: $\epsilon_t \thicksim N(0, \sigma^2)$
 
 # A single simulation from a two-group model
@@ -89,7 +89,7 @@ Now I have the fixed estimates of parameters, the variable `group` on which to b
 
 The statistical model
 
-$$y_t = \beta_0 + \beta_1*I_{(group_t=\textit{''group''})} + \epsilon_t$$
+$$y_t = \beta_0 + \beta_1*I_{(group_t=\textit{group2})} + \epsilon_t$$
 
 is my guide for how to combine these pieces to create the simulated response variable, $y_t$.  Notice I create the indicator variable in R with `group == "group2"` and call the simulated response variable `growth`.
 
