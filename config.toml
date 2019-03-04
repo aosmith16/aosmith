@@ -57,6 +57,12 @@ math = true
   # Default format is: January 2, 2006
   dateFormat = "January 2, 2006"
 
+  # Github source
+ githubsource = "https://github.com/aosmith16/aosmith/blob/master/content/post/"
+
+   # Your Twitter username without the @. E.g : thibaudlepretre
+  twitter = "aosmith16"
+
   # Global keywords configuration. Following keywords will be add to every pages
   # keywords = ["development", "next-gen"]
 

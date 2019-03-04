@@ -1,0 +1,10 @@
+{{ with .Params.tags }}
+  {{ $tagsLen := len . }}
+  {{ if gt $tagsLen 0 }}
+    <span>{{ i18n "post.tagged_in" }}</span>
+    <i class="fa fa-tags fa-fw"></i>
+    {{ range $k, $v := . }}
+      <a class="tag-link" href="{{ . | printf "%s%s" "/tag/" | urlize | lower | relLangURL }}">{{ . }}</a>{{ if lt $k (sub $tagsLen 1) }}, {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}

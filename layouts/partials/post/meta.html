@@ -1,0 +1,40 @@
+{{ if not (eq .Params.showMeta false) }}
+  <div class="postShorten-meta post-meta">
+    {{ if not (eq .Params.showDate false)  }}
+      <time itemprop="datePublished" datetime="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
+        {{ partial "internal/date.html" . }}
+      </time>
+
+    {{ end }}
+<span>&middot;</span>
+{{ partial "post/tag2.html" . }}
+    {{end}}
+
+<!--this adds twitter handle to all posts-->
+
+  {{ with $.Site.Params.twitter }}
+  &middot;
+    <i class="fa fa-twitter fa-fw"></i>
+    <a href="https://twitter.com/{{ . }}" target="_blank">@{{ . }}</a>&nbsp{{ else }}@{{ . }}
+  </span>
+  {{ end }}
+<!--end twitter handle code-->
+
+      <!--this adds github edit button to all posts-->
+{{ if $.File.Path }}
+
+{{ $Rmd := (print $.File.BaseFileName ".Rmd") }}
+
+  {{ $.Scratch.Set "FilePath" (print $Rmd) }}
+
+  {{ with $.Site.Params.githubsource }}
+&middot;
+    <i class="fa fa-github fa-fw"></i>
+    <a href="{{ . }}{{ $.Scratch.Get "FilePath" }}" target="_blank">View source</a>&nbsp{{ else }}@{{ . }}
+
+  {{ end }}
+{{ end }}
+<!--end github edit code-->
+
+ </div>
+
