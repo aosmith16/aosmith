@@ -192,14 +192,14 @@ math = true
   name = "Home"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-home\"></i>"
   url = "/"
+#[[menu.main]]
+#  weight = 2
+#  identifier = "categories"
+#  name = "Categories"
+#  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-bookmark\"></i>"
+#  url = "/categories"
 [[menu.main]]
   weight = 2
-  identifier = "categories"
-  name = "Categories"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-bookmark\"></i>"
-  url = "/categories"
-[[menu.main]]
-  weight = 3
   identifier = "tags"
   name = "Tags"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-tags\"></i>"
@@ -211,7 +211,7 @@ math = true
 #  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-archive\"></i>"
 #  url = "/archives"
 [[menu.main]]
-  weight = 5
+  weight = 3
   identifier = "about"
   name = "About"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-question\"></i>"
