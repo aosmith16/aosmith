@@ -10,11 +10,8 @@ tags:
   - simulation
   - teaching
 slug: lots-of-zeros
-draft: no
-description: "When working with counts, having many zeros does not necessarily indicate
-  zero-inflation.  I demonstrate this by simulating data from the negative binomial
-  and generalized Poisson distributions.  I then show one way to check if the data
-  has excess zeros compared to the number expected by the model."
+draft: FALSE
+description: "When working with counts, having many zeros does not necessarily indicate zero-inflation.  I demonstrate this by simulating data from the negative binomial and generalized Poisson distributions.  I then show one way to check if the data has excess zeros compared to the number of zeros expected based on the model."
 ---
 
 ```{r setup, echo = FALSE}
