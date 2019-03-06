@@ -1,5 +1,5 @@
 ---
-title: 'Lots of zeros or too many zeros?: thinking about zero-inflation'
+title: 'Lots of zeros or too many zeros?: Thinking about zero-inflation in count data'
 author: Ariel Muldoon
 date: '2019-03-05'
 slug: lots-of-zeros
@@ -10,43 +10,43 @@ tags:
   - glmm
   - simulation
   - teaching
-draft: TRUE
-description: "When working with counts, having 0 values does not necessarily indicate zero-inflation.  I demonstrate this by simulating data data simulated the negative binomial and generalized Poisson distributions.  I finish by talking about how to check if the model you fit models the number of 0 values in the data well."
+draft: FALSE
+description: "When working with counts, having many zeros does not necessarily indicate zero-inflation.  I demonstrate this by simulating data from the negative binomial and generalized Poisson distributions.  I then show one way to check if the data has excess zeros compared to the number expected by the model."
 ---
 
 ```{r setup, echo = FALSE}
 knitr::opts_chunk$set(comment = "#")
 ```
 
-As part of a class I was teaching, I gave an brief introduction to generalized linear models (GLM) this quarter.  You can't get into much detail in on GLM's just four class periods weeks, but I did manage to work in a bit of info on zero inflation with count distributions.  One take-home message that I thought worth repeating here is that having a lot of zero values does not necessarily mean you have zero inflation.
+In a recent lecture I gave a basic overview of zero-inflation in count distributions.  My main take-home message to the students that I thought worth posting about here is that having a lot of zero values does not necessarily mean you have zero inflation.
 
 Zero inflation is when there are more 0 values in the data than the distribution allows for.  But some distributions can have a lot of zeros!
 
 # Load packages and dataset
 
-I'm going to be simulating counts from distributions to demonstrate this.  Before I get to that, I'll load the packages I'm using today.
+I'm going to be simulating counts from different distributions to demonstrate this.  First I'll load the packages I'm using today.
 
-Package **HMMpa** is for drawing random samples from the generalized Poisson distribution and **VGAM** for drawing from a zero-inflated negative binomial distribution.
+Package **HMMpa** is for drawing random samples from the generalized Poisson distribution.
 
 ```{r, message = FALSE}
 library(ggplot2) # v. 3.1.0
 library(HMMpa) # v. 1.0.1
 library(MASS) # v. 7.3-51.1
-library(VGAM) # v. 1.1-1
 ```
 
 # [Negative binomial with many zeros](negative-binomial-with-many-zeros)
 
-First I'll draw 200 counts from a negative binomial with $\lambda = 10$ and $\theta = 0.05$.  R generally uses the parameterization where the variance of the distribution is $\lambda + (\lambda^2/\theta)$, so as $\theta$ gets small the variance gets big.
+First I'll draw 200 counts from a negative binomial with a mean ($\lambda$) of $10$ and $\theta = 0.05$.  
+R uses the parameterization of the negative binomial where the variance of the distribution is $\lambda + (\lambda^2/\theta)$.  In this parameterization, as $\theta$ gets small the variance gets big.  Using such a small value for theta will generally mean the distribution of counts can have many zeros as well as a few large counts
 
-I make random draws from this simple distribution using `rnbinom()`.  The `mu` argument is the mean and the `size` argument is theta.  Using such a small $\theta$ in the simulation will generally return lots of 0 values as well as a few very large values.
+I make random draws from this distribution using `rnbinom()`.  The `mu` argument is the mean and the `size` argument is theta.  
 
 ```{r}
 set.seed(16)
 dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )
 ```
 
-Here is a histogram of these data.  I've added info to the plot on the proportion of the 200 values that are 0 as well as the maximum observed count in the dataset.  There are lots of zeros!
+Here is a histogram of these data.  I've annotated the plot with the proportion of the 200 values that are 0 as well as the maximum observed count in the dataset.  There are lots of zeros!  But this is not zero-inflated, because we can expect to have many 0 values under this distribution.
 
 ```{r}
 ggplot(dat, aes(x = Y) ) +
@@ -54,7 +54,7 @@ ggplot(dat, aes(x = Y) ) +
 	theme_bw(base_size = 18) +
 	labs(y = "Frequency",
 	     title = "Negative binomial",
-	     subtitle = "lambda = 10, theta = 0.05" ) +
+	     subtitle = "mean = 10, theta = 0.05" ) +
 	annotate(geom = "text",
 		    label = paste("Proportion 0:", mean(dat$Y == 0), 
 		    		    "\nMax Count:", max(dat$Y) ),
@@ -64,7 +64,9 @@ ggplot(dat, aes(x = Y) ) +
 
 # [Generalized Poisson with many zeros](#generalized-poisson-with-many-zeros)
 
-I don't know the generalized Poisson distribution well, although it seems to be common in some fields.  For whatever reason, the negative binomial seems much more common in ecology.  From my understanding, this distribution can have heavier tails than the negative binomial, so it can have more extreme maximum counts as well as lots of zeros.
+I don't know the generalized Poisson distribution well, although it appears to be regularly used in some fields.  For whatever reason, the negative binomial seems much more common in ecology.  
+
+From my understanding, the generalized Poisson distribution can have heavier tails than the negative binomial.  It can have more extreme maximum counts as well as lots of zeros.
 
 See the documentation for `rgenpois()` for the formula for the density and definitions of mean and variance.  Note that when `lambda2` is 0, the generalized Poisson reduces to the Poisson.
 
@@ -74,7 +76,7 @@ set.seed(16)
 dat = data.frame(Y = rgenpois(200, lambda1 = 0.5, lambda2 = 0.95) )
 ```
 
-Here is a histogram of these data.  There are only a little over 50% zeros but the maximum count is over 1000! `r emo::ji("open_mouth")`
+Here is a histogram of these data.  Just over 50% of the values are zeros but the maximum count is over 1000! `r emo::ji("boom")`
 
 ```{r}
 ggplot(dat, aes(x = Y) ) +
@@ -92,15 +94,15 @@ ggplot(dat, aes(x = Y) ) +
 
 # [Lots of zeros or excess zeros?](#lots-of-zeros-or-excess-zeros)
 
-All the simulations above show us is that some distributions *can* have a lot of zeros.  In any given scenario, though, how do we check if we have *excess* zeros (i.e., more than the distribution we are using for modeling allows)?  If we have excess zeros than we may either need a different distribution or we could think about models that specifically address zero-inflation.
+All the simulations above show us is that some distributions *can* have a lot of zeros.  In any given scenario, though, how do we check if we have *excess* zeros?  Excess zeros is having more zeros than expected by the distribution we are using for modeling.  If we have excess zeros than we may either need a different count distribution or we could think about models that specifically address zero-inflation.
 
-The key is to figure out the number of zeros you would expect to see if the fitted model were truly the model that created your data.
+The key to checking for excess zeros is to estimate the number of zeros you would expect to see if the fitted model were truly the model that created your data.
 
 # Simulate negative binomial data
 
-To demonstrate this, I'll make a dataset based on a negative binomial model with a single explanatory variable.  
+To demonstrate this, I'll make a dataset based on a negative binomial model with a single, continuous explanatory variable.  
 
-Since this is a generalized linear model, I first calculate the means based on the linear predictor (the exponetiation is due to the log link).
+Since this is a generalized linear model, I first calculate the means based on the linear predictor (the exponentiation is due to using the natural log link to *link* the mean to the linear predictor).
 
 ```{r}
 set.seed(16)
@@ -108,47 +110,47 @@ x = runif(200, 5, 10) # simulate explanatory variable
 b0 = 1 # set value of intercept
 b1 = 0.25 # set value of intercept
 means = exp(b0 + b1*x) # true means
+theta = 0.25 # true theta
 ```
 
-Then I can use the means along with my chosen value of `theta` to simulate data from the negative binomial distribution.
+I can use these true means along with my chosen value of `theta` to simulate data from the negative binomial distribution.
 
 ```{r}
-theta = 0.25
 y = rnbinom(200, mu = means, size = theta)
 ```
 
-Now that I've made some data I can fit a model.  Since I'm using a negative binomial GLM with `x` as the explanatory variable, which is how I created the data, this model should work well.  The `glm.nb()` function is in package **MASS**.
+Now that I've made some data I can fit a model.  Since I'm using a negative binomial GLM with `x` as the explanatory variable, which is how I created the data, this model should work well.  The `glm.nb()` function is from package **MASS**.
 
 ```{r}
 fit1 = glm.nb(y ~ x)
 ```
 
-I'm going to go directly to checking for excess zeros, but I would usually look at residual plots and check for overdispersion to check model fit.
+In this exercise I'm going to go directly to checking for excess zeros.  This means I'm skipping other important checks of model fit, such as checks for overdispersion and examining residual plots.  Don't skip these in a real analysis; having excess zeros certainly isn't the only problem we can run into with count data.
 
 # [Checking for excess zeros](#checking-for-excess-zeros)
 
-The observed data has 76 0 values in it (out of 200).
+The observed data has 76 zeros (out of 200).
 
 ```{r}
 sum(y == 0)
 ```
 
-How many zeros is expected given the model?  I need the model estimated means and theta to anwer this.  I can get the means via `predict()` and I can pull `theta` out of the model `summary()`.
+How many zeros is expected given the model?  I need the model estimated means and theta to answer this question.  I can get the means via `predict()` and I can pull `theta` out of the model `summary()`.
 
 ```{r}
 preds = predict(fit1, type = "response") # estimated means
 esttheta = summary(fit1)$theta # estimated theta
 ```
 
-For discrete distributions like the negative binomial, the *density* distribution functions (which start with "d") return the probability that the observation is equal to the given value.  This means I can use `dnbinom()` to calculate the probability of an observation being 0 for every row in the dataset if I provide values for the parameters of the distribution of each observation.  
+For discrete distributions like the negative binomial, the *density* distribution functions (which start with the letter "d") return the probability that the observation is equal to a given value.  This means I can use `dnbinom()` to calculate the probability of an observation being 0 for every row in the dataset if I provide values for the parameters of the distribution of each observation.  
 
-Based on the model, the distribution of each observation is negative binomial with a model estimated mean and the overall theta.
+Based on the model, the distribution of each observation is negative binomial with the mean estimated from the model and the overall estimated theta.
 
 ```{r}
 prop0 = dnbinom(x = 0, mu = preds, size = esttheta )
 ```
 
-The sum these probabilities is an estimate of the number of zero values expected by the model (see [here](https://data.library.virginia.edu/getting-started-with-hurdle-models/) for another example).  I'll round this to the nearest integer.
+The sum of these probabilities is an estimate of the number of zero values expected by the model (see [here](https://data.library.virginia.edu/getting-started-with-hurdle-models/) for another example).  I'll round this to the nearest integer.
 
 ```{r}
 round( sum(prop0) )
@@ -158,7 +160,7 @@ The expected number of 0 values is ~72, very close to the 76 observed in the dat
 
 # [An example with excess zeros](#an-example-with-excess-zeros)
 
-The example above demonstrates a model that fits the data.  Let me finish by fitting a model to data that has more zeros than expected by the distribution.  This can be done by fitting a Poisson GLM instead of a negative binomial GLM to the data above.
+The example above demonstrates a model without excess zeros.  Let me finish by fitting a model to data that has more zeros than expected by the distribution.  This can be done by fitting a Poisson GLM instead of a negative binomial GLM to my simulated data.
 
 ```{r}
 fit2 = glm(y ~ x, family = poisson)
@@ -170,9 +172,12 @@ Remember the data contain 76 zeros.
 sum(y == 0)
 ```
 
-But, based on the Poisson model, we expect no 0 values.  These data are zero-inflated compared to the Poisson distribution, and we'd need a different option for fitting these data.
+Using `dpois()`, the number of zeros given be the Poisson model is 0. `r emo::ji("open_mouth")` These data are zero-inflated compared to the Poisson distribution, and I would need a different option for modeling these data.
 
 ```{r}
 round( sum( dpois(x = 0,
            lambda = predict(fit2, type = "response") ) ) )
 ```
+
+This brings me back to my earlier point about checking model fit.  If I had done other standard checks of model fit for `fit2` I would have seen additional problems that would indicate the Poisson distribution did not fit these data (such as severe overdispersion).
+
