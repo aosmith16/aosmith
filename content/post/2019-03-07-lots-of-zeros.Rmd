@@ -1,17 +1,20 @@
 ---
 title: 'Lots of zeros or too many zeros?: Thinking about zero-inflation in count data'
 author: Ariel Muldoon
-date: '2019-03-05'
-slug: lots-of-zeros
+date: '2019-03-07'
 categories:
-  - statistics
   - r
+  - statistics
 tags:
   - glmm
   - simulation
   - teaching
-draft: FALSE
-description: "When working with counts, having many zeros does not necessarily indicate zero-inflation.  I demonstrate this by simulating data from the negative binomial and generalized Poisson distributions.  I then show one way to check if the data has excess zeros compared to the number expected by the model."
+slug: lots-of-zeros
+draft: no
+description: When working with counts, having many zeros does not necessarily indicate
+  zero-inflation.  I demonstrate this by simulating data from the negative binomial
+  and generalized Poisson distributions.  I then show one way to check if the data
+  has excess zeros compared to the number expected by the model.
 ---
 
 ```{r setup, echo = FALSE}

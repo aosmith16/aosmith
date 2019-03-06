@@ -1,17 +1,20 @@
 ---
 title: 'Lots of zeros or too many zeros?: Thinking about zero-inflation in count data'
 author: Ariel Muldoon
-date: '2019-03-05'
-slug: lots-of-zeros
+date: '2019-03-07'
 categories:
-  - statistics
   - r
+  - statistics
 tags:
   - glmm
   - simulation
   - teaching
-draft: FALSE
-description: "When working with counts, having many zeros does not necessarily indicate zero-inflation.  I demonstrate this by simulating data from the negative binomial and generalized Poisson distributions.  I then show one way to check if the data has excess zeros compared to the number expected by the model."
+slug: lots-of-zeros
+draft: no
+description: When working with counts, having many zeros does not necessarily indicate
+  zero-inflation.  I demonstrate this by simulating data from the negative binomial
+  and generalized Poisson distributions.  I then show one way to check if the data
+  has excess zeros compared to the number expected by the model.
 ---
 
 
@@ -44,7 +47,7 @@ dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )</code></pre>
             label = paste(&quot;Proportion 0:&quot;, mean(dat$Y == 0), 
                         &quot;\nMax Count:&quot;, max(dat$Y) ),
                         x = 150, y = 100, size = 8)</code></pre>
-<p><img src="/post/2019-03-05-lots-of-zeros_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="/post/2019-03-07-lots-of-zeros_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 </div>
 <div id="generalized-poisson-with-many-zeros" class="section level1">
 <h1><a href="#generalized-poisson-with-many-zeros">Generalized Poisson with many zeros</a></h1>
@@ -64,7 +67,7 @@ dat = data.frame(Y = rgenpois(200, lambda1 = 0.5, lambda2 = 0.95) )</code></pre>
             label = paste(&quot;Proportion 0:&quot;, mean(dat$Y == 0), 
                         &quot;\nMax Count:&quot;, max(dat$Y) ),
                         x = 600, y = 100, size = 8)</code></pre>
-<p><img src="/post/2019-03-05-lots-of-zeros_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/2019-03-07-lots-of-zeros_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 </div>
 <div id="lots-of-zeros-or-excess-zeros" class="section level1">
 <h1><a href="#lots-of-zeros-or-excess-zeros">Lots of zeros or excess zeros?</a></h1>
