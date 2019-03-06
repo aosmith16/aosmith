@@ -18,7 +18,7 @@ description: "When working with counts, having 0 values does not necessarily ind
 knitr::opts_chunk$set(comment = "#")
 ```
 
-I gave an introduction to generalized linear models this quarter.  You can't really cover that much in two weeks, but I did manage to talk to students about zero inflation with count distributions for a few minutes.  Outside of talking about approaches when you have zero inflation, the main thing I wanted to stress is that having a lot of zero values does not necessarily mean you have zero inflation.
+As part of a class I was teaching, I gave an brief introduction to generalized linear models (GLM) this quarter.  You can't get into much detail in on GLM's just four class periods weeks, but I did manage to work in a bit of info on zero inflation with count distributions.  One take-home message that I thought worth repeating here is that having a lot of zero values does not necessarily mean you have zero inflation.
 
 Zero inflation is when there are more 0 values in the data than the distribution allows for.  But some distributions can have a lot of zeros!
 
@@ -46,7 +46,7 @@ set.seed(16)
 dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )
 ```
 
-Here is a histogram of these data.  I've added in info on the proportion of the 200 values that are 0 as well as the maximum count in the dataset.
+Here is a histogram of these data.  I've added info to the plot on the proportion of the 200 values that are 0 as well as the maximum observed count in the dataset.  There are lots of zeros!
 
 ```{r}
 ggplot(dat, aes(x = Y) ) +
@@ -140,7 +140,7 @@ preds = predict(fit1, type = "response") # estimated means
 esttheta = summary(fit1)$theta # estimated theta
 ```
 
-For discrete distributions like the negative binomial, the `density` distribution functions (which start with `d`) return the probability that the observation is equal to the given value.  This means I can use `dnbinom()` to calculate the probability of an observation being 0 for every row in the dataset if I provide values for the parameters of the distribution of each observation.  
+For discrete distributions like the negative binomial, the *density* distribution functions (which start with "d") return the probability that the observation is equal to the given value.  This means I can use `dnbinom()` to calculate the probability of an observation being 0 for every row in the dataset if I provide values for the parameters of the distribution of each observation.  
 
 Based on the model, the distribution of each observation is negative binomial with a model estimated mean and the overall theta.
 
@@ -154,9 +154,11 @@ The sum these probabilities is an estimate of the number of zero values expected
 round( sum(prop0) )
 ```
 
+The expected number of 0 values is ~72, very close to the 76 observed in the data.  This is no big surprise, since I fit the same model that I used to create the data.
+
 # [An example with excess zeros](#an-example-with-excess-zeros)
 
-The example above demonstrates a model fitting the data.  Let me finish by fitting a model to data that has more zeros than expected by the model.  This is as simple as fitting a Poisson GLM instead of a negative binomial GLM to the data above.
+The example above demonstrates a model that fits the data.  Let me finish by fitting a model to data that has more zeros than expected by the distribution.  This can be done by fitting a Poisson GLM instead of a negative binomial GLM to the data above.
 
 ```{r}
 fit2 = glm(y ~ x, family = poisson)
