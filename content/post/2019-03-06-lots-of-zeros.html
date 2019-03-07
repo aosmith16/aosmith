@@ -1,5 +1,5 @@
 ---
-title: 'Lots of zeros or too many zeros?: Thinking about zero-inflation in count data'
+title: 'Lots of zeros or too many zeros?: Thinking about zero inflation in count data'
 author: Ariel Muldoon
 date: '2019-03-06'
 categories:
@@ -12,7 +12,7 @@ tags:
 slug: lots-of-zeros
 draft: no
 description: When working with counts, having many zeros does not necessarily indicate
-  zero-inflation.  I demonstrate this by simulating data from the negative binomial
+  zero inflation.  I demonstrate this by simulating data from the negative binomial
   and generalized Poisson distributions.  I then show one way to check if the data
   has excess zeros compared to the number of zeros expected based on the model.
 ---
@@ -24,7 +24,7 @@ description: When working with counts, having many zeros does not necessarily in
 <div id="load-packages-and-dataset" class="section level1">
 <h1>Load packages and dataset</h1>
 <p>I’m going to be simulating counts from different distributions to demonstrate this. First I’ll load the packages I’m using today.</p>
-<p>Package <strong>HMMpa</strong> is for drawing random samples from the generalized Poisson distribution.</p>
+<p>Package <strong>HMMpa</strong> is for a function to draw random samples from the generalized Poisson distribution.</p>
 <pre class="r"><code>library(ggplot2) # v. 3.1.0
 library(HMMpa) # v. 1.0.1
 library(MASS) # v. 7.3-51.1</code></pre>
@@ -32,11 +32,11 @@ library(MASS) # v. 7.3-51.1</code></pre>
 <div id="negative-binomial-with-many-zeros" class="section level1">
 <h1><a href="negative-binomial-with-many-zeros">Negative binomial with many zeros</a></h1>
 <p>First I’ll draw 200 counts from a negative binomial with a mean (<span class="math inline">\(\lambda\)</span>) of <span class="math inline">\(10\)</span> and <span class="math inline">\(\theta = 0.05\)</span>.<br />
-R uses the parameterization of the negative binomial where the variance of the distribution is <span class="math inline">\(\lambda + (\lambda^2/\theta)\)</span>. In this parameterization, as <span class="math inline">\(\theta\)</span> gets small the variance gets big. Using such a small value for theta will generally mean the distribution of counts can have many zeros as well as a few large counts</p>
-<p>I make random draws from this distribution using <code>rnbinom()</code>. The <code>mu</code> argument is the mean and the <code>size</code> argument is theta.</p>
+R uses the parameterization of the negative binomial where the variance of the distribution is <span class="math inline">\(\lambda + (\lambda^2/\theta)\)</span>. In this parameterization, as <span class="math inline">\(\theta\)</span> gets small the variance gets big. Using a very small value of theta like I am will generally mean the distribution of counts will have many zeros as well as a few large counts</p>
+<p>I pull a random sample of size 200 from this distribution using <code>rnbinom()</code>. The <code>mu</code> argument is the mean and the <code>size</code> argument is theta.</p>
 <pre class="r"><code>set.seed(16)
 dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )</code></pre>
-<p>Here is a histogram of these data. I’ve annotated the plot with the proportion of the 200 values that are 0 as well as the maximum observed count in the dataset. There are lots of zeros! But this is not zero-inflated, because we can expect to have many 0 values under this distribution.</p>
+<p>Below is a histogram of these data. I’ve annotated the plot with the proportion of the 200 values that are 0 as well as the maximum observed count in the dataset. There are lots of zeros! But these data are not zero-inflated because we expect to have many 0 values under this particular distribution.</p>
 <pre class="r"><code>ggplot(dat, aes(x = Y) ) +
     geom_histogram(binwidth = 5)  +
     theme_bw(base_size = 18) +
@@ -51,12 +51,12 @@ dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )</code></pre>
 </div>
 <div id="generalized-poisson-with-many-zeros" class="section level1">
 <h1><a href="#generalized-poisson-with-many-zeros">Generalized Poisson with many zeros</a></h1>
-<p>I don’t know the generalized Poisson distribution well, although it appears to be regularly used in some fields. For whatever reason, the negative binomial seems much more common in ecology.</p>
-<p>From my understanding, the generalized Poisson distribution can have heavier tails than the negative binomial. It can have more extreme maximum counts as well as lots of zeros.</p>
-<p>See the documentation for <code>rgenpois()</code> for the formula for the density and definitions of mean and variance. Note that when <code>lambda2</code> is 0, the generalized Poisson reduces to the Poisson.</p>
+<p>I don’t know the generalized Poisson distribution well, although it appears to be regularly used in some fields. For whatever reason, the negative binomial seems much more common in ecology. 🤷</p>
+<p>From my understanding, the generalized Poisson distribution can have heavier tails than the negative binomial. This would mean that it can have more extreme maximum counts as well as lots of zeros.</p>
+<p>See the documentation for <code>rgenpois()</code> for the formula for the density of the generalized Poisson and definitions of mean and variance. Note that when <code>lambda2</code> is 0, the generalized Poisson reduces to the Poisson.</p>
 <pre class="r"><code>set.seed(16)
 dat = data.frame(Y = rgenpois(200, lambda1 = 0.5, lambda2 = 0.95) )</code></pre>
-<p>Here is a histogram of these data. Just over 50% of the values are zeros but the maximum count is over 1000! 💥</p>
+<p>Below is a histogram of these data. Just over 50% of the values are zeros but the maximum count is over 1000! 💥</p>
 <pre class="r"><code>ggplot(dat, aes(x = Y) ) +
     geom_histogram(binwidth = 5)  +
     theme_bw(base_size = 18) +
@@ -71,18 +71,18 @@ dat = data.frame(Y = rgenpois(200, lambda1 = 0.5, lambda2 = 0.95) )</code></pre>
 </div>
 <div id="lots-of-zeros-or-excess-zeros" class="section level1">
 <h1><a href="#lots-of-zeros-or-excess-zeros">Lots of zeros or excess zeros?</a></h1>
-<p>All the simulations above show us is that some distributions <em>can</em> have a lot of zeros. In any given scenario, though, how do we check if we have <em>excess</em> zeros? Excess zeros is having more zeros than expected by the distribution we are using for modeling. If we have excess zeros than we may either need a different count distribution or we could think about models that specifically address zero-inflation.</p>
-<p>The key to checking for excess zeros is to estimate the number of zeros you would expect to see if the fitted model were truly the model that created your data.</p>
+<p>All the simulations above show us is that some distributions <em>can</em> have a lot of zeros. In any given scenario, though, how do we check if we have <em>excess</em> zeros? Having excess zeros means there are more zeros than expected by the distribution we are using for modeling. If we have excess zeros than we may either need a different distribution to model the data or we could think about models that specifically address zero inflation.</p>
+<p>The key to checking for excess zeros is to estimate the number of zeros you would expect to see if the fitted model were truly the model that created your data and compare that to the number of zeros in the actual data. If there are many more zeros in the data than the model allows for then you have zero inflation compared to whatever distribution you are using.</p>
 </div>
 <div id="simulate-negative-binomial-data" class="section level1">
 <h1>Simulate negative binomial data</h1>
-<p>To demonstrate this, I’ll make a dataset based on a negative binomial model with a single, continuous explanatory variable.</p>
-<p>Since this is a generalized linear model, I first calculate the means based on the linear predictor (the exponentiation is due to using the natural log link to <em>link</em> the mean to the linear predictor).</p>
+<p>I’ll now simulate data based on a negative binomial model with a single, continuous explanatory variable. I’ll use a model fit to these data to show how to check for excess zeros.</p>
+<p>Since this is a generalized linear model, I first calculate the means based on the linear predictor. The exponentiation is due to using the natural log link to <em>link</em> the mean to the linear predictor.</p>
 <pre class="r"><code>set.seed(16)
 x = runif(200, 5, 10) # simulate explanatory variable
 b0 = 1 # set value of intercept
-b1 = 0.25 # set value of intercept
-means = exp(b0 + b1*x) # true means
+b1 = 0.25 # set value of slope
+means = exp(b0 + b1*x) # calculate true means
 theta = 0.25 # true theta</code></pre>
 <p>I can use these true means along with my chosen value of <code>theta</code> to simulate data from the negative binomial distribution.</p>
 <pre class="r"><code>y = rnbinom(200, mu = means, size = theta)</code></pre>
@@ -98,7 +98,7 @@ theta = 0.25 # true theta</code></pre>
 <p>How many zeros is expected given the model? I need the model estimated means and theta to answer this question. I can get the means via <code>predict()</code> and I can pull <code>theta</code> out of the model <code>summary()</code>.</p>
 <pre class="r"><code>preds = predict(fit1, type = &quot;response&quot;) # estimated means
 esttheta = summary(fit1)$theta # estimated theta</code></pre>
-<p>For discrete distributions like the negative binomial, the <em>density</em> distribution functions (which start with the letter “d”) return the probability that the observation is equal to a given value. This means I can use <code>dnbinom()</code> to calculate the probability of an observation being 0 for every row in the dataset if I provide values for the parameters of the distribution of each observation.</p>
+<p>For discrete distributions like the negative binomial, the <em>density</em> distribution functions (which start with the letter “d”) return the probability that the observation is equal to a given value. This means I can use <code>dnbinom()</code> to calculate the probability of an observation being 0 for every row in the dataset. To do this I need to provide values for the parameters of the distribution of each observation.</p>
 <p>Based on the model, the distribution of each observation is negative binomial with the mean estimated from the model and the overall estimated theta.</p>
 <pre class="r"><code>prop0 = dnbinom(x = 0, mu = preds, size = esttheta )</code></pre>
 <p>The sum of these probabilities is an estimate of the number of zero values expected by the model (see <a href="https://data.library.virginia.edu/getting-started-with-hurdle-models/">here</a> for another example). I’ll round this to the nearest integer.</p>
@@ -113,7 +113,7 @@ esttheta = summary(fit1)$theta # estimated theta</code></pre>
 <p>Remember the data contain 76 zeros.</p>
 <pre class="r"><code>sum(y == 0)</code></pre>
 <pre><code># [1] 76</code></pre>
-<p>Using <code>dpois()</code>, the number of zeros given be the Poisson model is 0. 😮 These data are zero-inflated compared to the Poisson distribution, and I would need a different option for modeling these data.</p>
+<p>Using <code>dpois()</code>, the number of zeros given be the Poisson model is 0. 😮 These data are zero-inflated compared to the Poisson distribution, and I clearly need a different approach for modeling these data.</p>
 <pre class="r"><code>round( sum( dpois(x = 0,
            lambda = predict(fit2, type = &quot;response&quot;) ) ) )</code></pre>
 <pre><code># [1] 0</code></pre>
