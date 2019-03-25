@@ -11,8 +11,8 @@ tags:
   - teaching
 keywords:
   - tech
-draft: TRUE
-description: "Using emmeans for post hoc comparisons is very useful.  This post goes through some of the basics for those just getting started with the package."
+draft: FALSE
+description: "Post hoc comparisons are made easy in package emmeans.  This post goes through some of the basics for those just getting started with the package."
 ---
 
 ```{r setup, echo = FALSE}
@@ -37,7 +37,7 @@ Package **emmeans** (formerly known as **lsmeans**) is enormously useful for fol
 
 I've started recommending **emmeans** all the time to students fitting models in R.  However, I've found that often times students struggle a bit to get started using the package, possibly due to the sheer amount of flexibility and information in the vignettes.  
 
-I've put together some basic examples for using **emmeans**, meant to be a complement to the vignettes.  Specifically this post will go over some of the built-in options for some standard post hoc comparisons; I will write a separate post about building custom comparisons in **emmeans**.
+I've put together some basic examples for using **emmeans**, meant to be a complement to the vignettes.  Specifically this post will demonstrate a few of the built-in options for some standard post hoc comparisons; I will write a separate post about custom comparisons in **emmeans**.
 
 *Disclaimer: This post is about using a package in R and so unfortunately does not focus on appropriate statistical practice for model fitting and post hoc comparisons.*
 
@@ -52,7 +52,7 @@ library(magrittr) # v. 1.5
 
 # The dataset and model
 
-I've made a small dataset to use as an example.  The response variable is `resp`, which comes from the log-normal distribution, and the two crossed factors of interest are `f1` and `f2`.  Each factor has two levels: a control called `c` as well as a second non-control level.
+I've made a small dataset to use in this example.  The response variable is `resp`, which comes from the log-normal distribution, and the two crossed factors of interest are `f1` and `f2`.  Each factor has two levels: a control called `c` as well as a second non-control level.
 
 ```{r}
 dat = structure(list(f1 = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
@@ -66,7 +66,7 @@ dat = structure(list(f1 = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L,
 str(dat)
 ```
 
-The model of interest is a linear model with a log-transformed response and the two factors and their interaction as explanatory variables.  This is the "true" model since I created these data so I'm skipping all model checks here (which I would not do in a real analysis).
+The model I will use is a linear model with a log-transformed response and the two factors and their interaction as explanatory variables.  This is the "true" model since I created these data so I'm skipping all model checks here (which I would not do in a real analysis).
 
 Note I use `log(resp)` in the model rather than creating a new log-transformed variable.  This will allow me to demonstrate one of the convenient options available in `emmeans()` later.
 
@@ -76,17 +76,17 @@ fit1 = lm(log(resp) ~ f1 + f2 + f1:f2, data = dat)
 
 # Built in comparisons with emmeans()
 
-The **emmeans** package has helper functions for common sets of comparisons (aka *contrasts*).  For example, we can do pairwise comparisons via `pairwise` or `revpairwise`, treatment vs control comparisons via `trt.vs.ctrl` or `trt.vs.ctrlk`, and even consecutive comparisons via `consec`.  
+The **emmeans** package has helper functions for commonly used post hoc comparisons (aka *contrasts*).  For example, we can do pairwise comparisons via `pairwise` or `revpairwise`, treatment vs control comparisons via `trt.vs.ctrl` or `trt.vs.ctrlk`, and even consecutive comparisons via `consec`.  
 
-The available functions for doing standard comparisons are all listed in the documentation for `?"contrast-methods"`.
+The available built-in functions for doing comparisons are listed in the documentation for `?"contrast-methods"`.
 
 # [All pairwise comparisons](#all-pairwise-comparisons)
 
-One way to use `emmeans()`, which I use a lot, is to use formula coding.  The type of comparison we want is on the left-hand side of the formula and the factor(s) that represent the group means we want to compare is on the right.  
+One way to use `emmeans()`, which I use a lot, is to use formula coding for the comparisons.  This formula is defined in the `specs` argument.  
 
-This formula is defined in the `specs` argument.  We pass our model to the first argument in `emmeans()`, `object`.
+I will do all pairwise comparisons for all combinations of `f1` and `f2`.  The built-in function `pairwise` is put on the left-hand side of the formula in `specs` and the factors with levels we want to compare among are on the right-hand side.  Since I'm doing all pairwise comparisons, the combination of `f1` and `f2` are put in the formula.
 
-Below I will do all pairwise comparisons for all group combinations.  The built-in function `pairwise` is put on the left-hand side of the formula and the groups we want comparisons for is on the right-hand side.  Since I'm doing all pairwise comparisons, this is the combination of `f1` and `f2`.
+The model object is passed to the first argument in `emmeans()`, `object`.
 
 ```{r}
 emm1 = emmeans(fit1, specs = pairwise ~ f1:f2)
@@ -94,7 +94,7 @@ emm1 = emmeans(fit1, specs = pairwise ~ f1:f2)
 
 Using the formula in this way returns an object with two parts. The first part, called `emmeans`, is the estimated marginal means along with the standard errors and confidence intervals. We can pull these out with dollar sign notation, which I do below. 
 
-These results are all on the *model* scale, so in this case these are estimated mean log response for each `f1` and `f2` combination.  Note the message that `emmeans()` gives us about results being on the log scale in the output below.  It knows the model is on the log scale because I used `log(resp)` as my response variable.
+These results are all on the *model* scale, so in this case these are estimated mean log response for each `f1` and `f2` combination.  Note the message that `emmeans()` gives us about results being on the log scale in the output.  It knows the model is on the log scale because I used `log(resp)` as my response variable.
 
 ```{r}
 emm1$emmeans
@@ -102,7 +102,7 @@ emm1$emmeans
 
 The second part of the output, called `contrasts`, contains the comparisons of interest.  It is this section that we are generally most interested in when answering a question about differences among groups.  
 
-These results are also on the model scale (and we get the same message in this section), but [we'll want to put them on the original scale](#back-transforming-results).  
+These results are also on the model scale (and we get the same message in this section), and [we'll want to put them on the original scale](#back-transforming-results).  
 
 The comparisons are accompanied by statistical tests of the null hypothesis of "no difference", but lack confidence interval (CI) limits by default.  [We'll need to get these](#confidence-intervals-for-comparisons).
 
@@ -114,11 +114,11 @@ emm1$contrasts
 
 # [Back-transforming results](#back-transforming-results)
 
-Since I used a log transformation I can express the results as multiplicative differences the original (data) scale.  We can always back-transform estimates and CI limits by hand, but `emmeans()` has a built-in argument `type` to help.  Using `type = "response"` will return results on the original scale.  This works similarly for link functions in generalized linear models.
+Since I used a log transformation I can express the results as multiplicative differences in medians on the original (data) scale.  We can always back-transform estimates and CI limits by hand, but in `emmeans()` we can use the `type` argument for this.  Using `type = "response"` will return results on the original scale.  This works when the transformation is explicit in the model (e.g., `log(resp)`) and works similarly for link functions in generalized linear models.
 
 You'll see the message changes in the output once I do this, indicating things were back-transformed from the model scale.  We also are reminded that the tests were done on the model scale.
 
-In the `contrast` column in the `contrasts` section we can see the expression of the comparisons has changed from additive comparisons (via subtraction) to multiplicative comparisons (via division).
+In the `contrast` column in the `contrasts` section we can see the expression of the comparisons has changed from additive comparisons (via subtraction) shown above to multiplicative comparisons (via division).
 
 ```{r}
 emmeans(fit1, specs = pairwise ~ f1:f2, type = "response")
@@ -137,7 +137,7 @@ emm1.1
 
 # [Confidence intervals for comparisons](#confidence-intervals-for-comparisons)
 
-We will almost invariably want to report confidence intervals for any comparisons.  We need a section function to get these.  Here is an example using the `confint()` function using the default 95% CI (the confidence level can be changed, see `?confint.emmGrid`).  I use the pipe to pass the `contrasts` into the `confint()` function.
+We will almost invariably want to report confidence intervals for any comparisons of interest.  We need a separate function to get these.  Here is an example using the `confint()` function with the default 95% CI (the confidence level can be changed, see `?confint.emmGrid`).  I use the pipe to pass the `contrasts` into the `confint()` function.
 
 ```{r}
 emm1.1$contrasts %>%
@@ -153,9 +153,9 @@ emm1.1$contrasts %>%
 
 # [Putting results in a data.frame](#putting-results-in-a-data.frame)
 
-One of the really nice things about `emmeans()` is that it is easy to get the results into a nice format for making tables or graphics of results.  This is because the results can be converted into a data.frame via `as.data.frame()`.
+One of the really nice things about `emmeans()` is that it makes it easy to get the results into a nice format for making tables or graphics of results.  This is because the results can be converted into a data.frame via `as.data.frame()`.
 
-This is true for both `confint()` and `summary()`, although I'll just show `confint()` here.  After getting the confidence intervals I pipe the results into `as.data.frame()`.  I assign this object a name so I can use it for, e.g., making a graph.
+This is true for both `confint()` and `summary()`, although I'll just show `confint()` here.  After getting the confidence intervals I pipe the results into `as.data.frame()`.  I assign this object a name so I can use it for, e.g., making a graph of results.
 
 ```{r}
 emm1.1_contrasts = emm1.1$contrasts %>%
@@ -174,9 +174,9 @@ emm1.1$emmeans %>%
 
 # [Within group comparisons](#within-group-comparisons)
 
-While we *can* do all pairwise comparisons, there are certainly lots of times that the research question dictates that we only want a specific set of comparisons.  A common example of this is when we want to compare the levels of one factor within the levels of another.  Here I'll show comparisons among levels of `f1` for each level of `f2`.
+While we *can* do all pairwise comparisons, there are certainly plenty of situations where the research question dictates that we only want a specific set of comparisons.  A common example of this is when we want to compare the levels of one factor within the levels of another.  Here I'll show comparisons among levels of `f1` for each level of `f2`.
 
-The only thing that changes is the right-hand side of the `specs` formula.  The code `f1|f2` essentially translates to "compare levels of `f1` within each level of `f2`".
+The only thing that changes is the right-hand side of the `specs` formula.  The code `f1|f2` translates to "compare levels of `f1` within each level of `f2`".
 
 ```{r}
 emm2 = emmeans(fit1, specs = pairwise ~ f1|f2, type = "response")
@@ -187,9 +187,9 @@ You can see there is no message about a multiple comparisons adjustment in the a
 
 If we consider the family of comparisons to be all comparisons regardless of group and want to correct for multiple comparisons, we can do so via `rbind.emmGrid`.
 
-We use `rbind()` on the `contrasts` to adjust for the larger family of comparisons.  The default adjustment is Bonferroni, which can be much too conservative when the number of comparisons is large.  You can control the multiple comparisons procedure via `adjust`.
+Here is an example of passing `contrasts` to `rbind()` to correct for multiple comparisons.  The default adjustment is Bonferroni, which can be much too conservative when the number of comparisons is large.  You can control the multiple comparisons procedure via `adjust`.
 
-The results of `rbind()` can also be used in `summary()`,  `confint()`, and/or `as.data.frame()`.
+The results of `rbind()` can also be used with `summary()`,  `confint()`, and/or `as.data.frame()`.
 
 ```{r}
 emm2$contrasts %>%
@@ -210,7 +210,7 @@ emmeans(fit1, specs = pairwise ~ f1)
 
 # [Treatment vs control example](#treatment-vs-control-example)
 
-The **emmeans** package also has built-in helper functions for comparing each group mean to the control mean.  If the control group is the in the first row of the `emmeans` section of the output, this set of comparisons can be requested via `trt.vs.ctrl`.
+The **emmeans** package has built-in helper functions for comparing each group mean to the control mean.  If the control group is the in the first row of the `emmeans` section of the output, this set of comparisons can be requested via `trt.vs.ctrl`.
 
 Note the default multiple comparisons adjustment is a Dunnett adjustment.
 
@@ -240,7 +240,7 @@ emmeans(fit1, specs = trt.vs.ctrlk ~ f1:f2, ref = 2, reverse = TRUE)
 
 # [Alternative code for comparisons](#alternative-code-for-comparisons)
 
-The `emmeans()` package also offers the option to do comparisons in two steps instead of in one step the way I did above by using a comparison function in the left-hand side of the `specs` formula.  I find this alternative most useful when doing custom contrasts, but I think it's good to introduce it now so it looks familiar.  This option keeps the estimated marginal means and the comparisons of interest in separate objects, which may be attractive in some situations.
+The `emmeans()` package offers the option to do comparisons in two steps instead of in one step the way I have been using it as above.  I personally find this alternative most useful when doing custom comparisons, and I think it's good to introduce it now so it looks familiar.  This alternative keeps the estimated marginal means and the comparisons of interest in separate objects, which may be attractive in some situations.
 
 The first step is to use `emmeans()` to calculate the marginal means of interest.  We still use the formula in `specs` with the factor(s) of interest on the right-hand side but no longer put anything on the left-hand side of the tilde.
 
@@ -259,4 +259,4 @@ We can use `adjust` in `contrast()` to change the multiple comparisons adjustmen
 contrast(emm3, method = "pairwise", adjust = "none")
 ```
 
-We can follow the `contrast()` argument with `summary()` or `confint()` and then put the results into a data.frame for plotting/saving.  Again, I think the real strength of `contrast()` comes when we want custom contrasts, and I'll demonstrate these in my next post.
+We can follow the `contrast()` argument with `summary()` or `confint()` and then put the results into a data.frame for plotting/saving.  Again, I think the real strength of `contrast()` comes when we want custom comparisons, and I'll demonstrate these in my next post.
