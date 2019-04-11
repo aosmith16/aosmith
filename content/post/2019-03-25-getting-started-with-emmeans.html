@@ -9,8 +9,6 @@ categories:
 tags:
   - analysis
   - teaching
-keywords:
-  - tech
 draft: FALSE
 description: "Post hoc comparisons are made easy in package emmeans.  This post goes through some of the basics for those just getting started with the package."
 ---
@@ -50,7 +48,7 @@ str(dat)</code></pre>
 <div id="built-in-comparisons-with-emmeans" class="section level1">
 <h1>Built in comparisons with emmeans()</h1>
 <p>The <strong>emmeans</strong> package has helper functions for commonly used post hoc comparisons (aka <em>contrasts</em>). For example, we can do pairwise comparisons via <code>pairwise</code> or <code>revpairwise</code>, treatment vs control comparisons via <code>trt.vs.ctrl</code> or <code>trt.vs.ctrlk</code>, and even consecutive comparisons via <code>consec</code>.</p>
-<p>The available built-in functions for doing comparisons are listed in the documentation for <code>?&quot;contrast-methods&quot;</code>.</p>
+<p>The available built-in functions for doing comparisons are listed in the documentation for <code>?"contrast-methods"</code>.</p>
 </div>
 <div id="all-pairwise-comparisons" class="section level1">
 <h1><a href="#all-pairwise-comparisons">All pairwise comparisons</a></h1>
@@ -87,7 +85,7 @@ str(dat)</code></pre>
 </div>
 <div id="back-transforming-results" class="section level1">
 <h1><a href="#back-transforming-results">Back-transforming results</a></h1>
-<p>Since I used a log transformation I can express the results as multiplicative differences in medians on the original (data) scale. We can always back-transform estimates and CI limits by hand, but in <code>emmeans()</code> we can use the <code>type</code> argument for this. Using <code>type = &quot;response&quot;</code> will return results on the original scale. This works when the transformation is explicit in the model (e.g., <code>log(resp)</code>) and works similarly for link functions in generalized linear models.</p>
+<p>Since I used a log transformation I can express the results as multiplicative differences in medians on the original (data) scale. We can always back-transform estimates and CI limits by hand, but in <code>emmeans()</code> we can use the <code>type</code> argument for this. Using <code>type = "response"</code> will return results on the original scale. This works when the transformation is explicit in the model (e.g., <code>log(resp)</code>) and works similarly for link functions in generalized linear models.</p>
 <p>You’ll see the message changes in the output once I do this, indicating things were back-transformed from the model scale. We also are reminded that the tests were done on the model scale.</p>
 <p>In the <code>contrast</code> column in the <code>contrasts</code> section we can see the expression of the comparisons has changed from additive comparisons (via subtraction) shown above to multiplicative comparisons (via division).</p>
 <pre class="r"><code>emmeans(fit1, specs = pairwise ~ f1:f2, type = &quot;response&quot;)</code></pre>
@@ -116,7 +114,7 @@ str(dat)</code></pre>
 <div id="changing-the-multiple-comparisons-adjustment" class="section level1">
 <h1><a href="#changing-the-multiple-comparisons-adjustment">Changing the multiple comparisons adjustment</a></h1>
 <p>The <code>adjust</code> argument can be used to change the type of multiple comparisons adjustment. All available options are listed and described in the documentation for <code>summary.emmGrid</code> under the section <em>P-value adjustments</em>.</p>
-<p>One option is to skip multiple comparisons adjustments all together, using <code>adjust = &quot;none&quot;</code>. If we use this the message about multiple comparisons disappears (since we didn’t use one).</p>
+<p>One option is to skip multiple comparisons adjustments all together, using <code>adjust = "none"</code>. If we use this the message about multiple comparisons disappears (since we didn’t use one).</p>
 <pre class="r"><code>emm1.1 = emmeans(fit1, specs = pairwise ~ f1:f2, type = &quot;response&quot;, adjust = &quot;none&quot;)
 emm1.1</code></pre>
 <pre><code># $emmeans

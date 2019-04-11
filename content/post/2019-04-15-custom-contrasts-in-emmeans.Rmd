@@ -1,0 +1,186 @@
+---
+title: Custom contrasts in emmeans
+author: Ariel Muldoon
+date: '2019-04-15'
+slug: custom-contrasts-in-emmeans
+categories:
+  - r
+  - statistics
+tags:
+  - analysis
+  - teaching
+draft: TRUE
+description: "One of the nice things about emmeans is that you can build custom comparisons for any groups or combinations of groups, which I show how to do in this post."
+---
+
+
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(comment = "#")
+```
+
+```{r, echo = FALSE}
+# Make dataset here that will use later
+# Two factors plus one log-normal response
+set.seed(16)
+dat = data.frame(f1.f2 = rep(c("A.1", "A.2", "B.1", "B.2", "control"), each = 5) )
+y = with(dat, 1 + 
+              -1*(f1.f2 == "A.2") +
+              .5*(f1.f2 == "B.1") +
+              1*(f1.f2 == "B.2") +
+              2*(f1.f2 == "control") +
+              rnorm(n = 25, mean = 0, sd = 1) )
+dat$resp = round(y, 1)
+```
+
+Following up on a [previous post](https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/) introducing the basic usage of package **emmeans** for doing post hoc comparisons, here I'll talk specifically about building custom comparisons (aka *contrasts*).  These are comparisons that aren't encompassed by some of the built-in functions in the package. Remember that you can explore the available built-in functions for doing comparisons listed in the documentation for `?"contrast-methods"`.
+
+# R packages
+
+I will load **magrittr** for the pipe in addition to **emmeans**.
+
+```{r}
+library(emmeans) # v. 1.3.3
+library(magrittr) # v. 1.5
+```
+
+# Reasons for custom comparisons
+
+There are a variety of reasons you might need to custom comparisons instead of the built in ones.  One common scenario that I see a lot having a single control group for multiple factors, so the factors aren't perfectly crossed.  This comes up, e.g., when doing experiments involving applying different substances (like fertilizers) at varying rates.  One factor is the different substances applied and the other is the application rate.  However, the control is applying nothing or water or something.  There aren't different "rates" of the control to apply, so there is a single control group for both factors.
+
+Rather than trying to fit a model with multiple factors, focusing on main effects and the interaction, such data can be analyzed with a *simple effects* model.  This is where the factors of interest have been combined into one.  Post hoc comparisons can be used to estimate the overall effects of the individual factors of interest.  
+
+# The dataset and model
+
+I've made a small dataset to use as an example.  The response variable is `resp` and the two factors of interest have been combined into a single factor with 5 levels: "A.1", "A.2", "B.1", "B.2", and "control".  One factor, which I'm thinking of as the "substance" factor, is represented by "A" and "B" (and the control).  The second, the "rate" factor, is represnted by "1" and "2".
+
+```{r}
+dat = structure(list(f1.f2 = structure(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 
+2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 4L, 4L, 4L, 4L, 4L, 5L, 5L, 5L, 
+5L, 5L), .Label = c("A.1", "A.2", "B.1", "B.2", "control"), class = "factor"),
+    resp = c(1.5, 0.9, 2.1, -0.4, 2.1, -0.5, -1, 0.1, 1, 0.6, 
+    3.3, 1.6, 0.8, 3.2, 2.2, 0.3, 2.6, 2.5, 1.5, 3.1, 1.4, 2.7, 
+    2.8, 4.5, 2.1)), row.names = c(NA, -25L), class = "data.frame")
+str(dat)
+```
+
+I will use a simple, linear model for analysis.
+
+```{r}
+fit1 = lm(resp ~ f1.f2, data = dat)
+```
+
+# Treatment vs control comparisons
+
+This sort of simple effects model makes it easy to get comparisons for each factor combination vs the control group with `emmeans()`.  I'll use `trt.vs.ctrlk` here for the comparisons since the control is the last level of the factor.
+
+```{r}
+emmeans(fit1, specs = trt.vs.ctrlk ~ f1.f2)
+```
+
+# [Getting started building custom contrasts](#getting-started-building-custom contrasts)
+
+But what if we want to compare the "A" group to the "B" group regardless of the application rate?  This is where we are going to need to set up a custom contrast. Before I get to that, though, I'm going to walk through a simpler example on how this works.
+
+Custom contrasts are based on the estimated marginal means output from `emmeans()`.  The first step is to calculate these so we have them to work with.
+
+```{r}
+emm1 = emmeans(fit1, specs = ~ f1.f2)
+emm1
+```
+
+Let's say we want to compare mean `resp` of the "A.2" group to the "B.2" group.  We'll need to pull out those specific means from the `emmeans` above to do this comparison.  We *pull out* values by assigning the means we want as 1's and the means we don't want as 0's.
+
+To pull out the mean of "A.2" above we will make a vector with 5 values in it.  The second value will be a 1, since the mean of "A.2" is in the second row.  All the other values will be 0.
+
+```{r}
+A2 = c(0, 1, 0, 0, 0)
+```
+
+Simlarly, to pull out the mean of "B.2" we'll have a vector of 5 values with a 1 as the fourth value.  In the output above the "B.2." group is on the fourth row.
+
+```{r}
+B2 = c(0, 0, 0, 1, 0)
+```
+
+When building custom contrasts via vectors like this, the vectors will always be the same length as the number of rows in the `emmeans` output.  I always calculate the `emmeans` prior to building the vectors so I know the number of rows and order the groups are in in the output.
+
+# Using the contrast() function
+
+Once we have the vectors that represent the means we are interested in comparing, we do the comparisons via the `contrast()` function.  Since we are interested in a *difference* in mean response, we'll take the difference between the vectors of means.  Taking the difference can be done inside or outside `contrast()`.  In this example I'm doing it inside.
+
+The `contrast()` function takes the `emmGrid` object `emm1` as the first argument.  We give the comparisons we want to do as a list.  Here I'm subtracting B2 from A2.
+
+```{r}
+contrast(emm1, method = list(A2 - B2) )
+```
+
+# Using named lists for better output
+
+The name in the output above isn't very helpful.  Using a named list for `method` will help.
+
+```{r}
+contrast(emm1, method = list("A2 minus B2" = A2 - B2) )
+```
+
+# An alternative for simple comparisons
+
+Note that I didn't need to do a custom contrast to do this comparison.  I could have gotten the comparison I wanted by using the `at` argument in `emmeans()` and choosing just the groups I was interested in.
+
+```{r}
+emmeans(fit1, specs = pairwise ~ f1.f2, 
+         at = list(f1.f2 = c("A.2", "B.2") ) )
+```
+
+# [Multiple custom contrasts at once](#multiple-custom-contrasts-at-once)
+
+Multiple custom contrasts can be done at one time by adding to the list.  I'll "fake" this by doing the example comparison twice, changing only which group is subtracted.  
+
+```{r}
+contrast(emm1, method = list("A2 minus B2" = A2 - B2,
+                             "B2 minus A2" = B2 - A2) )
+```
+
+Doing multiple comparisons at once means a multiple comparisons adjustment can be done as needed.  In addition, we can use the `confint()` function do get confidence intervals of comparisons.
+
+I'll play around here by adding a multivariate t adjustment via `adjust = "mvt"` and then get confidence intervals for the comparisons.
+
+```{r}
+contrast(emm1, method = list("A2 minus B2" = A2 - B2,
+                             "B2 minus A2" = B2 - A2),
+         adjust = "mvt") %>%
+  confint()
+```
+
+# More complicated custom contrasts
+
+Let's get back to the original comparison I proposed, which was to estimate the overall effect of "A" vs "B".  This is a "main effect" comparison, so I want to average over the effect of rate to talk about the overall effect of the substance factor levels.
+
+I'll need to pull out the means for all four non-control factor levels.  I'll print `emm1` again so I remember the order.
+
+```{r}
+emm1
+```
+
+I need to pull out each of the first four means to do the comparison.  If these vectors are every really long I sometimes use `rep()` to put all the 0 values in.
+
+```{r}
+A1 = c(1, 0, 0, 0, 0)
+A2 = c(0, 1, 0, 0, 0)
+B1 = c(0, 0, 1, 0, 0)
+B2 = c(0, 0, 0, 1, 0)
+```
+
+The vectors I made represent means for combinations of substance and rate.  I want to get the overall substance group means.  This involves *averaging over* the rate.  As in literally taking the average of, e.g., `A1` and `A2` to get the overall `A` mean.
+
+```{r}
+Aoverall = (A1 + A2)/2
+Boverall = (B1 + B2)/2
+```
+
+Now that the overall means are calculated we can do comparison of mean `resp` of the `A` group vs `B` group overall in `contrast()` the same way we used it above.
+
+```{r}
+contrast(emm1, method = list("A minus B" = Aoverall - Boverall) ) 
+```
+
+All other custom contrasts are built in this same basic way.  You can also build your own contrast functions if there is a custom contrast you do all the time.  See the [custom contrasts section](https://cran.r-project.org/web/packages/emmeans/vignettes/comparisons.html#linfcns) of the **emmeans** vignette for more info.
