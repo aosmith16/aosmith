@@ -70,6 +70,9 @@ math = true
   # You can comment it to disable syntax highlighting
   syntaxHighlighter = "highlight.js"
 
+  # Add r syntax highlighting? https://twitter.com/gartn001/status/993590483770335240
+  customJS = ["https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"]
+
   # Hide sidebar on all article page to let article take full width to improve reading, and enjoy wide images and cover images. (true: enable, false: disable)
   clearReading = true
 

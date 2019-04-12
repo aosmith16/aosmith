@@ -9,6 +9,7 @@ categories:
 tags:
   - analysis
   - teaching
+  - emmeans
 draft: FALSE
 description: "Post hoc comparisons are made easy in package emmeans.  This post goes through some of the basics for those just getting started with the package."
 ---
