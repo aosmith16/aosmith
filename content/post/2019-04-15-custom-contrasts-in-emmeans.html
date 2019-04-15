@@ -10,18 +10,18 @@ tags:
   - analysis
   - teaching
   - emmeans
-draft: TRUE
-description: "One of the nice things about emmeans is that you can build custom comparisons for any groups or combinations of groups, which I show how to do in this post."
+draft: FALSE
+description: "One of the nice things about emmeans is that you can build custom comparisons for any groups or combinations of groups.  I give an example showing how to set these up."
 ---
 
 
 
-<p>Following up on a <a href="https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/">previous post</a> where I demonstrated the basic usage of package <strong>emmeans</strong> for doing post hoc comparisons, here I’ll demonstrate how to make custom comparisons (aka <em>contrasts</em>). These are comparisons that aren’t encompassed by the built-in functions in the package.</p>
+<p>Following up on a <a href="https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/">previous post</a>, where I demonstrated the basic usage of package <strong>emmeans</strong> for doing post hoc comparisons, here I’ll demonstrate how to make custom comparisons (aka <em>contrasts</em>). These are comparisons that aren’t encompassed by the built-in functions in the package.</p>
 <p>Remember that you can explore the available built-in <strong>emmeans</strong> functions for doing comparisons via <code>?"contrast-methods"</code>.</p>
 <div id="reasons-for-custom-comparisons" class="section level1">
 <h1>Reasons for custom comparisons</h1>
-<p>There are a variety of reasons you might need custom comparisons instead of some of the standard, built-in ones. One common scenario that I see a lot is when we have a single control group for multiple factors, so the factors aren’t perfectly crossed. This comes up, e.g., when doing experiments that involve applying different substances (like fertilizers) at varying rates. One factor is the different substances applied and the other is different application rates. However, the control is applying nothing or water or something like that. There aren’t different “rates” of the control to apply, so there is a single control group for both factors.</p>
-<p>Rather than trying to fit a model with multiple factors, focusing on main effects and the interaction, such data can be analyzed with a <em>simple effects</em> model. This is where the two (or more) factors of interest have been combined into a single factor for analysis. This analysis focuses on the effect of the two factors combined. We can use post hoc comparisons to estimate the overall effects of individual factors.</p>
+<p>There are a variety of reasons you might need custom comparisons instead of some of the standard, built-in ones. One common scenario that I see a lot is when we have a single control group for multiple factors, so the factors aren’t perfectly crossed. This comes up, e.g., when doing experiments that involve applying different substances (like fertilizers) at varying rates. One factor is the different substances applied and the other is different application rates. However, the control is applying nothing or water or something like that. There aren’t different rates of the control to apply, so there is a single control group for both factors.</p>
+<p>Rather than trying to fit a model with multiple factors, focusing on main effects and the interaction, such data can be analyzed with a <em>simple effects</em> model. This is where the two (or more) factors of interest have been combined into a single factor for analysis. Such an analysis focuses on the effect of the two factors combined. We can use post hoc comparisons to estimate the overall effects of individual factors.</p>
 </div>
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
@@ -31,32 +31,33 @@ library(magrittr) # v. 1.5</code></pre>
 </div>
 <div id="the-dataset-and-model" class="section level1">
 <h1>The dataset and model</h1>
-<p>I’ve made a small dataset to use as an example. The response variable is <code>resp</code> and the two factors of interest have been combined into a single factor <code>f1.f2</code> that has 5 levels: <code>A.1</code>, <code>A.2</code>, <code>B.1</code>, <code>B.2</code>, and <code>control</code>.</p>
-<p>One factor, which I’m thinking of as the “substance” factor, is represented by <code>A</code> and <code>B</code> (and the control). The second, the “rate” factor, is represented by <code>1</code> and <code>2</code>.</p>
-<pre class="r"><code>dat = structure(list(f1.f2 = structure(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 
+<p>I’ve made a small dataset to use as an example. The response variable is <code>resp</code> and the two factors of interest have been combined into a single factor <code>sub.rate</code> that has 5 levels: <code>A.1</code>, <code>A.2</code>, <code>B.1</code>, <code>B.2</code>, and <code>control</code>.</p>
+<p>One factor, which I’m thinking of as the <em>substance</em> factor, is represented by <code>A</code> and <code>B</code> (and the control). The second, the <em>rate</em> factor, is represented by <code>1</code> and <code>2</code>.</p>
+<pre class="r"><code>dat = structure(list(sub.rate = structure(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 
 2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 4L, 4L, 4L, 4L, 4L, 5L, 5L, 5L, 
 5L, 5L), .Label = c(&quot;A.1&quot;, &quot;A.2&quot;, &quot;B.1&quot;, &quot;B.2&quot;, &quot;control&quot;), class = &quot;factor&quot;), 
     resp = c(5.5, 4.9, 6.1, 3.6, 6.1, 3.5, 3, 4.1, 5, 4.6, 7.3, 
     5.6, 4.8, 7.2, 6.2, 4.3, 6.6, 6.5, 5.5, 7.1, 5.4, 6.7, 6.8, 
     8.5, 6.1)), row.names = c(NA, -25L), class = &quot;data.frame&quot;)
+
 str(dat)</code></pre>
 <pre><code># &#39;data.frame&#39;: 25 obs. of  2 variables:
-#  $ f1.f2: Factor w/ 5 levels &quot;A.1&quot;,&quot;A.2&quot;,&quot;B.1&quot;,..: 1 1 1 1 1 2 2 2 2 2 ...
-#  $ resp : num  5.5 4.9 6.1 3.6 6.1 3.5 3 4.1 5 4.6 ...</code></pre>
+#  $ sub.rate: Factor w/ 5 levels &quot;A.1&quot;,&quot;A.2&quot;,&quot;B.1&quot;,..: 1 1 1 1 1 2 2 2 2 2 ...
+#  $ resp    : num  5.5 4.9 6.1 3.6 6.1 3.5 3 4.1 5 4.6 ...</code></pre>
 <p>I will use a simple, linear model for analysis.</p>
-<pre class="r"><code>fit1 = lm(resp ~ f1.f2, data = dat)</code></pre>
+<pre class="r"><code>fit1 = lm(resp ~ sub.rate, data = dat)</code></pre>
 </div>
 <div id="treatment-vs-control-comparisons" class="section level1">
 <h1>Treatment vs control comparisons</h1>
-<p>This simple effects model makes it easy to get comparisons for each factor combination vs the control group with <code>emmeans()</code>. I’ll use <code>trt.vs.ctrlk</code> to do this since the control is the last level of the factor.</p>
-<pre class="r"><code>emmeans(fit1, specs = trt.vs.ctrlk ~ f1.f2)</code></pre>
+<p>The simple effects model makes it easy to get comparisons for each factor combination vs the control group with <code>emmeans()</code>. I’ll use <code>trt.vs.ctrlk</code> to do this since the control is the last level of the factor.</p>
+<pre class="r"><code>emmeans(fit1, specs = trt.vs.ctrlk ~ sub.rate)</code></pre>
 <pre><code># $emmeans
-#  f1.f2   emmean    SE df lower.CL upper.CL
-#  A.1       5.24 0.466 20     4.27     6.21
-#  A.2       4.04 0.466 20     3.07     5.01
-#  B.1       6.22 0.466 20     5.25     7.19
-#  B.2       6.00 0.466 20     5.03     6.97
-#  control   6.70 0.466 20     5.73     7.67
+#  sub.rate emmean    SE df lower.CL upper.CL
+#  A.1        5.24 0.466 20     4.27     6.21
+#  A.2        4.04 0.466 20     3.07     5.01
+#  B.1        6.22 0.466 20     5.25     7.19
+#  B.2        6.00 0.466 20     5.03     6.97
+#  control    6.70 0.466 20     5.73     7.67
 # 
 # Confidence level used: 0.95 
 # 
@@ -68,56 +69,56 @@ str(dat)</code></pre>
 #  B.2 - control    -0.70 0.66 20 -1.061  0.6548 
 # 
 # P value adjustment: dunnettx method for 4 tests</code></pre>
+<p>We may also be interested in some other comparisons, though. In particular, we might want to do some overall comparisons across the two factors. We will need custom contrasts for this.</p>
 </div>
-<div id="getting-started-building-custom-contrasts" class="section level1">
-<h1><a href="#getting-started-building-custom-contrasts">Getting started building custom contrasts</a></h1>
-<p>But what if we want to compare the <code>A</code> group to the <code>B</code> group overall, regardless of the application rate? There is no built-in way to do this; we’ll need to set up a custom contrast.</p>
-<p>Custom contrasts are based on the estimated marginal means output from <code>emmeans()</code>. The first step is to calculate these so we have them to work with. I name this output <code>emm1</code>.</p>
-<pre class="r"><code>emm1 = emmeans(fit1, specs = ~ f1.f2)
+<div id="building-custom-contrasts" class="section level1">
+<h1><a href="#building-custom-contrasts">Building custom contrasts</a></h1>
+<p>Custom contrasts are based on the estimated marginal means output from <code>emmeans()</code>. The first step to building custom contrasts is to calculate the estimated marginal means so we have them to work with. I will name this output <code>emm1</code>.</p>
+<pre class="r"><code>emm1 = emmeans(fit1, specs = ~ sub.rate)
 emm1</code></pre>
-<pre><code>#  f1.f2   emmean    SE df lower.CL upper.CL
-#  A.1       5.24 0.466 20     4.27     6.21
-#  A.2       4.04 0.466 20     3.07     5.01
-#  B.1       6.22 0.466 20     5.25     7.19
-#  B.2       6.00 0.466 20     5.03     6.97
-#  control   6.70 0.466 20     5.73     7.67
+<pre><code>#  sub.rate emmean    SE df lower.CL upper.CL
+#  A.1        5.24 0.466 20     4.27     6.21
+#  A.2        4.04 0.466 20     3.07     5.01
+#  B.1        6.22 0.466 20     5.25     7.19
+#  B.2        6.00 0.466 20     5.03     6.97
+#  control    6.70 0.466 20     5.73     7.67
 # 
 # Confidence level used: 0.95</code></pre>
-<p>Before I get to that more complicated example of <code>A</code> vs <code>B</code> overall, I’m going to walk through a simpler example. I’ll start by showing how to compare mean <code>resp</code> of the <code>A.2</code> group to the <code>B.2</code> group via custom contrasts. This involves pulling out those specific group means from the <code>emmeans</code> output shown above.</p>
-<p>We <em>pull out</em> a group mean by making a vector to represent the specific mean of interest. In this vector we assign a <code>1</code> to the mean of the group of interest and a <code>0</code> to the other groups.</p>
-<p>For example, to pull out the mean of <code>A.2</code> we will make a vector with 5 values in it, one for each row of the <code>emmeans</code> output. The second value will be a <code>1</code>, since the mean of <code>A.2</code> is on the second row. All the other values in the vector will be <code>0</code>.</p>
-<p>Below is the vector that represents that <code>A.2</code> mean.</p>
+<p>I’m going to start with a relatively simple example. I will compare mean <code>resp</code> of the <code>A.2</code> group to the <code>B.2</code> group via custom contrasts.</p>
+<p>Building a custom contrast involves pulling out specific group means of interest from the <code>emmeans()</code> output. We <em>pull out</em> a group mean by making a vector to represent the specific mean of interest. In this vector we assign a <code>1</code> to the mean of the group of interest and a <code>0</code> to the other groups.</p>
+<p>For example, to pull out the mean of <code>A.2</code> from <code>emm1</code> we will make a vector with 5 values in it, one for each row of the output. The second value will be a <code>1</code>, since the mean of <code>A.2</code> is on the second row of <code>emm1</code>. All the other values in the vector will be <code>0</code>.</p>
+<p>Below is the vector that represents the <code>A.2</code> mean.</p>
 <pre class="r"><code>A2 = c(0, 1, 0, 0, 0)</code></pre>
-<p>Similarly, to pull out the mean of <code>B.2</code> we’ll have a vector of 5 values with a <code>1</code> as the fourth value. In the output above the <code>B.2</code> group is on the fourth row.</p>
+<p>Similarly, to pull out the mean of <code>B.2</code> we’ll have a vector of 5 values with a <code>1</code> as the fourth value. The <code>B.2</code> group is on the fourth row in <code>emm1</code>.</p>
 <pre class="r"><code>B2 = c(0, 0, 0, 1, 0)</code></pre>
-<p>When building custom contrasts via vectors like this, the vectors will always be the same length as the number of rows in the <code>emmeans</code> output. I always calculate and print the <code>emmeans</code> prior to building the vectors so I am certain of the number of rows and the order of the groups in the output.</p>
+<p>When building custom contrasts via vectors like this, the vectors will always be the same length as the number of rows in the <code>emmeans()</code> output. I always calculate and print the estimated marginal means prior to building the vectors so I am certain of the number of rows and the order of the groups in the output.</p>
 </div>
-<div id="using-the-contrast-function-for-custom-comparisons" class="section level1">
-<h1>Using the contrast() function for custom comparisons</h1>
-<p>Once we have the vectors that represent the means we are interested in comparing, we actually do the comparisons via the <code>contrast()</code> function. Since we are interested in a <em>difference</em> in mean response, we take the difference between the vectors that represent the means. Taking the difference can be done inside or outside <code>contrast()</code>. In this example I’m doing it inside.</p>
+<div id="the-contrast-function-for-custom-comparisons" class="section level1">
+<h1>The contrast() function for custom comparisons</h1>
+<p>Once we have the vectors that represent the means we are interested in comparing, we actually do the comparisons via the <code>contrast()</code> function. Since we are interested in a <em>difference</em> in mean response, we take the difference between the vectors that represent the means.</p>
+<p>Taking the difference between vectors can be done inside or outside <code>contrast()</code>. In this example I’m doing it inside.</p>
 <p>The <code>contrast()</code> function takes an <code>emmGrid</code> object (i.e., output from <code>emmeans()</code>) as the first argument. We give the comparison we want to do via a list passed to the <code>method</code> argument.</p>
-<p>Here I want to calculate the difference in mean <code>resp</code> of <code>A.2</code> and <code>B.2</code>. I subtract the <code>B2</code> vector from the <code>A2</code> vector.</p>
-<p>The output is the difference in mean <code>resp</code> between these groups.</p>
+<p>Here I want to calculate the difference in mean <code>resp</code> of <code>A.2</code> and <code>B.2</code>. I subtract the <code>B2</code> vector from the <code>A2</code> vector. The output is the difference in mean <code>resp</code> between these groups.</p>
 <pre class="r"><code>contrast(emm1, method = list(A2 - B2) )</code></pre>
 <pre><code>#  contrast          estimate   SE df t.ratio p.value
 #  c(0, 1, 0, -1, 0)    -1.96 0.66 20 -2.972  0.0075</code></pre>
 </div>
 <div id="using-named-lists-for-better-output" class="section level1">
 <h1>Using named lists for better output</h1>
-<p>The name in the output above isn’t very helpful for figuring out which groups this comparison represents. Using a named list for <code>method</code> is much more useful.</p>
+<p>Unfortunately you can’t tell what comparisons was done in the output above 🤔. We can use a named list in <code>method</code> to make the output more understandable.</p>
 <pre class="r"><code>contrast(emm1, method = list(&quot;A2 - B2&quot; = A2 - B2) )</code></pre>
 <pre><code>#  contrast estimate   SE df t.ratio p.value
 #  A2 - B2     -1.96 0.66 20 -2.972  0.0075</code></pre>
 </div>
 <div id="using-at-for-simple-comparisons" class="section level1">
 <h1><a href="#using-at-for-simple-comparisons">Using “at” for simple comparisons</a></h1>
-<p>Note that I didn’t need to do a custom contrast to do this particular comparison. I could have gotten the comparison I wanted by using the <code>at</code> argument in <code>emmeans()</code> and choosing just the two groups I was interested in.</p>
-<pre class="r"><code>emmeans(fit1, specs = pairwise ~ f1.f2, 
-         at = list(f1.f2 = c(&quot;A.2&quot;, &quot;B.2&quot;) ) )</code></pre>
+<p>Note that I didn’t need to do a custom contrast to do this particular comparison. I could have gotten the comparison I wanted by using the <code>at</code> argument with <code>pairwise</code> in <code>emmeans()</code> and choosing just the two groups I was interested in.</p>
+<pre class="r"><code>emmeans(fit1, specs = pairwise ~ sub.rate, 
+         at = list(sub.rate = c(&quot;A.2&quot;, &quot;B.2&quot;) ) )</code></pre>
 <pre><code># $emmeans
-#  f1.f2 emmean    SE df lower.CL upper.CL
-#  A.2     4.04 0.466 20     3.07     5.01
-#  B.2     6.00 0.466 20     5.03     6.97
+#  sub.rate emmean    SE df lower.CL upper.CL
+#  A.2        4.04 0.466 20     3.07     5.01
+#  B.2        6.00 0.466 20     5.03     6.97
 # 
 # Confidence level used: 0.95 
 # 
@@ -127,18 +128,20 @@ emm1</code></pre>
 </div>
 <div id="multiple-custom-contrasts-at-once" class="section level1">
 <h1><a href="#multiple-custom-contrasts-at-once">Multiple custom contrasts at once</a></h1>
-<p>Multiple custom contrasts can be done simultaneously by adding more comparisons to the <code>method</code> list. I’ll demonstrate this by doing the simple example comparison twice, changing only which group is subtracted from the other. I name both elements of the list for ease of interpreting the output.</p>
+<p>Multiple custom contrasts can be done simultaneously in <code>contrast()</code> by adding more comparisons to the <code>method</code> list. I’ll demonstrate this by doing the simple example comparison twice, changing only which group mean is subtracted from the other.</p>
+<p>I name both elements of the list for ease of interpretation. I find naming the list of comparisons to be a key part of doing these custom contrasts.</p>
 <pre class="r"><code>contrast(emm1, method = list(&quot;A2 - B2&quot; = A2 - B2,
                              &quot;B2 - A2&quot; = B2 - A2) )</code></pre>
 <pre><code>#  contrast estimate   SE df t.ratio p.value
 #  A2 - B2     -1.96 0.66 20 -2.972  0.0075 
 #  B2 - A2      1.96 0.66 20  2.972  0.0075</code></pre>
 <p>Doing multiple comparisons at once means a multiple comparisons adjustment can be done as needed. In addition, we can use the <code>confint()</code> function do get confidence intervals for the comparisons.</p>
-<p>I’ll play around here by adding a multivariate-<span class="math inline">\(t\)</span> adjustment via <code>adjust = "mvt"</code> and then get confidence intervals for the comparisons. Remember we can get both confidence intervals and tests for comparisons via <code>summary()</code> with <code>infer = TRUE</code>.</p>
-<pre class="r"><code>contrast(emm1, method = list(&quot;A2 minus B2&quot; = A2 - B2,
+<p>I’ll add a multivariate-<span class="math inline">\(t\)</span> adjustment via <code>adjust = "mvt"</code> and then get confidence intervals for the comparisons. Remember we can get both confidence intervals and tests for comparisons via <code>summary()</code> with <code>infer = TRUE</code>.</p>
+<pre class="r"><code>twocomp = contrast(emm1, method = list(&quot;A2 minus B2&quot; = A2 - B2,
                              &quot;B2 minus A2&quot; = B2 - A2),
          adjust = &quot;mvt&quot;) %&gt;%
-     confint()</code></pre>
+     confint()
+twocomp</code></pre>
 <pre><code>#  contrast    estimate   SE df lower.CL upper.CL
 #  A2 minus B2    -1.96 0.66 20   -3.336   -0.584
 #  B2 minus A2     1.96 0.66 20    0.584    3.336
@@ -148,26 +151,28 @@ emm1</code></pre>
 </div>
 <div id="more-complicated-custom-contrasts" class="section level1">
 <h1>More complicated custom contrasts</h1>
-<p>Let’s go back to the original comparison I proposed, which was to estimate the overall effect of <code>A</code> vs <code>B</code>. This is a <em>main effect</em> comparison, so I need to average over the effect of the “rate” factor in order to estimate the overall effect of the “substance” factor.</p>
-<p>To do this comparison I need the means for all four non-control factor levels. I’ll print <code>emm1</code> again here so I remember the order of the output.</p>
+<p>Now that we’ve seen a simple case, let’s do something slightly more complicated (and realistic). What if we want to compare the <code>A</code> group to the <code>B</code> group overall, regardless of the application rate?</p>
+<p>This is a <em>main effect</em> comparison, so I need to average over the effect of the rate factor in order to estimate the overall effect of the levels of the substance factor.</p>
+<p>To do this comparison I need the means for all four non-control factor levels. I’ll print <code>emm1</code> again here so I remember the order of the output before starting to write out the vectors that represent the group means.</p>
 <pre class="r"><code>emm1</code></pre>
-<pre><code>#  f1.f2   emmean    SE df lower.CL upper.CL
-#  A.1       5.24 0.466 20     4.27     6.21
-#  A.2       4.04 0.466 20     3.07     5.01
-#  B.1       6.22 0.466 20     5.25     7.19
-#  B.2       6.00 0.466 20     5.03     6.97
-#  control   6.70 0.466 20     5.73     7.67
+<pre><code>#  sub.rate emmean    SE df lower.CL upper.CL
+#  A.1        5.24 0.466 20     4.27     6.21
+#  A.2        4.04 0.466 20     3.07     5.01
+#  B.1        6.22 0.466 20     5.25     7.19
+#  B.2        6.00 0.466 20     5.03     6.97
+#  control    6.70 0.466 20     5.73     7.67
 # 
 # Confidence level used: 0.95</code></pre>
-<p>I pull out each of the first four group means, just like I demonstrated above. While typing these vectors out isn’t too hard, since they only contain 5 values, if I have many groups and so really long vectors you will sometimes see me use <code>rep()</code> to put all the 0 values in.</p>
+<p>I’ll need all means that involve <code>A</code> or <code>B</code>, which is the first four group means in <code>emm1</code>. I’ll make a vector to represent each of these group means.</p>
+<p>While typing these vectors out isn’t too hard, since they only contain 5 values, when I have many groups and so really long vectors I sometimes use <code>rep()</code> to repeat all the 0 values.</p>
 <pre class="r"><code>A1 = c(1, 0, 0, 0, 0)
 A2 = c(0, 1, 0, 0, 0)
 B1 = c(0, 0, 1, 0, 0)
 B2 = c(0, 0, 0, 1, 0)</code></pre>
-<p>The vectors I made represent means for combinations of substance and rate. I want the overall substance group means, though. This is done by <em>averaging over</em> the two rates. I literally taking the average of, e.g., <code>A1</code> and <code>A2</code> vectors to get a vector that represents the overall <code>A</code> mean.</p>
+<p>The vectors I made represent means for combinations of substance and rate. I want to compare the <em>overall</em> substance group means, though. This can be done by <em>averaging over</em> the two rates. This involves literally taking the average of, e.g., <code>A1</code> and <code>A2</code> vectors to get a vector that represents the overall <code>A</code> mean.</p>
 <pre class="r"><code>Aoverall = (A1 + A2)/2
 Boverall = (B1 + B2)/2</code></pre>
-<p>Now that the overall means are calculated we can do comparison of mean <code>resp</code> of the <code>A</code> group vs <code>B</code> group overall in <code>contrast()</code>.</p>
+<p>Now that we have vectors to represent the overall means we can do comparison of mean <code>resp</code> of the <code>A</code> group vs <code>B</code> group overall in <code>contrast()</code>.</p>
 <pre class="r"><code>contrast(emm1, method = list(&quot;A - B&quot; = Aoverall - Boverall) ) </code></pre>
 <pre><code>#  contrast estimate    SE df t.ratio p.value
 #  A - B       -1.47 0.466 20 -3.152  0.0050</code></pre>

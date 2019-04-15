@@ -10,8 +10,8 @@ tags:
   - analysis
   - teaching
   - emmeans
-draft: TRUE
-description: "One of the nice things about emmeans is that you can build custom comparisons for any groups or combinations of groups, which I show how to do in this post."
+draft: FALSE
+description: "One of the nice things about emmeans is that you can build custom comparisons for any groups or combinations of groups.  I give an example showing how to set these up."
 ---
 
 
@@ -23,25 +23,25 @@ knitr::opts_chunk$set(comment = "#")
 # Make dataset here that will use later
 # Two factors plus one log-normal response
 set.seed(16)
-dat = data.frame(f1.f2 = rep(c("A.1", "A.2", "B.1", "B.2", "control"), each = 5) )
+dat = data.frame(sub.rate = rep(c("A.1", "A.2", "B.1", "B.2", "control"), each = 5) )
 y = with(dat, 5 + 
-              -1*(f1.f2 == "A.2") +
-              .5*(f1.f2 == "B.1") +
-              1*(f1.f2 == "B.2") +
-              2*(f1.f2 == "control") +
+              -1*(sub.rate == "A.2") +
+              .5*(sub.rate == "B.1") +
+              1*(sub.rate == "B.2") +
+              2*(sub.rate == "control") +
               rnorm(n = 25, mean = 0, sd = 1) )
 dat$resp = round(y, 1)
 ```
 
-Following up on a [previous post](https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/) where I demonstrated the basic usage of package **emmeans** for doing post hoc comparisons, here I'll demonstrate how to make custom comparisons (aka *contrasts*).  These are comparisons that aren't encompassed by the built-in functions in the package. 
+Following up on a [previous post](https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/), where I demonstrated the basic usage of package **emmeans** for doing post hoc comparisons, here I'll demonstrate how to make custom comparisons (aka *contrasts*).  These are comparisons that aren't encompassed by the built-in functions in the package. 
 
 Remember that you can explore the available built-in **emmeans** functions for doing comparisons via `?"contrast-methods"`.
 
 # Reasons for custom comparisons
 
-There are a variety of reasons you might need custom comparisons instead of some of the standard, built-in ones.  One common scenario that I see a lot is when we have a single control group for multiple factors, so the factors aren't perfectly crossed.  This comes up, e.g., when doing experiments that involve applying different substances (like fertilizers) at varying rates.  One factor is the different substances applied and the other is different application rates.  However, the control is applying nothing or water or something like that.  There aren't different "rates" of the control to apply, so there is a single control group for both factors.
+There are a variety of reasons you might need custom comparisons instead of some of the standard, built-in ones.  One common scenario that I see a lot is when we have a single control group for multiple factors, so the factors aren't perfectly crossed.  This comes up, e.g., when doing experiments that involve applying different substances (like fertilizers) at varying rates.  One factor is the different substances applied and the other is different application rates.  However, the control is applying nothing or water or something like that.  There aren't different rates of the control to apply, so there is a single control group for both factors.
 
-Rather than trying to fit a model with multiple factors, focusing on main effects and the interaction, such data can be analyzed with a *simple effects* model.  This is where the two (or more) factors of interest have been combined into a single factor for analysis.  This analysis focuses on the effect of the two factors combined.  We can use post hoc comparisons to estimate the overall effects of individual factors.  
+Rather than trying to fit a model with multiple factors, focusing on main effects and the interaction, such data can be analyzed with a *simple effects* model.  This is where the two (or more) factors of interest have been combined into a single factor for analysis.  Such an analysis focuses on the effect of the two factors combined.  We can use post hoc comparisons to estimate the overall effects of individual factors.  
 
 # R packages
 
@@ -54,74 +54,75 @@ library(magrittr) # v. 1.5
 
 # The dataset and model
 
-I've made a small dataset to use as an example.  The response variable is `resp` and the two factors of interest have been combined into a single factor `f1.f2` that has 5 levels: `A.1`, `A.2`, `B.1`, `B.2`, and `control`.  
+I've made a small dataset to use as an example.  The response variable is `resp` and the two factors of interest have been combined into a single factor `sub.rate` that has 5 levels: `A.1`, `A.2`, `B.1`, `B.2`, and `control`.  
 
-One factor, which I'm thinking of as the "substance" factor, is represented by `A` and `B` (and the control).  The second, the "rate" factor, is represented by `1` and `2`.
+One factor, which I'm thinking of as the *substance* factor, is represented by `A` and `B` (and the control).  The second, the *rate* factor, is represented by `1` and `2`.
 
 ```{r}
-dat = structure(list(f1.f2 = structure(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 
+dat = structure(list(sub.rate = structure(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 
 2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 4L, 4L, 4L, 4L, 4L, 5L, 5L, 5L, 
 5L, 5L), .Label = c("A.1", "A.2", "B.1", "B.2", "control"), class = "factor"), 
     resp = c(5.5, 4.9, 6.1, 3.6, 6.1, 3.5, 3, 4.1, 5, 4.6, 7.3, 
     5.6, 4.8, 7.2, 6.2, 4.3, 6.6, 6.5, 5.5, 7.1, 5.4, 6.7, 6.8, 
     8.5, 6.1)), row.names = c(NA, -25L), class = "data.frame")
+
 str(dat)
 ```
 
 I will use a simple, linear model for analysis.
 
 ```{r}
-fit1 = lm(resp ~ f1.f2, data = dat)
+fit1 = lm(resp ~ sub.rate, data = dat)
 ```
 
 # Treatment vs control comparisons
 
-This simple effects model makes it easy to get comparisons for each factor combination vs the control group with `emmeans()`.  I'll use `trt.vs.ctrlk` to do this since the control is the last level of the factor.
+The simple effects model makes it easy to get comparisons for each factor combination vs the control group with `emmeans()`.  I'll use `trt.vs.ctrlk` to do this since the control is the last level of the factor.
 
 ```{r}
-emmeans(fit1, specs = trt.vs.ctrlk ~ f1.f2)
+emmeans(fit1, specs = trt.vs.ctrlk ~ sub.rate)
 ```
 
-# [Getting started building custom contrasts](#getting-started-building-custom-contrasts)
+We may also be interested in some other comparisons, though. In particular, we might want to do some overall comparisons across the two factors.  We will need custom contrasts for this.
 
-But what if we want to compare the `A` group to the `B` group overall, regardless of the application rate?  There is no built-in way to do this; we'll need to set up a custom contrast.
+# [Building custom contrasts](#building-custom-contrasts)
 
-Custom contrasts are based on the estimated marginal means output from `emmeans()`.  The first step is to calculate these so we have them to work with.  I name this output `emm1`.
+Custom contrasts are based on the estimated marginal means output from `emmeans()`.  The first step to building custom contrasts is to calculate the estimated marginal means so we have them to work with.  I will name this output `emm1`.
 
 ```{r}
-emm1 = emmeans(fit1, specs = ~ f1.f2)
+emm1 = emmeans(fit1, specs = ~ sub.rate)
 emm1
 ```
 
-Before I get to that more complicated example of `A` vs `B` overall, I'm going to walk through a simpler example.  I'll start by showing how to compare mean `resp` of the `A.2` group to the `B.2` group via custom contrasts.  This involves pulling out those specific group means from the `emmeans` output shown above.  
+I'm going to start with a relatively simple example.   I will compare mean `resp` of the `A.2` group to the `B.2` group via custom contrasts.  
 
-We *pull out* a group mean by making a vector to represent the specific mean of interest.  In this vector we assign a `1` to the mean of the group of interest and a `0` to the other groups.  
+Building a custom contrast involves pulling out specific group means of interest from the `emmeans()` output.  We *pull out* a group mean by making a vector to represent the specific mean of interest.  In this vector we assign a `1` to the mean of the group of interest and a `0` to the other groups.  
 
-For example, to pull out the mean of `A.2` we will make a vector with 5 values in it, one for each row of the `emmeans` output.  The second value will be a `1`, since the mean of `A.2` is on the second row.  All the other values in the vector will be `0`.
+For example, to pull out the mean of `A.2` from `emm1` we will make a vector with 5 values in it, one for each row of the output.  The second value will be a `1`, since the mean of `A.2` is on the second row of `emm1`.  All the other values in the vector will be `0`.
 
-Below is the vector that represents that `A.2` mean.
+Below is the vector that represents the `A.2` mean.
 
 ```{r}
 A2 = c(0, 1, 0, 0, 0)
 ```
 
-Similarly, to pull out the mean of `B.2` we'll have a vector of 5 values with a `1` as the fourth value.  In the output above the `B.2` group is on the fourth row.
+Similarly, to pull out the mean of `B.2` we'll have a vector of 5 values with a `1` as the fourth value.  The `B.2` group is on the fourth row in `emm1`.
 
 ```{r}
 B2 = c(0, 0, 0, 1, 0)
 ```
 
-When building custom contrasts via vectors like this, the vectors will always be the same length as the number of rows in the `emmeans` output.  I always calculate and print the `emmeans` prior to building the vectors so I am certain of the number of rows and the order of the groups in the output.
+When building custom contrasts via vectors like this, the vectors will always be the same length as the number of rows in the `emmeans()` output.  I always calculate and print the estimated marginal means prior to building the vectors so I am certain of the number of rows and the order of the groups in the output.
 
-# Using the contrast() function for custom comparisons
+# The contrast() function for custom comparisons
 
-Once we have the vectors that represent the means we are interested in comparing, we actually do the comparisons via the `contrast()` function.  Since we are interested in a *difference* in mean response, we take the difference between the vectors that represent the means.  Taking the difference can be done inside or outside `contrast()`.  In this example I'm doing it inside.
+Once we have the vectors that represent the means we are interested in comparing, we actually do the comparisons via the `contrast()` function.  Since we are interested in a *difference* in mean response, we take the difference between the vectors that represent the means.  
+
+Taking the difference between vectors can be done inside or outside `contrast()`.  In this example I'm doing it inside.
 
 The `contrast()` function takes an `emmGrid` object (i.e., output from `emmeans()`) as the first argument.  We give the comparison we want to do via a list passed to the `method` argument.  
 
-Here I want to calculate the difference in mean `resp` of `A.2` and `B.2`.  I subtract the `B2` vector from the `A2` vector.
-
-The output is the difference in mean `resp` between these groups.
+Here I want to calculate the difference in mean `resp` of `A.2` and `B.2`.  I subtract the `B2` vector from the `A2` vector.  The output is the difference in mean `resp` between these groups.
 
 ```{r}
 contrast(emm1, method = list(A2 - B2) )
@@ -129,7 +130,7 @@ contrast(emm1, method = list(A2 - B2) )
 
 # Using named lists for better output
 
-The name in the output above isn't very helpful for figuring out which groups this comparison represents.  Using a named list for `method` is much more useful.
+Unfortunately you can't tell what comparisons was done in the output above `r emo::ji("thinking")`.  We can use a named list in `method` to make the output more understandable.
 
 ```{r}
 contrast(emm1, method = list("A2 - B2" = A2 - B2) )
@@ -137,16 +138,18 @@ contrast(emm1, method = list("A2 - B2" = A2 - B2) )
 
 # [Using "at" for simple comparisons](#using-at-for-simple-comparisons)
 
-Note that I didn't need to do a custom contrast to do this particular comparison.  I could have gotten the comparison I wanted by using the `at` argument in `emmeans()` and choosing just the two groups I was interested in.
+Note that I didn't need to do a custom contrast to do this particular comparison.  I could have gotten the comparison I wanted by using the `at` argument with `pairwise` in `emmeans()` and choosing just the two groups I was interested in.
 
 ```{r}
-emmeans(fit1, specs = pairwise ~ f1.f2, 
-         at = list(f1.f2 = c("A.2", "B.2") ) )
+emmeans(fit1, specs = pairwise ~ sub.rate, 
+         at = list(sub.rate = c("A.2", "B.2") ) )
 ```
 
 # [Multiple custom contrasts at once](#multiple-custom-contrasts-at-once)
 
-Multiple custom contrasts can be done simultaneously by adding more comparisons to the `method` list.  I'll demonstrate this by doing the simple example comparison twice, changing only which group is subtracted from the other.  I name both elements of the list for ease of interpreting the output.  
+Multiple custom contrasts can be done simultaneously in `contrast()` by adding more comparisons to the `method` list.  I'll demonstrate this by doing the simple example comparison twice, changing only which group mean is subtracted from the other.  
+
+I name both elements of the list for ease of interpretation.  I find naming the list of comparisons to be a key part of doing these custom contrasts.  
 
 ```{r}
 contrast(emm1, method = list("A2 - B2" = A2 - B2,
@@ -155,26 +158,31 @@ contrast(emm1, method = list("A2 - B2" = A2 - B2,
 
 Doing multiple comparisons at once means a multiple comparisons adjustment can be done as needed.  In addition, we can use the `confint()` function do get confidence intervals for the comparisons.
 
-I'll play around here by adding a multivariate-$t$ adjustment via `adjust = "mvt"` and then get confidence intervals for the comparisons.  Remember we can get both confidence intervals and tests for comparisons via `summary()` with `infer = TRUE`.
+I'll add a multivariate-$t$ adjustment via `adjust = "mvt"` and then get confidence intervals for the comparisons.  Remember we can get both confidence intervals and tests for comparisons via `summary()` with `infer = TRUE`.
 
 ```{r}
-contrast(emm1, method = list("A2 minus B2" = A2 - B2,
+twocomp = contrast(emm1, method = list("A2 minus B2" = A2 - B2,
                              "B2 minus A2" = B2 - A2),
          adjust = "mvt") %>%
      confint()
+twocomp
 ```
 
 # More complicated custom contrasts
 
-Let's go back to the original comparison I proposed, which was to estimate the overall effect of `A` vs `B`.  This is a *main effect* comparison, so I need to average over the effect of the "rate" factor in order to estimate the overall effect of the "substance" factor.
+Now that we've seen a simple case, let's do something slightly more complicated (and realistic).  What if we want to compare the `A` group to the `B` group overall, regardless of the application rate?  
 
-To do this comparison I need the means for all four non-control factor levels.  I'll print `emm1` again here so I remember the order of the output.
+This is a *main effect* comparison, so I need to average over the effect of the rate factor in order to estimate the overall effect of the levels of the substance factor.
+
+To do this comparison I need the means for all four non-control factor levels.  I'll print `emm1` again here so I remember the order of the output before starting to write out the vectors that represent the group means.
 
 ```{r}
 emm1
 ```
 
-I pull out each of the first four group means, just like I demonstrated above.  While typing these vectors out isn't too hard, since they only contain 5 values, if I have many groups and so really long vectors you will sometimes see me use `rep()` to put all the 0 values in.
+I'll need all means that involve `A` or `B`, which is the first four group means in `emm1`.  I'll make a vector to represent each of these group means.
+
+While typing these vectors out isn't too hard, since they only contain 5 values, when I have many groups and so really long vectors I sometimes use `rep()` to repeat all the 0 values.
 
 ```{r}
 A1 = c(1, 0, 0, 0, 0)
@@ -183,14 +191,14 @@ B1 = c(0, 0, 1, 0, 0)
 B2 = c(0, 0, 0, 1, 0)
 ```
 
-The vectors I made represent means for combinations of substance and rate.  I want the overall substance group means, though.  This is done by *averaging over* the two rates.  I literally taking the average of, e.g., `A1` and `A2` vectors to get a vector that represents the overall `A` mean.
+The vectors I made represent means for combinations of substance and rate.  I want to compare the *overall* substance group means, though.  This can be done by *averaging over* the two rates.  This involves literally taking the average of, e.g., `A1` and `A2` vectors to get a vector that represents the overall `A` mean.
 
 ```{r}
 Aoverall = (A1 + A2)/2
 Boverall = (B1 + B2)/2
 ```
 
-Now that the overall means are calculated we can do comparison of mean `resp` of the `A` group vs `B` group overall in `contrast()`.
+Now that we have vectors to represent the overall means we can do comparison of mean `resp` of the `A` group vs `B` group overall in `contrast()`.
 
 ```{r}
 contrast(emm1, method = list("A - B" = Aoverall - Boverall) ) 
