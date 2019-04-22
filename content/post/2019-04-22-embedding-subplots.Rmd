@@ -9,18 +9,18 @@ tags:
   - ggplot2
   - purrr
 draft: TRUE
-description: "I was first exposed to the idea of embedding small subplots into a larger plot in package ggsubplot, which is no longer maintained.  Embedding subplots is still possible in ggplot2 via function annotation_custom(), and many subplots can be made and added to a plot via loops.  I demonstrate one approach to this here."
+description: "When I first learned about embedding many small subplots into a larger plot as a way to visualize large datasets it could be done in ggplot2 via package ggsubplot.  Embedding subplots is still possible with the annotation_custom() function.  Many subplots can be made and then added to a plot via loops.  I demonstrate one approach to do this."
 ---
 
 ```{r setup, echo = FALSE}
 knitr::opts_chunk$set(comment = "#")
 ```
 
-This quarter I'm doing a small reading and conference discussion group with graduate students on data visualization, partially based on the two recent data visualization books written by [Kieran Healy](https://kieranhealy.org/publications/dataviz/) and [Claus Wilke](https://serialmentor.com/dataviz/). The ultimate goal is to have each student work on a graphic with their own data.  During discussions on what sort of plot to make, one student brought up the idea of embedded plots for visualizing complex data.
+This quarter I'm doing a small reading and conference discussion group on data visualization with graduate students, partially based on the two recent data visualization books written by [Kieran Healy](https://kieranhealy.org/publications/dataviz/) and [Claus Wilke](https://serialmentor.com/dataviz/). The ultimate goal is to have each student work on a graphic with their own data.  
 
-I first saw embedded graphics in package **ggsubplot**.  It turns out the student had seen [an old post](https://blog.revolutionanalytics.com/2012/09/visualize-complex-data-with-subplots.html) about that package and about embedded graphics and was interested to try it on her fairly large dataset.  However, **ggsubplot** is no longer maintained and doesn't work with current versions of **ggplot2**.
+During discussions on what sort of graphic each student should make, the idea of embedded plots for visualizing a large dataset that has a problem with overplotting came up.  I first learned about embedded graphics from package **ggsubplot**.  You can still see [an old post](https://blog.revolutionanalytics.com/2012/09/visualize-complex-data-with-subplots.html) about that package and about embedded graphics in general.  However, **ggsubplot** is no longer maintained and doesn't work with current versions of **ggplot2**.
 
-Below is an example of an embedded plot of the `diamonds` dataset from that blog post.  You can see there are small subplots showing summarized data placed within the larger plot. This can be useful for large datasets and it can look pretty neat on maps.
+Below is an example of an embedded plot of the `diamonds` dataset from that blog post.  You can see there are small subplots showing summarized data placed within the larger plot. This can be useful to show patterns in for large datasets like `diamonds`.  Embedded plots can also work well on maps.
 
 ```{r, echo = FALSE}
 knitr::include_graphics("https://revolution-computing.typepad.com/.a/6a010534b1db25970b0177448319ad970d-800wi")
@@ -28,11 +28,11 @@ knitr::include_graphics("https://revolution-computing.typepad.com/.a/6a010534b1d
 
 I poked around a bit, and found that `annotation_custom()` is the go-to function for embedding plots in a **ggplot2** graphic these days.  Since embedded plots like the one above involve making and adding many subplots, generally we'll need some sort of looping to be efficient.  I found a couple of recent examples for how to tackle these plots on Stack Overflow [here](https://stackoverflow.com/a/44125392/2461552) and [here](https://stackoverflow.com/a/45417727/2461552).
 
-I'm going to work through an example of embedding subplots using the same sort of approach outlined in those answers.
+I'm going to work through an example of embedding subplots using the same kind of approach outlined in those answers.
 
 # R packages
 
-First I'll load the R packages I'm using today.  All plotting is done via **ggplot2**, I do data manipulation with **dplyr** and **tidyr**, and **purrr** is for looping to make the subplots and then get them into separate `annotation_custom()` layers.
+First I'll load the R packages I'm using today.  All plotting is done via **ggplot2**, I do data manipulation with **dplyr** and **tidyr**, and **purrr** is both for looping to make the subplots and for getting the subplots into `annotation_custom()` layers.
 
 ```{r}
 library(ggplot2) # 3.1.1
@@ -43,15 +43,15 @@ library(purrr) # 0.3.2
 
 # Cutting continuous variables into evenly-spaced categories
 
-An additional complication that I didn't see covered in the Stack Overflow answers was how to approach for cutting up the two continuous variables on the axis of the large plot into categories prior to making the subplots.  
+Binning the continuous variables on the axis of the larger plot to make the subplots is an additional complication that I didn't see covered in those Stack Overflow answers.  That's the first thing I wanted to grapple with.  
 
-That's the first thing I wanted to grapple with.  I played with various ways to get evenly sized subplots.  While I thought it might be nice to have plots placed at "even" points on the axis, in the end I gave that up and decided to cut up the continuous variable into groups of even lengths.
+I thought it made the most sense to have all the subplots be the same size and so wanted evenly sized *bins* or groups.  The range of values for of each bin for a particular variable can be based on the total range of the variable and the desired number of groups.
 
-This is a job for `cut()`.  Rather than using `cut()` directly I made a function built around `cut()`.  The main reason for this is because I'm going to eventually need the minimum and maximum value of each group in order to place the subplots along the axes of the larger plot.  This information can be pulled from the labels, but I didn't like how `cut()` rounded the values.
+Binning into even-length groups is a job for `cut()`.  Since I'm going to need the minimum and maximum value of each group to place the subplots along the axes of the larger plot, rather than using `cut()` directly I made a function built it.  While information on the range encompassed by a group can be pulled from the default `cut()` bin labels, I didn't like how `cut()` rounded those values.
 
-My function `cuteven()`, takes a continuous variable and returns a variable cut into `ngroups` groups.  The labels of this categorized variable are the (unrounded) minimum and maximum value of the group, separated by commas.
+My function `cuteven()`, takes a continuous variable and returns a variable cut into `ngroups` bins.  The labels of the resulting groups are the unrounded minimum and maximum value of each one, with the values separated by commas.
 
-The `include.lowest` argument in `cut()` is to make sure the minimum value in the dataset is included in the first group.
+I use `include.lowest = TRUE` in `cut()` is to make sure the minimum value in the dataset is included in the first group.
 
 
 ```{r}
@@ -64,19 +64,19 @@ cuteven = function(variable, ngroups) {
 }
 ```
 
-Let's test the function by cutting `Sepal.Length` from the `iris` dataset into 3 groups.
+Let's test the function by cutting `Sepal.Length` from the `iris` dataset into 3 groups.  The new, categorical variable has three categories, labeled with the minimum and maximum values in each.
 
 ```{r}
 with(iris, cuteven(Sepal.Length, ngroups = 3) )
 ```
 
-# Categorizing the axis labels
+# Categorizing the axis variables
 
-While these embedded plots can be useful for large datasets, I'm going demonstrate the process with a relatively small dataset so I can focus on the concepts.
+While these embedded plots can be useful for large datasets, I'm going demonstrate the process with a relatively small dataset.
 
-I will embed subplots on a larger plot based on the `iris` data, showing `Sepal.Length` on the x axis and `Petal.Length` on the y axis.  My first step is to categorize those variables.  I'm going to make three groups for `Sepal.Length` and four groups for `Petal.Length`.
+I will embed subplots on a larger plot based on the `iris` data, showing `Sepal.Length` on the x axis and `Petal.Length` on the y axis.  My first step is to categorize those variables with `cuteven()`.  I'm going to make three groups for `Sepal.Length` and four groups for `Petal.Length`.
 
-I cut both variables within `mutate()` and add them to `iris`.  I give them generic names that indicate which variable is `x` and which is `y`.
+I cut both variables within `mutate()` and add them to `iris`.  I give the new variables generic names that indicate which variable is `x` and which is `y`.
 
 ```{r}
 iris = mutate(iris,
@@ -88,11 +88,13 @@ glimpse(iris)
 
 # Extracting the coordinates for each subplot
 
-We'll need the minimum and maximum value for group for each axis variable to place the subplot in the larger plot in `annotation_custom()`.  Since the labels of the new variables contain this info separated by a comma, we can use `separate()` to extract this info into columns.
+We'll need the minimum and maximum value per group for each axis variable in order to place the subplot in the larger plot with `annotation_custom()`.  Since the labels of the new variables contain this info separated by a comma, we can use `separate()` to extract the coordinate information from the labels into separate columns.
 
-Since I have two group variables, one for each axis, I end up using `separate()` twice.  I again make the names of the new columns in `into` based on which axis the value refers to.  
+Since I have two group variables, one for each axis, I end up using `separate()` twice.  I again make the names of the new columns in `into` based on which axis I'll be plotting that variable on.
 
-Since these coordinates are for numeric axes I use `convert = TRUE` to convert the values to numbers from categories.
+Since these coordinates are for numeric axes I use `convert = TRUE` to convert the values from categorical to numerical.  
+
+When this step is complete we'll have coordinates to indicate where each corner of a subplot will be placed within the larger plot.  Unique combinations of the four variables define each group we want to make a subplot for.
 
 ```{r}
 iris = iris %>%
@@ -106,11 +108,13 @@ glimpse(iris)
 
 # Bar plot subplots
 
-Before I go any further I'm going to figure out what I want my subplots to look like.  I'm going to start with subplots as bar plots to count up the number of each species.
+Next I'm going to figure out what I want my subplots to look like.  I'm going to start with bar plots to count up the number of each species in each group.
 
-It is useful to make a function for making the plots.  Before I do that, I always work out what I want the plot to look like on a single subset of the data.  While you can't see it here, this is an iterative process and I often have to come back and tweak things once I've made the plots and embedded them.
+Since I will be making many plots with the same look I'll create a function for the task.  I like to work out what I want the plot to look like on a single subset of the data before making the function  While you can't see it here, this is an iterative process.  I often have to come back and tweak the plot once I've made test subplots and embedded them.
 
-I want all the plots to have the same x and y axes.  Since the y axis is counts, I need to calculate the maximum number of species across each subplot x/y group for setting the y axis limits.
+In this case, I want all the plots to have the same x and y axes.  Since the y axis is counts, I need to calculate the maximum number of species across groups so I can set the y axis limits.
+
+The maximum count is `47`, so that will be my upper axis limit.  Bar plots always start at 0.
 
 ```{r}
 iris %>%
@@ -122,11 +126,13 @@ iris %>%
 
 In case a species is missing from one of the subplot groups I'll define the `limits` for the x axis in `scale_x_discrete()`.  This forces each plot to have the same x axis breaks.
 
-I'll be removing all axis labels, etc., via `theme_void()` so that the subplots fit nicely into the larger plot, but keep the outline around the plot.  
+I'll be removing all axis labels, etc., via `theme_void()` so that the subplots fit nicely into the larger plot.  I will add an outline around the plot, though.  
 
-I use `fill` to color the bars by species and will add a legend to the final plot since there are no x axis labels on the subplot.  I set explicit colors in `scale_fill_manual()` (colors taken [from here](http://colorspace.r-forge.r-project.org/articles/hcl_palettes.html#qualitative-palettes)).  I suppress the legend in the subplots, though.
+I use `fill` to color the bars by species and will add a legend to the large plot since there are no x axis labels on the subplot.  I suppress the legend in the subplots.  
 
-Here is my test plot.
+I set explicit colors in `scale_fill_manual()` (colors taken [from here](http://colorspace.r-forge.r-project.org/articles/hcl_palettes.html#qualitative-palettes)) so all the plots will have the same color scheme.
+
+Here is my test plot for one group.  This particular group only has one species in it.
 
 ```{r}
 ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475), 
@@ -143,7 +149,9 @@ ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
      ylim(0, 47)
 ```
 
-Once I have the plot worked out I can make a function so I can loop through all the data subsets and make a plot for each one.  In this case the function takes a dataset, since I'm hard-coding in the axis variables, etc.
+Once I have the plot worked out for one group I put the code into a function.  Here I name the function `barfun`.  In this case the function takes only a dataset, since I'm hard-coding in all the axis variables.
+
+This function will allow me to loop through all the data subsets and make a bar plot for each one.  
 
 ```{r}
 barfun = function(data) {
@@ -162,7 +170,7 @@ barfun = function(data) {
 }
 ```
 
-Does this make the same plot I made manually?  Yep. `r emo::ji("+1")`
+Does this function make the same plot I made manually?  Yep. `r emo::ji("+1")`
 
 ```{r}
 barfun(data = filter(iris, max_x <= 5.5, max_y <= 2.475) )
@@ -172,9 +180,11 @@ barfun(data = filter(iris, max_x <= 5.5, max_y <= 2.475) )
 
 Now I'm ready to make the subplots! `r emo::ji("laughing")`.  
 
-This involves looping through each subset of data and making the plot.  Since I'm going to need those coordinates for subplot placement later I decided that the most straightforward way to do this is to group by the unique combinations of coordinates and then *nest* the dataset.  When nesting, the dataset to be plotted is put in a column called `data`.
+I'll loop through each subset of data and plot it with my function.  
 
-I loop through each dataset in `data` with `map()` in `mutate()` and make a new list column of plots called `subplots`. 
+Since I'm going to need those coordinates for subplot placement later I decided that the most straightforward way to do this is to group by the unique combinations of coordinates and then *nest* the dataset.  When nesting, the dataset that contains the data to be plotted is placed in a column called `data`.
+
+I loop through each dataset in `data` with `map()` within `mutate()`.  The new column containing the plots is named `subplots`. 
 
 ```{r}
 allplots = iris %>%
@@ -185,22 +195,22 @@ allplots = iris %>%
 allplots
 ```
 
-Here's a couple of the plots.  The first one should look fairly familiar
+Here's a couple of the plots.  The first one should look fairly familiar.
 
 ```{r}
 allplots$subplots[[1]]
 allplots$subplots[[6]]
 ```
 
-# Putting subplots in annotation_custom()
+# Putting subplots into annotation_custom()
 
-The next step is to make each of these plots a *grob* (graphical object) and pass it into `annotation_custom()` for adding to the larger plot.  It is in `annotation_custom()` where we finally need those coordinates we made.
+Now I need to make each of these plots a *grob* (graphical object) and pass it into `annotation_custom()` for adding to the larger plot.  The coordinate columns will be passed to the `xmin`, `xmax`, `ymin`, `ymax` arguments in `annotation_custom()`.  This is how we indicate where each subplot should be placed in the larger plot.  
 
-I'm going to use the `allplots` dataset.  I need to loop through each row of the dataset to put the subplots into `annotation_custom()` and using the coordinates for the `xmin`, `xmax`, `ymin`, `ymax` arguments so the subplots get placed correctly.  Working *row-wise* like this tells me I probably want `pmap()` for the looping.  
+I want to use `annotation_custom()` with each subplot and coordinates from each row of the dataset.  Looping *row-wise* through a dataset usually indicates that I'll want to use the `pmap()` function.  
 
-I'll be working with five columns simultaneously for this step so I decided to make a function prior to looping.
+Since I'll be working with five columns simultaneously in this step I decided to make a function prior to looping.
 
-Notice I put my arguments of the function in the same order as they appear in the dataset and *they have the same names as the columns of the dataset*.  I did this on purpose for ease of working with `pmap()`.
+Notice I put my arguments of the function in the same order as they appear in the dataset and *they have the same names as the columns of the dataset*.  I did this on purpose for ease of working with `pmap()`.  I name this function `grobfun`.
 
 ```{r}
 grobfun = function(min_x, max_x, min_y, max_y, subplots) {
@@ -210,11 +220,11 @@ grobfun = function(min_x, max_x, min_y, max_y, subplots) {
 }
 ```
 
-I no longer need the `data` column, so I remove it to end up with only the columns I need for the `grobfun()` function I made.
+I no longer need the `data` column, so I remove it to end up with only the columns I need for the `grobfun()` function I made.  This isn't strictly necessary, but makes working with `pmap()` easier.
 
 The dot, `.`, indicates I'm passing the entire dataset to `pmap()` and so looping through it row-wise.
 
-I find this takes a little time to run.
+I find this can take a little time to run when doing many subplots.
 
 ```{r}
 ( allgrobs = allplots %>%
@@ -224,9 +234,9 @@ I find this takes a little time to run.
 
 # Making the large plot
 
-I haven't actually made the plot I'm going to embed plots into.  This is a blank plot with `Sepal.Length` on the x axis and `Petal.Length` on the y axis.
+I haven't actually made the plot I'm going to embed plots into.  This will be a blank plot with `Sepal.Length` on the x axis and `Petal.Length` on the y axis that will have an overall legend for `fill`.  
 
-I want to have a legend on this plot, though, since I removed the legends from the subplots.  Those Stack Overflow posts show a trick with `geom_col()` to do this (thank goodness, since I would have never figured out on my own `r emo::ji("stuck_out_tongue")`).
+Adding on the overall legend to a blank plot involves a little trick with `geom_col()`, which was demonstrated in those Stack Overflow posts. (Thank goodness for SO, since I would have never figured it out otherwise `r emo::ji("stuck_out_tongue_winking_eye")`.)
 
 ```{r}
 ( largeplot = ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, fill = Species) ) +
@@ -239,7 +249,7 @@ I want to have a legend on this plot, though, since I removed the legends from t
 
 # Embedding the subplots
 
-Last step!  We add the list of subplots in `annotation_custom()` to the big plot, which are then added individually to the large plot.  There was a little extra space on the y axis that I removed by setting the axis limits. 
+Last step!  We can now add the list of subplots in `annotation_custom()` to the larger plot. `r emo::ji("tada")` There was a little extra space on the y axis that I removed by setting the axis limits. 
 
 I think this looks nice with evenly spaced subplots but there may be times unevenly spaced subplots is useful.  In that case you could cut the variables into uneven groups.
 
@@ -249,29 +259,27 @@ largeplot +
      ylim(1, NA)
 ```
 
-After polishing it up a bit as desired, the final plot can be saved with `ggsave()`.
+After polishing this plot up a bit as desired, the final plot can be saved with `ggsave()`.
 
 # Continuous distribution subplots
 
-I've seen quite a few examples showing bar plot or pie chart subplots to show the distribution of some categorical variable across the axis variables.  But there's no reason I can see that we can't show the distribution of a third continuous variable.
+I've seen quite a few examples of embedded plots with bar plot or pie chart subplots to show patterns in the distribution of some categorical variable across the axis variables.  But there's no reason we can't show the distribution of a third continuous variable.
 
-I found a lot of little details that took some work for "contininuous distribuiton subplots" but in the end I thought things worked out OK.
+I found a lot of little details that took some work for "continuous distribution subplots", which I go through below.
 
 I'll make a histogram of the variable `Petal.Width` for the same subplot groups I used above.
 
-I'll want the x axis to encompass the entire range of `Petal.Width` in each plot, so let's check that range.  These will be x axis limits (with extra added to make sure all the bars fit).
+I'll want the x axis to encompass the entire range of `Petal.Width` in each plot, so let's check that range.  These will be x axis limits (with some extra added to make sure all the histogram bars fit).
 
 ```{r}
 range(iris$Petal.Width)
 ```
 
-The y axis is a little trickier.  One option is to show the bars as proportions of the maximum count with `ncount` instead of a raw count.  
-
-Since the height of bars is a proportion of maximum instead of a count I decided to add the sample size per group to the plot as text.  I ended up putting this in a facet strip rather than within the plot. 
+I found the y axis to be a little trickier.  I decided to show the bars as proportions of the maximum count with `ncount` instead of as a raw count.  Since the height of bars is then a proportion of maximum instead of a count I added the sample size per group to the plot as text.  I ended up putting this in a facet strip rather than within the plot.  I went back and forth a bunch and am still not sure the final result is exactly what I want. 
 
 I'll base the color of the bars on `Petal.Width`, which can be done with `fill = stat(x)` to refer to the bins calculated by `geom_histogram()`.
 
-I'll also need to set the `binwidth` to make the histogram bars the same width for each plot.  I arbitrarily chose `0.25`.  This is also what I used to pad the x axis limits to make sure all the bars show.
+I'll also need to set the `binwidth` to make the histogram bars the same width for each plot.  I arbitrarily chose `0.25`.  This is also what I used to pad the x axis limits to make sure all the bars show in every plot.
 
 Here is my example plot for the first group.  As far as I can tell the warning message is spurious since all three bars that should be there are there. 
 
@@ -288,14 +296,14 @@ ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
                                        fill = "transparent") )
 ```
 
-Here's the function to make these histograms.
+And here's the function to make histograms for each subplot dataset, which I name `histfun`.
 
 ```{r}
 histfun = function(data) {
      ggplot(data = data,
             aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
           geom_histogram(binwidth = .25) +
-          theme_void() +
+          theme_void(base_size = 14) +
           scale_x_continuous(limits = c(0.1 - .25, 2.5 + .25) ) +
           scale_fill_continuous(type = "viridis",
                                 guide  = "none") +
@@ -307,7 +315,7 @@ histfun = function(data) {
 
 # Get the subplots ready to plot
 
-This time I'll make the subplots and then put them into `annotation_custom()` in one pipe chain.
+This time I'll make the subplots with `histfun` and then put them into `annotation_custom()` with `grobfun` in one pipe chain.
 
 ```{r, warning = FALSE}
 allgrobs_hist = iris %>%
