@@ -15,11 +15,11 @@ description: "I first learned about embedding many small subplots into a larger 
 
 
 <p>The idea of embedded plots for visualizing a large dataset that has an overplotting problem recently came up in some discussions with students. I first learned about embedded graphics from package <strong>ggsubplot</strong>. You can still see <a href="https://blog.revolutionanalytics.com/2012/09/visualize-complex-data-with-subplots.html">an old post</a> about that package and about embedded graphics in general, with examples. However, <strong>ggsubplot</strong> is no longer maintained and doesn’t work with current versions of <strong>ggplot2</strong>.</p>
-<p>I poked around a bit, and found that <code>annotation_custom()</code> is the go-to function for embedding plots in a <strong>ggplot2</strong> graphic. I found a couple of recent examples for how to tackle these plots in <strong>ggplot2</strong> on Stack Overflow <a href="https://stackoverflow.com/a/44125392/2461552">here</a> and <a href="https://stackoverflow.com/a/45417727/2461552">here</a>.</p>
+<p>I poked around a bit, and found that <code>annotation_custom()</code> is the go-to function for embedding plots in a <strong>ggplot2</strong> graphic. I found a couple of recent examples for how to tackle making such plots on Stack Overflow <a href="https://stackoverflow.com/a/44125392/2461552">here</a> and <a href="https://stackoverflow.com/a/45417727/2461552">here</a>.</p>
 <p>I’m going to work through an example of embedding subplots using the same kind of looping approach outlined in those answers.</p>
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
-<p>First I’ll load the R packages I’m using today. All plotting is done via <strong>ggplot2</strong>, I do data manipulation with <strong>dplyr</strong> and <strong>tidyr</strong>, and <strong>purrr</strong> is both for looping to make the subplots and for getting the subplots into <code>annotation_custom()</code> layers.</p>
+<p>First I’ll load the R packages I’m using today. All plotting is done via <strong>ggplot2</strong>, I do data manipulation with <strong>dplyr</strong> and <strong>tidyr</strong>, and <strong>purrr</strong> is for looping to make the subplots and then for getting the subplots into <code>annotation_custom()</code> layers.</p>
 <pre class="r"><code>library(ggplot2) # 3.1.1
 suppressPackageStartupMessages( library(dplyr) ) # 0.8.0.1
 library(tidyr) # 0.8.3
@@ -27,9 +27,9 @@ library(purrr) # 0.3.2</code></pre>
 </div>
 <div id="cutting-continuous-variables-into-evenly-spaced-categories" class="section level1">
 <h1>Cutting continuous variables into evenly-spaced categories</h1>
-<p>Binning the continuous variables that will be on the axes of the larger plot in order to make separate datasets for each subplot is the first step in this process.</p>
+<p>Binning the continuous variables that will be on the axes of the larger plot in order to create separate datasets for each subplot is the first step in this process.</p>
 <p>I thought it made the most sense to make all the subplots the same size in the final plot and so I wanted to make evenly sized <em>bins</em> or groups. The range of values in each bin can then be based on the total range of the variable of interest and the desired number of groups.</p>
-<p>Binning into even-length groups is a job for <code>cut()</code>. Since I’m going to need the minimum and maximum value of each group to place the subplots along the axes of the larger plot, rather than using <code>cut()</code> directly I made a function built around it. While information on the range encompassed by a group can be pulled from the default <code>cut()</code> bin labels, I didn’t like how <code>cut()</code> rounded those values.</p>
+<p>Binning into even-length groups is a job for <code>cut()</code>. I’m going to need the minimum and maximum value of each group to place the subplots along the axes of the larger plot, so rather than using <code>cut()</code> directly I made a function built around it. While information on the range of values encompassed by a group can be pulled from the default <code>cut()</code> bin labels, I didn’t like how <code>cut()</code> rounded those values.</p>
 <p>My function, <code>cuteven()</code>, takes a continuous variable and returns a variable cut into <code>ngroups</code> bins. The labels for the new groups are the unrounded minimum and maximum value within each group, with the values separated by commas.</p>
 <p>I use <code>include.lowest = TRUE</code> in <code>cut()</code> is to make sure the minimum value in the dataset is included in the first group.</p>
 <pre class="r"><code>cuteven = function(variable, ngroups) {
@@ -39,7 +39,7 @@ library(purrr) # 0.3.2</code></pre>
          labels = paste(seq_all[-(ngroups + 1)], seq_all[-1], sep = &quot;,&quot;),
          include.lowest = TRUE)
 }</code></pre>
-<p>I’ll test the function by cutting <code>Sepal.Length</code> from the <code>iris</code> dataset into 3 groups. The new, categorical variable has three categories, labeled with the minimum and maximum values in each.</p>
+<p>I’ll test the function by cutting <code>Sepal.Length</code> from the <code>iris</code> dataset into 3 groups. The new, categorical variable has three groups. The groups are labeled with their minimum and maximum value.</p>
 <pre class="r"><code>with(iris, cuteven(Sepal.Length, ngroups = 3) )</code></pre>
 <pre><code>#   [1] 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5
 #   [9] 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 4.3,5.5 5.5,6.7 5.5,6.7
@@ -162,8 +162,8 @@ glimpse(iris)</code></pre>
 <h1>Make the subplots</h1>
 <p>I’m ready to make the subplots!</p>
 <p>I’ll loop through each subset of data and plot it with my function.</p>
-<p>Since I’m going to need those coordinates for subplot placement later I decided that the most straightforward way to do this is to group by the unique combinations of coordinates and then <em>nest</em> the dataset. When nesting, the dataset that contains the data to be plotted is placed in a column called <code>data</code>.</p>
-<p>I loop through each dataset in <code>data</code> with <code>map()</code> within <code>mutate()</code>. The new column containing the plots is named <code>subplots</code>.</p>
+<p>Since I’m going to need those coordinates for subplot placement later I decided that the most straightforward way to do this is to group by the unique combinations of coordinates and then <em>nest</em> the dataset. When nesting, the data to be plotted for each group is placed in a column called <code>data</code>.</p>
+<p>I loop through each dataset in <code>data</code> via <code>map()</code> within <code>mutate()</code>. The new column containing the plots is named <code>subplots</code>.</p>
 <pre class="r"><code>allplots = iris %&gt;%
      group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
      group_nest() %&gt;%
@@ -220,7 +220,7 @@ allplots</code></pre>
 </div>
 <div id="making-the-large-plot" class="section level1">
 <h1>Making the large plot</h1>
-<p>I haven’t actually made the plot I’m going to embed plots into yet. This will be a blank plot with <code>Sepal.Length</code> on the x axis and <code>Petal.Length</code> on the y axis with a legend for <code>fill</code>.</p>
+<p>I haven’t actually made the larger plot I’m going to embed subplots into yet. This will be a blank plot with <code>Sepal.Length</code> on the x axis and <code>Petal.Length</code> on the y axis with a legend for <code>fill</code>.</p>
 <p>Adding on the overall legend to a blank plot involves a little trick with <code>geom_col()</code>, which was demonstrated in those Stack Overflow posts. (Thank goodness for SO, since I would have never figured it out otherwise 😜.)</p>
 <p>Here is the plot I will embed the subplots into.</p>
 <pre class="r"><code>( largeplot = ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, fill = Species) ) +
@@ -247,13 +247,13 @@ allplots</code></pre>
 <div id="continuous-distribution-subplots" class="section level1">
 <h1>Continuous distribution subplots</h1>
 <p>I’ve seen quite a few examples of embedded plots with bar plot or pie chart subplots to show patterns in the distribution of some categorical variable across the axis variables. But there’s no reason we can’t show the distribution of a third continuous variable.</p>
-<p>I decided to make a histogram of the variable <code>Petal.Width</code> for the same subplot groups I used above. I found a lot of little details to work through when making subplots showing the distribution of a continuous variable, which I go through below.</p>
-<p>I’ll want the x axis to encompass the entire range of <code>Petal.Width</code> in each plot, so first I check that range. These will be x axis limits (with some extra added to make sure all the histogram bars fit).</p>
+<p>I decided to make a histogram of the variable <code>Petal.Width</code> for the same subplot groups I used above. I found a lot of little details to work through when making subplots showing the distribution of a continuous variable.</p>
+<p>I want the x axis of each plot to encompass the entire range of <code>Petal.Width</code>, so my first step was to pull out that information. These values will be the x axis limits (with some extra added to make sure all the histogram bars fit).</p>
 <pre class="r"><code>range(iris$Petal.Width)</code></pre>
 <pre><code># [1] 0.1 2.5</code></pre>
 <p>I found the y axis to be a little trickier. I decided to show the bars as proportions of the maximum count with <code>ncount</code> instead of as a raw count. Since the height of bars is then a proportion of maximum instead of a count I added the sample size per group to the plot as text. I ended up putting this in a facet strip rather than within the plot. I went back and forth a bunch and am still not sure the final result is exactly what I want.</p>
-<p>I’ll base the color of the bars on <code>Petal.Width</code>, which can be done with <code>fill = stat(x)</code>, to refer to the bins calculated by <code>geom_histogram()</code>.</p>
-<p>I’ll also need to set the <code>binwidth</code> to make the histogram bars the same width for each plot. I arbitrarily chose <code>0.25</code>. This is also what I used to pad the x axis limits to make sure all the bars show in every plot.</p>
+<p>I’ll base the color of the bars on <code>Petal.Width</code>. This can be done with <code>fill = stat(x)</code>, which is how to refer to the bins calculated by <code>geom_histogram()</code>.</p>
+<p>I’ll also need to set the <code>binwidth</code> to make the histogram bars are the same width for each plot. I arbitrarily chose <code>0.25</code> but seeing the final produce I could have used narrower bars. This value is also what I used to pad the x axis limits to make sure all the bars show in every plot.</p>
 <p>Here is my example plot for the first group. As far as I can tell the warning message is spurious since all three bars that should be there are there.</p>
 <pre class="r"><code>ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
        aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
