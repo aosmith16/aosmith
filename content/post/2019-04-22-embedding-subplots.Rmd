@@ -229,12 +229,14 @@ Adding on the overall legend to a blank plot involves a little trick with `geom_
 Here is the plot I will embed the subplots into.
 
 ```{r}
-( largeplot = ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, fill = Species) ) +
-     geom_blank() +
-     geom_col( aes(Inf, Inf) ) +
-     scale_fill_manual(values = c("setosa" = "#ED90A4", 
-                                       "versicolor" = "#ABB150",
-                                       "virginica" = "#00C1B2") ) )
+( largeplot = ggplot(iris, aes(x = Sepal.Length, 
+                               y = Petal.Length, 
+                               fill = Species) ) +
+       geom_blank() +
+       geom_col( aes(Inf, Inf) ) +
+       scale_fill_manual(values = c("setosa" = "#ED90A4", 
+                                    "versicolor" = "#ABB150",
+                                    "virginica" = "#00C1B2") ) )
 ```
 
 # Embedding the subplots
@@ -259,7 +261,7 @@ I've seen quite a few examples of embedded plots with bar plot or pie chart subp
 
 I decided to make a histogram of the variable `Petal.Width` for the same subplot groups I used above.  I found a lot of little details to work through when making subplots showing the distribution of a continuous variable.
 
-I want the x axis of each plot to encompass the entire range of `Petal.Width`, so my first step was to pull out that information.  These values will be the x axis limits (with some extra added to make sure all the histogram bars fit).
+I want the x axis of each plot to encompass the entire range of `Petal.Width`, so my first step was to pull out that information.  These values will be the x axis limits (with some extra added to make sure all the histogram bars fit) and the limits for the continuous legend.
 
 ```{r}
 range(iris$Petal.Width)
@@ -269,18 +271,21 @@ I found the y axis to be a little trickier.  I decided to show the bars as propo
 
 I'll base the color of the bars on `Petal.Width`.  This can be done with `fill = stat(x)`, which is how to refer to the bins calculated by `geom_histogram()`.
 
-I'll also need to set the `binwidth` to make the histogram bars are the same width for each plot.  I arbitrarily chose `0.25` but seeing the final produce I could have used narrower bars.  This value is also what I used to pad the x axis limits to make sure all the bars show in every plot.
+To make sure each plot has the same number of bar I set the `binwidth`.  I chose to make each bar 0.2 units wide, since the entire range of `Petal.Width` (2.4 units) is evenly divisible by that number.  I also `center` the first bar at the minimum value of the dataset, so the first bar is centered at 0.1.  
 
-Here is my example plot for the first group.  As far as I can tell the warning message is spurious since all three bars that should be there are there. 
+I pad the x axis limits with half the `binwidth` value to make sure all the bars will show in every plot.  Getting the limits correct can be hard; see, e.g., [this GitHub issue](https://github.com/tidyverse/ggplot2/issues/3265) if you are seeing warnings that you don't think are correct. 
+
+Here is my example plot for the first group.  Since I was careful with my plot limits the warning message is spurious.
 
 ```{r}
 ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
        aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
-     geom_histogram(binwidth = .25) +
+     geom_histogram(binwidth = .2, center = .1) +
      theme_void(base_size = 14) +
-     scale_x_continuous(limits = c(0.1 - .25, 2.5 + .25) ) +
+     scale_x_continuous(limits = c(0.1 - .1, 2.5 + .1) ) +
      scale_fill_continuous(type = "viridis",
-                           guide  = "none") +
+                           guide  = "none",
+                           limits = c(.1, 2.5) ) +
      facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
      theme(panel.border = element_rect(color = "grey",
                                        fill = "transparent") )
@@ -292,15 +297,16 @@ And here's the function to make histograms for each subplot dataset, which I nam
 histfun = function(data) {
      ggplot(data = data,
             aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
-          geom_histogram(binwidth = .25) +
+          geom_histogram(binwidth = .2, center = .1) +
           theme_void(base_size = 14) +
-          scale_x_continuous(limits = c(0.1 - .25, 2.5 + .25) ) +
+          scale_x_continuous(limits = c(0.1 - .1, 2.5 + .1) ) +
           scale_fill_continuous(type = "viridis",
-                                guide  = "none") +
+                                guide  = "none",
+                                limits = c(.1, 2.5) ) +
           facet_wrap(~paste0("n = ", nrow(data) ) ) +
           theme(panel.border = element_rect(color = "grey",
                                             fill = "transparent") )
-     }
+}
 ```
 
 # Get the subplots ready to plot
@@ -318,14 +324,17 @@ allgrobs_hist = iris %>%
 
 # Embed the histogram subplots
 
-This time the large plot needs a continuous legend.
+This time the large plot needs a continuous legend.  I set the `breaks` so the minimum and maximum value are included on the legend.  How well this works will depend on the range of your dataset.
 
 ```{r}
-( largeplot2 = ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, 
+( largeplot2 = ggplot(iris, aes(x = Sepal.Length, 
+                                y = Petal.Length, 
                                 fill = Petal.Width) ) +
        geom_blank() +
        geom_col( aes(Inf, Inf) ) +
-       scale_fill_continuous(type = "viridis") )
+       scale_fill_continuous(type = "viridis",
+                             limits = c(.1, 2.5),
+                             breaks = seq(.1, 2.5, by = .8) ) )
 ```
 
 And, finally, here's the plot embedded with the `Petal.Width` distribution plots. `r emo::ji("smile")`

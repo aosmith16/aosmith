@@ -223,12 +223,14 @@ allplots</code></pre>
 <p>I haven’t actually made the larger plot I’m going to embed subplots into yet. This will be a blank plot with <code>Sepal.Length</code> on the x axis and <code>Petal.Length</code> on the y axis with a legend for <code>fill</code>.</p>
 <p>Adding on the overall legend to a blank plot involves a little trick with <code>geom_col()</code>, which was demonstrated in those Stack Overflow posts. (Thank goodness for SO, since I would have never figured it out otherwise 😜.)</p>
 <p>Here is the plot I will embed the subplots into.</p>
-<pre class="r"><code>( largeplot = ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, fill = Species) ) +
-     geom_blank() +
-     geom_col( aes(Inf, Inf) ) +
-     scale_fill_manual(values = c(&quot;setosa&quot; = &quot;#ED90A4&quot;, 
-                                       &quot;versicolor&quot; = &quot;#ABB150&quot;,
-                                       &quot;virginica&quot; = &quot;#00C1B2&quot;) ) )</code></pre>
+<pre class="r"><code>( largeplot = ggplot(iris, aes(x = Sepal.Length, 
+                               y = Petal.Length, 
+                               fill = Species) ) +
+       geom_blank() +
+       geom_col( aes(Inf, Inf) ) +
+       scale_fill_manual(values = c(&quot;setosa&quot; = &quot;#ED90A4&quot;, 
+                                    &quot;versicolor&quot; = &quot;#ABB150&quot;,
+                                    &quot;virginica&quot; = &quot;#00C1B2&quot;) ) )</code></pre>
 <pre><code># Warning: Removed 149 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 </div>
@@ -248,38 +250,40 @@ allplots</code></pre>
 <h1>Continuous distribution subplots</h1>
 <p>I’ve seen quite a few examples of embedded plots with bar plot or pie chart subplots to show patterns in the distribution of some categorical variable across the axis variables. But there’s no reason we can’t show the distribution of a third continuous variable.</p>
 <p>I decided to make a histogram of the variable <code>Petal.Width</code> for the same subplot groups I used above. I found a lot of little details to work through when making subplots showing the distribution of a continuous variable.</p>
-<p>I want the x axis of each plot to encompass the entire range of <code>Petal.Width</code>, so my first step was to pull out that information. These values will be the x axis limits (with some extra added to make sure all the histogram bars fit).</p>
+<p>I want the x axis of each plot to encompass the entire range of <code>Petal.Width</code>, so my first step was to pull out that information. These values will be the x axis limits (with some extra added to make sure all the histogram bars fit) and the limits for the continuous legend.</p>
 <pre class="r"><code>range(iris$Petal.Width)</code></pre>
 <pre><code># [1] 0.1 2.5</code></pre>
 <p>I found the y axis to be a little trickier. I decided to show the bars as proportions of the maximum count with <code>ncount</code> instead of as a raw count. Since the height of bars is then a proportion of maximum instead of a count I added the sample size per group to the plot as text. I ended up putting this in a facet strip rather than within the plot. I went back and forth a bunch and am still not sure the final result is exactly what I want.</p>
 <p>I’ll base the color of the bars on <code>Petal.Width</code>. This can be done with <code>fill = stat(x)</code>, which is how to refer to the bins calculated by <code>geom_histogram()</code>.</p>
-<p>I’ll also need to set the <code>binwidth</code> to make the histogram bars are the same width for each plot. I arbitrarily chose <code>0.25</code> but seeing the final produce I could have used narrower bars. This value is also what I used to pad the x axis limits to make sure all the bars show in every plot.</p>
-<p>Here is my example plot for the first group. As far as I can tell the warning message is spurious since all three bars that should be there are there.</p>
+<p>To make sure each plot has the same number of bar I set the <code>binwidth</code>. I chose to make each bar 0.2 units wide, since the entire range of <code>Petal.Width</code> (2.4 units) is evenly divisible by that number. I also <code>center</code> the first bar at the minimum value of the dataset, so the first bar is centered at 0.1.</p>
+<p>I pad the x axis limits with half the <code>binwidth</code> value to make sure all the bars will show in every plot. Getting the limits correct can be hard; see, e.g., <a href="https://github.com/tidyverse/ggplot2/issues/3265">this GitHub issue</a> if you are seeing warnings that you don’t think are correct.</p>
+<p>Here is my example plot for the first group. Since I was careful with my plot limits the warning message is spurious.</p>
 <pre class="r"><code>ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
        aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
-     geom_histogram(binwidth = .25) +
+     geom_histogram(binwidth = .2, center = .1) +
      theme_void(base_size = 14) +
-     scale_x_continuous(limits = c(0.1 - .25, 2.5 + .25) ) +
+     scale_x_continuous(limits = c(0.1 - .1, 2.5 + .1) ) +
      scale_fill_continuous(type = &quot;viridis&quot;,
-                           guide  = &quot;none&quot;) +
+                           guide  = &quot;none&quot;,
+                           limits = c(.1, 2.5) ) +
      facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
      theme(panel.border = element_rect(color = &quot;grey&quot;,
                                        fill = &quot;transparent&quot;) )</code></pre>
-<pre><code># Warning: Removed 2 rows containing missing values (geom_bar).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 <p>And here’s the function to make histograms for each subplot dataset, which I name <code>histfun</code>.</p>
 <pre class="r"><code>histfun = function(data) {
      ggplot(data = data,
             aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
-          geom_histogram(binwidth = .25) +
+          geom_histogram(binwidth = .2, center = .1) +
           theme_void(base_size = 14) +
-          scale_x_continuous(limits = c(0.1 - .25, 2.5 + .25) ) +
+          scale_x_continuous(limits = c(0.1 - .1, 2.5 + .1) ) +
           scale_fill_continuous(type = &quot;viridis&quot;,
-                                guide  = &quot;none&quot;) +
+                                guide  = &quot;none&quot;,
+                                limits = c(.1, 2.5) ) +
           facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
           theme(panel.border = element_rect(color = &quot;grey&quot;,
                                             fill = &quot;transparent&quot;) )
-     }</code></pre>
+}</code></pre>
 </div>
 <div id="get-the-subplots-ready-to-plot" class="section level1">
 <h1>Get the subplots ready to plot</h1>
@@ -293,12 +297,15 @@ allplots</code></pre>
 </div>
 <div id="embed-the-histogram-subplots" class="section level1">
 <h1>Embed the histogram subplots</h1>
-<p>This time the large plot needs a continuous legend.</p>
-<pre class="r"><code>( largeplot2 = ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, 
+<p>This time the large plot needs a continuous legend. I set the <code>breaks</code> so the minimum and maximum value are included on the legend. How well this works will depend on the range of your dataset.</p>
+<pre class="r"><code>( largeplot2 = ggplot(iris, aes(x = Sepal.Length, 
+                                y = Petal.Length, 
                                 fill = Petal.Width) ) +
        geom_blank() +
        geom_col( aes(Inf, Inf) ) +
-       scale_fill_continuous(type = &quot;viridis&quot;) )</code></pre>
+       scale_fill_continuous(type = &quot;viridis&quot;,
+                             limits = c(.1, 2.5),
+                             breaks = seq(.1, 2.5, by = .8) ) )</code></pre>
 <pre><code># Warning: Removed 149 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
 <p>And, finally, here’s the plot embedded with the <code>Petal.Width</code> distribution plots. 😄</p>
