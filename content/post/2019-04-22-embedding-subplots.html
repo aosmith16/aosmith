@@ -319,12 +319,13 @@ allplots</code></pre>
 <h1>A density subplot example</h1>
 <p>I thought the histogram subplots ended up being pretty tricky, what with having to figure out the plot limits and the bar widths and centers.</p>
 <p>Density plots are another possibility for showing the distribution of continuous data, and the color of the line can be allowed to vary.</p>
-<p>Here’s an example of what a density plot could look like. In some scenarios using <code>trim = TRUE</code> may be useful in <code>stat_density()</code>.</p>
+<p>Here’s an example of what a density plot could look like. In some scenarios using <code>trim = TRUE</code> may be useful in <code>stat_density()</code>. You’ll notice I set the x axis limits to the minimum and maximum value in the datast with no padding for this plot.</p>
 <pre class="r"><code>ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
        aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
      stat_density(geom = &quot;line&quot;, size = 1.25) +
      theme_void(base_size = 14) +
-     scale_x_continuous(limits = c(0.1, 2.5) ) +
+     scale_x_continuous(limits = c(0.1, 2.5),
+                        expand = c(0, 0) ) +
      scale_color_viridis_c(guide  = &quot;none&quot;,
                            limits = c(.1, 2.5) ) +
      facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
@@ -337,7 +338,8 @@ allplots</code></pre>
             aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
           stat_density(geom = &quot;line&quot;, size = 1.25) +
           theme_void(base_size = 14) +
-          scale_x_continuous(limits = c(0.1, 2.5) ) +
+          scale_x_continuous(limits = c(0.1, 2.5),
+                             expand = c(0, 0) ) +
           scale_color_viridis_c(guide  = &quot;none&quot;,
                                 limits = c(.1, 2.5) ) +
           facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
@@ -357,4 +359,53 @@ allplots</code></pre>
      ylim(1, NA)</code></pre>
 <pre><code># Warning: Removed 150 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-25-1.png" width="672" /></p>
+</div>
+<div id="filled-density-plots" class="section level1">
+<h1><a href="#filled-density-plots">Filled density plots</a></h1>
+<p>I belatedly realized that we can use <code>geom_density_ridges_gradient()</code> from package <strong>ggridges</strong> to make density plots with continuous fill.</p>
+<p>Since this package is really for <a href="https://cran.r-project.org/web/packages/ggridges/vignettes/introduction.html">ridge plots</a>, I use <code>y = 1</code> to get a single density plot. This geom uses a relative scale by default so <code>stat(ndensity)</code> isn’t needed.</p>
+<pre class="r"><code>library(ggridges) # v 0.5.1
+ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
+       aes(x = Petal.Width, y = 1, fill = stat(x) ) ) +
+     geom_density_ridges_gradient() +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1, 2.5),
+                        expand = c(0, 0) ) +
+     scale_fill_viridis_c(guide  = &quot;none&quot;,
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                       fill = &quot;transparent&quot;) )</code></pre>
+<p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-26-1.png" width="672" /></p>
+<p>Let’s see how that looks as embedded plots. I’ll do the whole process in one code chunk, taking some extra time to move the legend around in the final plot.</p>
+<pre class="r"><code>densfun2 = function(data) {
+  ggplot(data = data,
+         aes(x = Petal.Width, y = 1, fill = stat(x) ) ) +
+    geom_density_ridges_gradient() +
+    theme_void(base_size = 14) +
+    scale_x_continuous(limits = c(0.1, 2.5),
+                       expand = c(0, 0) ) +
+    scale_fill_viridis_c(guide  = &quot;none&quot;,
+                         limits = c(.1, 2.5) ) +
+    facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
+    theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                      fill = &quot;transparent&quot;) )
+}
+allgrobs_dens2 = iris %&gt;%
+    group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
+    group_nest() %&gt;%
+    mutate(subplots = map(data, densfun2) ) %&gt;%
+    select(-data) %&gt;%
+    mutate(grobs = pmap(., grobfun) )
+
+largeplot2 +
+    allgrobs_dens2$grobs +
+    ylim(1, NA) +
+    theme_bw() +
+    theme(legend.direction = &quot;horizontal&quot;,
+          legend.position = c(.8, .25),
+          legend.background = element_blank() ) +
+    guides(fill = guide_colorbar(title.position = &quot;top&quot;) )</code></pre>
+<pre><code># Warning: Removed 150 rows containing missing values (geom_col).</code></pre>
+<p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-27-1.png" width="672" /></p>
 </div>

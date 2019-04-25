@@ -351,14 +351,15 @@ I thought the histogram subplots ended up being pretty tricky, what with having 
 
 Density plots are another possibility for showing the distribution of continuous data, and the color of the line can be allowed to vary.
 
-Here's an example of what a density plot could look like.  In some scenarios using `trim = TRUE` may be useful in `stat_density()`.
+Here's an example of what a density plot could look like.  In some scenarios using `trim = TRUE` may be useful in `stat_density()`.  You'll notice I set the x axis limits to the minimum and maximum value in the datast with no padding for this plot.
   
 ```{r}
 ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
        aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
      stat_density(geom = "line", size = 1.25) +
      theme_void(base_size = 14) +
-     scale_x_continuous(limits = c(0.1, 2.5) ) +
+     scale_x_continuous(limits = c(0.1, 2.5),
+                        expand = c(0, 0) ) +
      scale_color_viridis_c(guide  = "none",
                            limits = c(.1, 2.5) ) +
      facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
@@ -374,7 +375,8 @@ densfun = function(data) {
             aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
           stat_density(geom = "line", size = 1.25) +
           theme_void(base_size = 14) +
-          scale_x_continuous(limits = c(0.1, 2.5) ) +
+          scale_x_continuous(limits = c(0.1, 2.5),
+                             expand = c(0, 0) ) +
           scale_color_viridis_c(guide  = "none",
                                 limits = c(.1, 2.5) ) +
           facet_wrap(~paste0("n = ", nrow(data) ) ) +
@@ -400,5 +402,59 @@ And here's the density subplots embedded in the large plot. Not too bad!  I'm gu
 largeplot2 +
      allgrobs_dens$grobs +
      ylim(1, NA)
+```
+
+# [Filled density plots](#filled-density-plots)
+
+I belatedly realized that we can use `geom_density_ridges_gradient()` from package **ggridges** to make density plots with continuous fill.
+
+Since this package is really for [ridge plots](https://cran.r-project.org/web/packages/ggridges/vignettes/introduction.html), I use `y = 1` to get a single density plot.  This geom uses a relative scale by default so `stat(ndensity)` isn't needed.
+
+```{r, message = FALSE}
+library(ggridges) # v 0.5.1
+ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
+       aes(x = Petal.Width, y = 1, fill = stat(x) ) ) +
+     geom_density_ridges_gradient() +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1, 2.5),
+                        expand = c(0, 0) ) +
+     scale_fill_viridis_c(guide  = "none",
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = "grey",
+                                       fill = "transparent") )
+```
+
+Let's see how that looks as embedded plots.  I'll do the whole process in one code chunk, taking some extra time to move the legend around in the final plot.
+
+```{r, message = FALSE}
+densfun2 = function(data) {
+  ggplot(data = data,
+         aes(x = Petal.Width, y = 1, fill = stat(x) ) ) +
+    geom_density_ridges_gradient() +
+    theme_void(base_size = 14) +
+    scale_x_continuous(limits = c(0.1, 2.5),
+                       expand = c(0, 0) ) +
+    scale_fill_viridis_c(guide  = "none",
+                         limits = c(.1, 2.5) ) +
+    facet_wrap(~paste0("n = ", nrow(data) ) ) +
+    theme(panel.border = element_rect(color = "grey",
+                                      fill = "transparent") )
+}
+allgrobs_dens2 = iris %>%
+    group_by_at( vars( matches("min|max") ) ) %>%
+    group_nest() %>%
+    mutate(subplots = map(data, densfun2) ) %>%
+    select(-data) %>%
+    mutate(grobs = pmap(., grobfun) )
+
+largeplot2 +
+    allgrobs_dens2$grobs +
+    ylim(1, NA) +
+    theme_bw() +
+    theme(legend.direction = "horizontal",
+          legend.position = c(.8, .25),
+          legend.background = element_blank() ) +
+    guides(fill = guide_colorbar(title.position = "top") )
 ```
 
