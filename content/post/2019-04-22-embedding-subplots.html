@@ -158,8 +158,8 @@ glimpse(iris)</code></pre>
 <pre class="r"><code>barfun(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) )</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 </div>
-<div id="make-the-subplots" class="section level1">
-<h1>Make the subplots</h1>
+<div id="creating-all-the-bar-plot-subplots" class="section level1">
+<h1>Creating all the bar plot subplots</h1>
 <p>I’m ready to make the subplots!</p>
 <p>I’ll loop through each subset of data and plot it with my function.</p>
 <p>Since I’m going to need those coordinates for subplot placement later I decided that the most straightforward way to do this is to group by the unique combinations of coordinates and then <em>nest</em> the dataset. When nesting, the data to be plotted for each group is placed in a column called <code>data</code>.</p>
@@ -188,8 +188,8 @@ allplots</code></pre>
 <pre class="r"><code>allplots$subplots[[6]]</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
 </div>
-<div id="putting-subplots-into-annotation_custom" class="section level1">
-<h1>Putting subplots into annotation_custom()</h1>
+<div id="putting-the-subplots-into-annotation_custom" class="section level1">
+<h1>Putting the subplots into annotation_custom()</h1>
 <p>Next I need to make each of these plots a <em>grob</em> (graphical object) and pass it into <code>annotation_custom()</code>. The coordinates for each subplot will be passed to the <code>xmin</code>, <code>xmax</code>, <code>ymin</code>, <code>ymax</code> arguments in <code>annotation_custom()</code>, which indicate where each subplot should be placed in the larger plot.</p>
 <p>Since I want to pass the <code>subplots</code> column as well as the four coordinates columns to <code>annotation_custom()</code> I will loop through <code>allplots</code> <em>row-wise</em>. I can use the <code>pmap()</code> function for looping through the rows of a dataset.</p>
 <p>Since I’ll be working with five columns simultaneously in this step I decided to make a function prior to looping, which I name <code>grobfun</code>.</p>
@@ -234,8 +234,8 @@ allplots</code></pre>
 <pre><code># Warning: Removed 149 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 </div>
-<div id="embedding-the-subplots" class="section level1">
-<h1>Embedding the subplots</h1>
+<div id="embedding-the-bar-plot-subplots" class="section level1">
+<h1>Embedding the bar plot subplots</h1>
 <p>Last step! I can now add the list of subplots in <code>annotation_custom()</code> to the larger plot. 🎉</p>
 <p>There was a little extra space on the y axis that I removed by setting the axis limits.</p>
 <p>I think this looks nice with evenly spaced subplots but there may be times that having unevenly spaced subplots is desirable. In that case you could cut the variables into uneven groups.</p>
@@ -246,8 +246,8 @@ allplots</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 <p>After polishing this plot up a bit as desired, the final plot can be saved with <code>ggsave()</code>.</p>
 </div>
-<div id="continuous-distribution-subplots" class="section level1">
-<h1>Continuous distribution subplots</h1>
+<div id="histogram-subplots" class="section level1">
+<h1>Histogram subplots</h1>
 <p>I’ve seen quite a few examples of embedded plots with bar plot or pie chart subplots to show patterns in the distribution of some categorical variable across the axis variables. But there’s no reason we can’t show the distribution of a third continuous variable.</p>
 <p>I decided to make a histogram of the variable <code>Petal.Width</code> for the same subplot groups I used above. I found a lot of little details to work through when making subplots showing the distribution of a continuous variable.</p>
 <p>I want the x axis of each plot to encompass the entire range of <code>Petal.Width</code>, so my first step was to pull out that information. These values will be the x axis limits (with some extra added to make sure all the histogram bars fit) and the limits for the continuous legend.</p>
@@ -285,8 +285,8 @@ allplots</code></pre>
                                             fill = &quot;transparent&quot;) )
 }</code></pre>
 </div>
-<div id="get-the-subplots-ready-to-plot" class="section level1">
-<h1>Get the subplots ready to plot</h1>
+<div id="get-the-histograms-ready-to-embed" class="section level1">
+<h1>Get the histograms ready to embed</h1>
 <p>This time I’ll make the subplots with <code>histfun</code> and then put them into <code>annotation_custom()</code> with <code>grobfun</code> in one pipe chain.</p>
 <pre class="r"><code>allgrobs_hist = iris %&gt;%
      group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
@@ -308,10 +308,53 @@ allplots</code></pre>
                              breaks = seq(.1, 2.5, by = .8) ) )</code></pre>
 <pre><code># Warning: Removed 149 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
-<p>And, finally, here’s the plot embedded with the <code>Petal.Width</code> distribution plots. 😄</p>
+<p>And, finally, here’s the plot embedded with the <code>Petal.Width</code> distribution plots. 😃</p>
 <pre class="r"><code>largeplot2 +
      allgrobs_hist$grobs +
      ylim(1, NA)</code></pre>
 <pre><code># Warning: Removed 150 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+</div>
+<div id="a-density-subplot-example" class="section level1">
+<h1>A density subplot example</h1>
+<p>I thought the histogram subplots ended up being pretty tricky, what with having to figure out the plot limits and the bar widths and centers.</p>
+<p>Density plots are another possibility for showing the distribution of continuous data, and the color of the line can be allowed to vary.</p>
+<p>Here’s an example of what a density plot could look like. In some scenarios using <code>trim = TRUE</code> may be useful in <code>stat_density()</code>.</p>
+<pre class="r"><code>ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
+       aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
+     stat_density(geom = &quot;line&quot;, size = 1.25) +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1, 2.5) ) +
+     scale_color_viridis_c(guide  = &quot;none&quot;,
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                       fill = &quot;transparent&quot;) )</code></pre>
+<p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<p>Turning the plot code into a function for looping through groups.</p>
+<pre class="r"><code>densfun = function(data) {
+     ggplot(data = data,
+            aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
+          stat_density(geom = &quot;line&quot;, size = 1.25) +
+          theme_void(base_size = 14) +
+          scale_x_continuous(limits = c(0.1, 2.5) ) +
+          scale_color_viridis_c(guide  = &quot;none&quot;,
+                                limits = c(.1, 2.5) ) +
+          facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
+          theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                            fill = &quot;transparent&quot;) )
+}</code></pre>
+<p>Loop through to create and get the subplots ready to add to the plot.</p>
+<pre class="r"><code>allgrobs_dens = iris %&gt;%
+     group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
+     group_nest() %&gt;%
+     mutate(subplots = map(data, densfun) ) %&gt;%
+     select(-data) %&gt;%
+     mutate(grobs = pmap(., grobfun) )</code></pre>
+<p>And here’s the density subplots embedded in the large plot. Not too bad! I’m guessing the density plot approach would be most useful for larger sample sizes. 😺</p>
+<pre class="r"><code>largeplot2 +
+     allgrobs_dens$grobs +
+     ylim(1, NA)</code></pre>
+<pre><code># Warning: Removed 150 rows containing missing values (geom_col).</code></pre>
+<p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-25-1.png" width="672" /></p>
 </div>

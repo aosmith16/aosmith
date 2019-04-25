@@ -164,7 +164,7 @@ Does this function make the same plot I made manually?  Yep. `r emo::ji("+1")`
 barfun(data = filter(iris, max_x <= 5.5, max_y <= 2.475) )
 ```
 
-# Make the subplots
+# Creating all the bar plot subplots
 
 I'm ready to make the subplots!
 
@@ -190,7 +190,7 @@ allplots$subplots[[1]]
 allplots$subplots[[6]]
 ```
 
-# Putting subplots into annotation_custom()
+# Putting the subplots into annotation_custom()
 
 Next I need to make each of these plots a *grob* (graphical object) and pass it into `annotation_custom()`.  The coordinates for each subplot will be passed to the `xmin`, `xmax`, `ymin`, `ymax` arguments in `annotation_custom()`, which indicate where each subplot should be placed in the larger plot.  
 
@@ -239,7 +239,7 @@ Here is the plot I will embed the subplots into.
                                     "virginica" = "#00C1B2") ) )
 ```
 
-# Embedding the subplots
+# Embedding the bar plot subplots
 
 Last step!  I can now add the list of subplots in `annotation_custom()` to the larger plot. `r emo::ji("tada")` 
 
@@ -255,7 +255,7 @@ largeplot +
 
 After polishing this plot up a bit as desired, the final plot can be saved with `ggsave()`.
 
-# Continuous distribution subplots
+# Histogram subplots
 
 I've seen quite a few examples of embedded plots with bar plot or pie chart subplots to show patterns in the distribution of some categorical variable across the axis variables.  But there's no reason we can't show the distribution of a third continuous variable.
 
@@ -309,7 +309,7 @@ histfun = function(data) {
 }
 ```
 
-# Get the subplots ready to plot
+# Get the histograms ready to embed
 
 This time I'll make the subplots with `histfun` and then put them into `annotation_custom()` with `grobfun` in one pipe chain.
 
@@ -337,11 +337,68 @@ This time the large plot needs a continuous legend.  I set the `breaks` so the m
                              breaks = seq(.1, 2.5, by = .8) ) )
 ```
 
-And, finally, here's the plot embedded with the `Petal.Width` distribution plots. `r emo::ji("smile")`
+And, finally, here's the plot embedded with the `Petal.Width` distribution plots. `r emo::ji("smiley")`
 
 ```{r}
 largeplot2 +
      allgrobs_hist$grobs +
+     ylim(1, NA)
+```
+
+# A density subplot example
+
+I thought the histogram subplots ended up being pretty tricky, what with having to figure out the plot limits and the bar widths and centers.  
+
+Density plots are another possibility for showing the distribution of continuous data, and the color of the line can be allowed to vary.
+
+Here's an example of what a density plot could look like.  In some scenarios using `trim = TRUE` may be useful in `stat_density()`.
+  
+```{r}
+ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
+       aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
+     stat_density(geom = "line", size = 1.25) +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1, 2.5) ) +
+     scale_color_viridis_c(guide  = "none",
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = "grey",
+                                       fill = "transparent") )
+```
+
+Turning the plot code into a function for looping through groups.
+
+```{r}
+densfun = function(data) {
+     ggplot(data = data,
+            aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
+          stat_density(geom = "line", size = 1.25) +
+          theme_void(base_size = 14) +
+          scale_x_continuous(limits = c(0.1, 2.5) ) +
+          scale_color_viridis_c(guide  = "none",
+                                limits = c(.1, 2.5) ) +
+          facet_wrap(~paste0("n = ", nrow(data) ) ) +
+          theme(panel.border = element_rect(color = "grey",
+                                            fill = "transparent") )
+}
+```
+
+Loop through to create and get the subplots ready to add to the plot.
+
+```{r, warning = FALSE}
+allgrobs_dens = iris %>%
+     group_by_at( vars( matches("min|max") ) ) %>%
+     group_nest() %>%
+     mutate(subplots = map(data, densfun) ) %>%
+     select(-data) %>%
+     mutate(grobs = pmap(., grobfun) )
+```
+
+And here's the density subplots embedded in the large plot. Not too bad!  I'm guessing the density plot approach would be most useful for larger sample sizes.  `r emo::ji("smiley_cat")`
+
+```{r}
+largeplot2 +
+     allgrobs_dens$grobs +
      ylim(1, NA)
 ```
 
