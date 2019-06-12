@@ -3,6 +3,9 @@ title: 'Time after time: calculating the autocorrelation function for uneven or 
 author: Ariel Muldoon
 date: '2018-06-27'
 slug: uneven-group-autocorrelation
+output:
+  blogdown::html_page:
+    toc: true
 categories:
   - r
   - statistics
@@ -14,6 +17,18 @@ description: "Checking for autocorrelation must be done carefully when some obse
 ---
 
 
+<div id="TOC">
+<ul>
+<li><a href="#simulate-data-with-autocorrelation">Simulate data with autocorrelation</a></li>
+<li><a href="#fit-model-and-extract-residuals">Fit model and extract residuals</a></li>
+<li><a href="#problems-with-naively-using-acf"><span>Problems with naively using acf()</span></a></li>
+<li><a href="#calculate-the-maximum-lag"><span>Calculate the maximum lag</span></a></li>
+<li><a href="#order-the-dataset-by-time">Order the dataset by time</a></li>
+<li><a href="#pad-the-dataset-with-na"><span>Pad the dataset with NA</span></a></li>
+<li><a href="#plot-autocorrelation-function-of-appropriately-spaced-residuals">Plot autocorrelation function of appropriately-spaced residuals</a></li>
+<li><a href="#add-confidence-interval-to-the-acf-plot">Add confidence interval to the ACF plot</a></li>
+</ul>
+</div>
 
 <p>I first learned how to check for autocorrelation via autocorrelation function (ACF) plots in R in a class on time series However, the examples we worked on were all single, long term time series with no missing values and no groups. I figured out later that calculating the ACF when the sampling through time is uneven or there are distinct time series for independent sample units takes a bit more thought. It’s easy to mistakenly ignore such structure, which then makes it difficult to determine what sort and how much autocorrelation may be present.</p>
 <p>I first ran into this problem myself when I was analyzing data from a <a href="http://methods.sagepub.com/reference/encyclopedia-of-survey-research-methods/n500.xml">rotating panel study design</a>. In the data I was working with, some units were sampled every year, some sampled every 3rd year, some every 9th year, etc. So sampling was annual, but not all sample units had observations from every year. In addition, the sample units were considered independent replicates of each time series, so any autocorrelation of concern would be <em>within</em> sample unit autocorrelation.</p>
@@ -137,7 +152,7 @@ library(dplyr) # v. 0.7.5</code></pre>
 </div>
 <div id="pad-the-dataset-with-na" class="section level1">
 <h1><a href="#pad-the-dataset-with-na">Pad the dataset with NA</a></h1>
-<p>When I was working through this problem for the first time, I found these <a href="http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#testing">lecture notes</a> that showed the basic idea of adding observations in order to get the spacing between groups right. In my own work I originally achieved this using some joins. Since then I’ve found switched to using the <code>complete()</code> function from package <strong>tidyr</strong> for this task.</p>
+<p>When I was working through this problem for the first time, I found these <a href="https://sakai.unc.edu/access/content/group/2842013b-58f5-4453-aa8d-3e01bacbfc3d/public/Ecol562_Spring2012/docs/lectures/lecture17.htm#testing">lecture notes</a> that showed the basic idea of adding observations in order to get the spacing between groups right. In my own work I originally achieved this using some joins. Since then I’ve found switched to using the <code>complete()</code> function from package <strong>tidyr</strong> for this task.</p>
 <pre class="r"><code>library(tidyr) # v. 0.8.1</code></pre>
 <p>You must have a variable representing the autocorrelation variable in the dataset for this approach to work. (This may seem obvious, but I’ve seen datasets that rely on the order of the dataset rather than having a specific time variable.) In this case that variable is <code>time</code>.</p>
 <p>I group the dataset by <code>unit</code> prior to using <code>complete()</code> so every group has rows added to it. I define what values of <code>time</code> I want to be in the dataset within <code>complete()</code>. These values are based on 1., the sampling times present in the dataset and 2., the maximum group size. I need more rows between groups than the maximum lag I’m going to check for autocorrelation. The maximum lag I will explore is a lag 9 so I will add 10 extra rows between each sample unit in the dataset.</p>
@@ -180,10 +195,10 @@ library(dplyr) # v. 0.7.5</code></pre>
 <pre class="r"><code>acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)</code></pre>
 <p><img src="/post/2018-06-21-time-after-time-uneven-grouped-autocorrelation_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
-<div id="the-confidence-interval-on-the-acf-plot" class="section level1">
-<h1>The confidence interval on the ACF plot</h1>
+<div id="add-confidence-interval-to-the-acf-plot" class="section level1">
+<h1>Add confidence interval to the ACF plot</h1>
 <p>I removed the confidence interval from the plot above with <code>ci = 0</code>. The confidence intervals calculated by <code>acf()</code> use the NA values as part of the sample size for each lag, so the confidence interval is too narrow.</p>
-<p>You can calculate your own confidence interval based on the actual number of observations for each lag, but you have to calculate them yourself. I refer you again to those <a href="http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#acf">lecture notes</a> for some ideas on how to do this. I’ll put code I’ve used for this in the past below as an example, but I won’t walk through it.</p>
+<p>You can calculate your own confidence interval based on the actual number of observations for each lag, but you have to calculate them yourself. I refer you again to those <a href="https://sakai.unc.edu/access/content/group/2842013b-58f5-4453-aa8d-3e01bacbfc3d/public/Ecol562_Spring2012/docs/lectures/lecture17.htm#testing">lecture notes</a> for some ideas on how to do this. I’ll put code I’ve used for this in the past below as an example, but I won’t walk through it.</p>
 <pre class="r"><code>( nall = map_df(1:9, 
                 ~dat %&gt;%
                      group_by(unit) %&gt;%

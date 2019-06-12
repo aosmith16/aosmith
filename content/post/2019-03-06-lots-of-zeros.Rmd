@@ -2,6 +2,9 @@
 title: 'Lots of zeros or too many zeros?: Thinking about zero inflation in count data'
 author: Ariel Muldoon
 date: '2019-03-06'
+output:
+  blogdown::html_page:
+    toc: true
 categories:
   - r
   - statistics
@@ -37,7 +40,7 @@ library(HMMpa) # v. 1.0.1
 library(MASS) # v. 7.3-51.1
 ```
 
-# [Negative binomial with many zeros](negative-binomial-with-many-zeros)
+# [Negative binomial with many zeros](#negative-binomial-with-many-zeros)
 
 First I'll draw 200 counts from a negative binomial with a mean ($\lambda$) of $10$ and $\theta = 0.05$.  
 R uses the parameterization of the negative binomial where the variance of the distribution is $\lambda + (\lambda^2/\theta)$.  In this parameterization, as $\theta$ gets small the variance gets big.  Using a very small value of theta like I am will generally mean the distribution of counts will have many zeros as well as a few large counts

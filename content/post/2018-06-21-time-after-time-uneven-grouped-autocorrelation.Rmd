@@ -3,6 +3,9 @@ title: 'Time after time: calculating the autocorrelation function for uneven or 
 author: Ariel Muldoon
 date: '2018-06-27'
 slug: uneven-group-autocorrelation
+output:
+  blogdown::html_page:
+    toc: true
 categories:
   - r
   - statistics
@@ -141,7 +144,7 @@ dat = dat %>%
 
 # [Pad the dataset with NA](#pad-the-dataset-with-na)
 
-When I was working through this problem for the first time, I found these [lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#testing) that showed the basic idea of adding observations in order to get the spacing between groups right.  In my own work I originally achieved this using some joins.  Since then I've found switched to using the `complete()` function from package **tidyr** for this task.  
+When I was working through this problem for the first time, I found these [lecture notes](https://sakai.unc.edu/access/content/group/2842013b-58f5-4453-aa8d-3e01bacbfc3d/public/Ecol562_Spring2012/docs/lectures/lecture17.htm#testing) that showed the basic idea of adding observations in order to get the spacing between groups right.  In my own work I originally achieved this using some joins.  Since then I've found switched to using the `complete()` function from package **tidyr** for this task.  
 
 ```{r}
 library(tidyr) # v. 0.8.1
@@ -177,11 +180,11 @@ This is now a plot we can use to check for the presence and amount of autocorrel
 acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
 ```
 
-# The confidence interval on the ACF plot
+# Add confidence interval to the ACF plot
 
 I removed the confidence interval from the plot above with `ci = 0`.  The confidence intervals calculated by `acf()` use the NA values as part of the sample size for each lag, so the confidence interval is too narrow. 
 
-You can calculate your own confidence interval based on the actual number of observations for each lag, but you have to calculate them yourself.  I refer you again to those [lecture notes](http://www.unc.edu/courses/2010spring/ecol/562/001/docs/lectures/lecture10.htm#acf) for some ideas on how to do this.  I'll put code I've used for this in the past below as an example, but I won't walk through it.
+You can calculate your own confidence interval based on the actual number of observations for each lag, but you have to calculate them yourself.  I refer you again to those [lecture notes](https://sakai.unc.edu/access/content/group/2842013b-58f5-4453-aa8d-3e01bacbfc3d/public/Ecol562_Spring2012/docs/lectures/lecture17.htm#testing) for some ideas on how to do this.  I'll put code I've used for this in the past below as an example, but I won't walk through it.
 
 ```{r}
 ( nall = map_df(1:9, 

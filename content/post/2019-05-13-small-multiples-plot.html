@@ -11,8 +11,8 @@ categories:
 tags:
   - ggplot2
   - tidyr
-draft: TRUE
-description: "There are a variety of ways to combine ggplot2 plots to have a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show three approaches to this: using facets, via package cowplot, and finally demonstrating how this is done in package egg."
+draft: FALSE
+description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show three approaches to make such a plot: using facets, with package cowplot, and with package egg."
 ---
 
 
@@ -27,14 +27,15 @@ description: "There are a variety of ways to combine ggplot2 plots to have a sin
 </ul>
 </div>
 
-<p>There are a variety of ways to combine <strong>ggplot2</strong> plots to have a single shared axis. However, things can get tricky if you want a lot of control over all plot elements.</p>
+<p>There are a variety of ways to combine <strong>ggplot2</strong> plots with a single shared axis. However, things can get tricky if you want a lot of control over all plot elements.</p>
 <p>I demonstrate three different approaches for this:<br />
 1. Using facets, which is built in to <strong>ggplot2</strong> but doesn’t allow much control over the non-shared axes.<br />
-2. Using package <strong>cowplot</strong> to combine them, which has a lot of nice features but the spacing doesn’t play well with a single shared axis.<br />
+2. Using package <strong>cowplot</strong>, which has a lot of nice features but the plot spacing doesn’t play well with a single shared axis.<br />
 3. Using package <strong>egg</strong>, which allows nice spacing for plots with a shared axis.</p>
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
-<p>I’ll be plotting with <strong>ggplot2</strong>, reshaping with <strong>tidyr</strong>, and combining plots with package <strong>egg</strong>. I’ll also be using package <strong>cowplot</strong> version 0.9.4 to combine individual plots into one, but will use the package functions via <code>cowplot::</code> instead of loading the package. (I believe the next version of <strong>cowplot</strong> will not be so opinionated about the theme.)</p>
+<p>I’ll be plotting with <strong>ggplot2</strong>, reshaping with <strong>tidyr</strong>, and combining plots with package <strong>egg</strong>.</p>
+<p>I’ll also be using package <strong>cowplot</strong> version 0.9.4 to combine individual plots into one, but will use the package functions via <code>cowplot::</code> instead of loading the package. (I believe the next version of <strong>cowplot</strong> will not be so opinionated about the theme.)</p>
 <pre class="r"><code>library(ggplot2) # v. 3.1.1
 library(tidyr) # v. 0.8.3
 library(egg) # v. 0.4.2</code></pre>
@@ -42,7 +43,7 @@ library(egg) # v. 0.4.2</code></pre>
 <div id="the-set-up" class="section level1">
 <h1>The set-up</h1>
 <p>Here’s the scenario: we have one response variable (<code>resp</code>) that we want to plot against three other variables and combine them into a single “small multiples” plot.</p>
-<p>I’ll call the three variables <code>elev</code>, <code>grad</code>, and <code>slp</code>. You’ll notice that I created these variables to be on very different scales.</p>
+<p>I’ll call the three variables <code>elev</code>, <code>grad</code>, and <code>slp</code>. You’ll note that I created these variables to have very different scales.</p>
 <pre class="r"><code>set.seed(16)
 dat = data.frame(elev = round( runif(20, 100, 500), 1),
                  resp = round( runif(20, 0, 10), 1),
@@ -70,7 +71,7 @@ head(datlong)</code></pre>
 # 4  4.3     elev 191.8
 # 5  2.3     elev 445.4
 # 6  6.5     elev 224.5</code></pre>
-<p>Now I can use <code>facet_wrap()</code> to make a scatterplot of <code>resp</code> vs each variable. The argument <code>scales = "free_x"</code> allows the x axis scales to differ for each variable but leaves a single y axis.</p>
+<p>Now I can use <code>facet_wrap()</code> to make a separate scatterplot of <code>resp</code> vs each variable. The argument <code>scales = "free_x"</code> allows the x axis scales to differ for each variable but leaves a single y axis.</p>
 <pre class="r"><code>ggplot(datlong, aes(x = value, y = resp) ) +
      geom_point() +
      theme_bw() +
@@ -85,13 +86,13 @@ head(datlong)</code></pre>
            strip.placement = &quot;outside&quot;) +
      labs(x = NULL)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>That’s a pretty nice plot, although I’d clearly need to make the text larger and make the axis text labels nicer. However, controlling the axis breaks in the individual panels <a href="https://stackoverflow.com/questions/51735481/ggplot2-change-axis-limits-for-each-individual-facet-panel">can be complicated</a>, which is something we’d commonly want to do.</p>
+<p>That’s a pretty nice plot to start with. However, controlling the axis breaks in the individual panels <a href="https://stackoverflow.com/questions/51735481/ggplot2-change-axis-limits-for-each-individual-facet-panel">can be complicated</a>, which is something we’d commonly want to do.</p>
 <p>In that case, it may make more sense to create separate plots and then combine them into a small multiples plot with an add-on package.</p>
 </div>
 <div id="using-cowplot-to-combine-plots" class="section level1">
 <h1>Using <strong>cowplot</strong> to combine plots</h1>
-<p>Package <strong>cowplot</strong> is a really nice package for combining plots, and has lots of bells and whistles along with some pretty thorough <a href="https://cran.r-project.org/web/packages/cowplot/index.html">vignettws</a>.</p>
-<p>The first step is to make each of the three plots separately. If doing lots of these we’d likely want to use some sort of loop to make a list of plots <a href="https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/">as I’ve demonstrated previously</a>. Today I’m just going to make each of the three plots manually.</p>
+<p>Package <strong>cowplot</strong> is a really nice package for combining plots, and has lots of bells and whistles along with some pretty thorough <a href="https://cran.r-project.org/web/packages/cowplot/index.html">vignettes</a>.</p>
+<p>The first step is to make each of the three plots separately. If doing lots of these we’d want to use some sort of loop to make a list of plots <a href="https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/">as I’ve demonstrated previously</a>. Today I’m going to make the three plots manually.</p>
 <pre class="r"><code>elevplot = ggplot(dat, aes(x = elev, y = resp) ) +
      geom_point() +
      theme_bw()
@@ -105,14 +106,15 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
      geom_point() +
      theme_bw() +
      scale_x_continuous(breaks = seq(0, 35, by = 5) )</code></pre>
-<p>The function <code>plot_grid()</code> in <strong>cowplot</strong> is for combining plots. To make a single row of plots I use <code>nrow = 1</code>. The <code>labels</code> argument puts separate labels on each panel.</p>
+<p>The function <code>plot_grid()</code> in <strong>cowplot</strong> is for combining plots. To make a single row of plots I use <code>nrow = 1</code>.</p>
+<p>The <code>labels</code> argument puts separate labels on each panel for captioning.</p>
 <pre class="r"><code>cowplot::plot_grid(elevplot, 
                    gradplot, 
                    slpplot,
                    nrow = 1,
                    labels = &quot;auto&quot;)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<p>But we want a single shared y axis, not a separate y axis on each plot. I’ll remake the combined plot, this time removing all y axis elements from all but the first plot.</p>
+<p>But we want a single shared y axis, not a separate y axis on each plot. I’ll remake the combined plot, this time removing the y axis elements from all but the first plot.</p>
 <pre class="r"><code>cowplot::plot_grid(elevplot, 
                    gradplot + theme(axis.text.y = element_blank(),
                                     axis.ticks.y = element_blank(),
@@ -123,7 +125,7 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
                    nrow = 1,
                    labels = &quot;auto&quot;)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<p>The panels are different sizes, which isn’t ideal. But <strong>cowplot</strong> allows us to align the panels. To have all the plots the same width I need to align them vertically with <code>align = "v"</code>.</p>
+<p>This makes panels different sizes, though, which isn’t ideal. To have all the plots the same width I need to align them vertically with <code>align = "v"</code>.</p>
 <pre class="r"><code>cowplot::plot_grid(elevplot, 
                    gradplot + 
                         theme(axis.text.y = element_blank(),
@@ -157,7 +159,7 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
      theme_bw() +
      scale_x_continuous(breaks = seq(0, 35, by = 5) )</code></pre>
 <p>The <code>ggarrange()</code> function has an <code>nrow</code> argument so I can keep the plots in a single row.</p>
-<p>The panel spacing is automagically the same here, and things look pretty nice right out of the box.</p>
+<p>The panel spacing is automagically the same here after I remove the y axis elements, and things look pretty nice right out of the box.</p>
 <pre class="r"><code>ggarrange(elevplot, 
           gradplot + 
                theme(axis.text.y = element_blank(),
@@ -169,18 +171,18 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
                      axis.title.y = element_blank() ),
           nrow = 1)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
-<p>We can bring panes closer by removing some of the space around the plot margins with <code>plot.margin()</code>. I’ll set the spacing for right margin of the first plot, both left and right margins of the second, and the left margin of the third.</p>
+<p>We can bring panes closer by removing some of the space around the plot margins with the <code>plot.margin</code> in <code>theme()</code>. I’ll set the spacing for right margin of the first plot, both left and right margins of the second, and the left margin of the third.</p>
 <pre class="r"><code>ggarrange(elevplot +
-               theme(axis.ticks.y.right = element_blank(),
+               theme(axis.ticks.y = element_blank(),
                      plot.margin = margin(r = 1) ), 
           gradplot + 
                theme(axis.text.y = element_blank(),
-                     axis.ticks.y.left = element_blank(),
+                     axis.ticks.y = element_blank(),
                      axis.title.y = element_blank(),
                      plot.margin = margin(r = 1, l = 1) ), 
           slpplot + 
                theme(axis.text.y = element_blank(),
-                     axis.ticks.y.left = element_blank(),
+                     axis.ticks.y = element_blank(),
                      axis.title.y = element_blank(),
                      plot.margin = margin(l = 1)  ),
           nrow = 1)</code></pre>
@@ -188,27 +190,28 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
 </div>
 <div id="adding-plot-labels-with-tag_facet-in-egg" class="section level1">
 <h1>Adding plot labels with tag_facet() in <strong>egg</strong></h1>
-<p>You’ll see there is a <code>labels</code> argument in <code>ggarrange()</code> documentation, but it didn’t work well for me out of the box with only one plot with a y axis. However, we can get tricky with <code>egg::tag_facet()</code> if we add a facet strip to each individual.</p>
-<p>It’d make sense to build these plots outside of <code>ggarrange()</code> and then add the tags and combine them instead of nesting everything like I did here.</p>
+<p>You’ll see there is a <code>labels</code> argument in <code>ggarrange()</code> documentation, but it didn’t work well for me out of the box with only one plot with a y axis. However, we can get tricky with <code>egg::tag_facet()</code> if we add a facet strip to each of the individual plots.</p>
+<p>It’d make sense to build these plots outside of <code>ggarrange()</code> and then add the tags and combine them instead of nesting everything like I did here, since the code is now a little hard to follow.</p>
 <pre class="r"><code>ggarrange(tag_facet(elevplot +
-                          theme(axis.ticks.y.right = element_blank(),
+                          theme(axis.ticks.y = element_blank(),
                                 plot.margin = margin(r = 1) ) +
                           facet_wrap(~&quot;elev&quot;),
                      tag_pool = &quot;a&quot;), 
           tag_facet(gradplot + 
                           theme(axis.text.y = element_blank(),
-                                axis.ticks.y.left = element_blank(),
+                                axis.ticks.y = element_blank(),
                                 axis.title.y = element_blank(),
                                 plot.margin = margin(r = 1, l = 1) ) +
-                          facet_wrap(~&quot;grad&quot;), tag_pool = &quot;b&quot; ), 
+                          facet_wrap(~&quot;grad&quot;), 
+                    tag_pool = &quot;b&quot; ), 
           tag_facet(slpplot + 
                           theme(axis.text.y = element_blank(),
-                                axis.ticks.y.left = element_blank(),
+                                axis.ticks.y = element_blank(),
                                 axis.title.y = element_blank(),
                                 plot.margin = margin(l = 1)  ) +
                           facet_wrap(~&quot;slp&quot;),
                      tag_pool = &quot;c&quot;),
           nrow = 1)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
-<p>We can also do things like add a right y axis to the right-most plot. In this case we’d want to change the axis ticks length to 0 via <code>theme()</code> elements. This can be done <a href="https://github.com/tidyverse/ggplot2/pull/2934">separately per axis in the development version of <strong>ggplot2</strong></a>, and will be included in version 3.2.0.</p>
+<p>We might want to add a right y axis to the right-most plot. In this case we’d want to change the axis ticks length to 0 via <code>theme()</code> elements. This can be done <a href="https://github.com/tidyverse/ggplot2/pull/2934">separately per axis in the development version of <strong>ggplot2</strong></a>, and will be included in version 3.2.0.</p>
 </div>
