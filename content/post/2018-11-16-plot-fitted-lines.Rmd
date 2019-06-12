@@ -3,6 +3,9 @@ title: How to plot fitted lines with ggplot2
 author: Ariel Muldoon
 date: '2018-11-16'
 slug: plot-fitted-lines
+output:
+  blogdown::html_page:
+    toc: true
 categories:
   - r
 tags:
@@ -110,7 +113,7 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_smooth(method = "lm", alpha = .15, aes(fill = grp))
 ```
 
-# [Extracting predicted values from a model](#extracting-predicted-values-from-a-model)
+# [Extracting predicted values with predict()](#extracting-predicted-values-with-predict)
 
 In the plots above you can see that the slopes vary by `grp` category.  If you want parallel lines instead of separate slopes per group, `geom_smooth()` isn't going to work for you.
 
@@ -124,7 +127,7 @@ methods("predict")
 
 You can go to the help page for the `predict()` function for a specific model type.  For example, `?predict.lme` will take you to the documentation for the `predict()` function for `lme` objects fit with `nlme::lme()`.
 
-# [Plotting parallel fitted lines](#plotting-parallel-fitted-lines)
+# [Plotting predicted values with geom_line()](#plotting-predicted-values-with_geom_line)
 
 The first step of this "prediction" approach to plotting fitted lines is to fit a model.  I'll use a linear model with a different intercept for each `grp` category and a single `x1` slope to end up with parallel lines per group.
 
@@ -146,7 +149,7 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_line(aes(y = predlm), size = 1)
 ```
 
-# [Confidence intervals for lm objects](#confidence-intervals-for-lm-objects)
+# [Add confidence intervals for lm objects](#add-confidence-intervals-for-lm-objects)
 
 What about confidence intervals?  The `predict()` function for `lm` objects has an `interval` argument that returns confidence or prediction intervals, which are appropriate to use if model assumptions have been reasonably met.  I'm skipping the assumption-checking step here. `r emo::ji("wink")`
 

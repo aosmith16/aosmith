@@ -3,6 +3,9 @@ title: How to plot fitted lines with ggplot2
 author: Ariel Muldoon
 date: '2018-11-16'
 slug: plot-fitted-lines
+output:
+  blogdown::html_page:
+    toc: true
 categories:
   - r
 tags:
@@ -12,6 +15,19 @@ description: "I show a general approach for plotting fitted lines with ggplot2 t
 ---
 
 
+<div id="TOC">
+<ul>
+<li><a href="#load-packages-and-dataset">Load packages and dataset</a></li>
+<li><a href="#plotting-separate-slopes-with-geom_smooth"><span>Plotting separate slopes with geom_smooth()</span></a></li>
+<li><a href="#extracting-predicted-values-with-predict"><span>Extracting predicted values with predict()</span></a></li>
+<li><a href="#plotting-predicted-values-with-geom_line"><span>Plotting predicted values with geom_line()</span></a></li>
+<li><a href="#add-confidence-intervals-for-lm-objects"><span>Add confidence intervals for lm objects</span></a></li>
+<li><a href="#using-a-new-dataset-with-predict"><span>Using a new dataset with predict()</span></a></li>
+<li><a href="#plotting-fitted-lines-from-an-lme-object"><span>Plotting fitted lines from an lme object</span></a></li>
+<li><a href="#confidence-intervals-for-lme-objects"><span>Confidence intervals for lme objects</span></a></li>
+<li><a href="#what-if-there-is-no-predict-function"><span>What if there is no predict() function?</span></a></li>
+</ul>
+</div>
 
 <p>Most analyses aren’t really done until we’ve found a way to visualize the results graphically, and I’ve recently been getting some questions from students on how to plot fitted lines from models. There are some R packages that are made specifically for this purpose; see packages <strong>effects</strong> and <strong>visreg</strong>, for example.</p>
 <p>If using the <strong>ggplot2</strong> package for plotting, fitted lines from simple models can be graphed using <code>geom_smooth()</code>. However, once models get more complicated that convenient function is no longer useful. I’ll go over the approach that I use for plotting fitted lines in <strong>ggplot2</strong> that can be used across many model types and situations.</p>
@@ -60,7 +76,7 @@ library(ggplot2) # v. 3.1.0</code></pre>
 <p>The <code>geom_smooth()</code> function in <strong>ggplot2</strong> can plot fitted lines from models with a simple structure. Supported model types include models fit with <code>lm()</code>, <code>glm()</code>, <code>nls()</code>, and <code>mgcv::gam()</code>.</p>
 <p>Fitted lines can vary by groups if a factor variable is mapped to an aesthetic like <code>color</code> or <code>group</code>. I’m going to plot fitted regression lines of <code>resp</code> vs <code>x1</code> for each <code>grp</code> category.</p>
 <p>By default you will get confidence intervals plotted in <code>geom_smooth()</code>. This can be great if you are plotting the results after you’ve checked all assumptions but is not-so-great if you are exploring the data. Confidence intervals can be suppressed using <code>se = FALSE</code>, which I use below.</p>
-<p>This is a linear model fit, so I use <code>method = &quot;lm&quot;</code>.</p>
+<p>This is a linear model fit, so I use <code>method = "lm"</code>.</p>
 <pre class="r"><code>ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_smooth(method = &quot;lm&quot;, se = FALSE)</code></pre>
@@ -71,11 +87,11 @@ library(ggplot2) # v. 3.1.0</code></pre>
      geom_smooth(method = &quot;lm&quot;, alpha = .15, aes(fill = grp))</code></pre>
 <p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 </div>
-<div id="extracting-predicted-values-from-a-model" class="section level1">
-<h1><a href="#extracting-predicted-values-from-a-model">Extracting predicted values from a model</a></h1>
+<div id="extracting-predicted-values-with-predict" class="section level1">
+<h1><a href="#extracting-predicted-values-with-predict">Extracting predicted values with predict()</a></h1>
 <p>In the plots above you can see that the slopes vary by <code>grp</code> category. If you want parallel lines instead of separate slopes per group, <code>geom_smooth()</code> isn’t going to work for you.</p>
 <p>To free ourselves of the constraints of <code>geom_smooth()</code>, we can take a different plotting approach. We can instead fit a model and extract the predicted values. These predicted values can then be used for drawing the fitted line(s). For many model types the predictions can be extracted from the fitted model via the <code>predict()</code> function.</p>
-<p>You can check if the model you are using has a predict function via <code>methods()</code>. For example, <code>methods(&quot;predict&quot;)</code> lists all the different model objects that have specific <code>predict()</code> functions. Since I’ve already loaded package <strong>nlme</strong> you can see <code>predict.lme</code> and <code>predict.gls</code> along with many others. (Also see, e.g., <code>methods(class = &quot;lm&quot;)</code> for functions available for a specific model type.)</p>
+<p>You can check if the model you are using has a predict function via <code>methods()</code>. For example, <code>methods("predict")</code> lists all the different model objects that have specific <code>predict()</code> functions. Since I’ve already loaded package <strong>nlme</strong> you can see <code>predict.lme</code> and <code>predict.gls</code> along with many others. (Also see, e.g., <code>methods(class = "lm")</code> for functions available for a specific model type.)</p>
 <pre class="r"><code>methods(&quot;predict&quot;)</code></pre>
 <pre><code>#  [1] predict.ar*                predict.Arima*            
 #  [3] predict.arima0*            predict.glm               
@@ -91,8 +107,8 @@ library(ggplot2) # v. 3.1.0</code></pre>
 # see &#39;?methods&#39; for accessing help and source code</code></pre>
 <p>You can go to the help page for the <code>predict()</code> function for a specific model type. For example, <code>?predict.lme</code> will take you to the documentation for the <code>predict()</code> function for <code>lme</code> objects fit with <code>nlme::lme()</code>.</p>
 </div>
-<div id="plotting-parallel-fitted-lines" class="section level1">
-<h1><a href="#plotting-parallel-fitted-lines">Plotting parallel fitted lines</a></h1>
+<div id="plotting-predicted-values-with-geom_line" class="section level1">
+<h1><a href="#plotting-predicted-values-with_geom_line">Plotting predicted values with geom_line()</a></h1>
 <p>The first step of this “prediction” approach to plotting fitted lines is to fit a model. I’ll use a linear model with a different intercept for each <code>grp</code> category and a single <code>x1</code> slope to end up with parallel lines per group.</p>
 <pre class="r"><code>fitlm = lm(resp ~ grp + x1, data = dat)</code></pre>
 <p>I can add the predicted values to the dataset.</p>
@@ -103,10 +119,10 @@ library(ggplot2) # v. 3.1.0</code></pre>
      geom_line(aes(y = predlm), size = 1)</code></pre>
 <p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 </div>
-<div id="confidence-intervals-for-lm-objects" class="section level1">
-<h1><a href="#confidence-intervals-for-lm-objects">Confidence intervals for lm objects</a></h1>
+<div id="add-confidence-intervals-for-lm-objects" class="section level1">
+<h1><a href="#add-confidence-intervals-for-lm-objects">Add confidence intervals for lm objects</a></h1>
 <p>What about confidence intervals? The <code>predict()</code> function for <code>lm</code> objects has an <code>interval</code> argument that returns confidence or prediction intervals, which are appropriate to use if model assumptions have been reasonably met. I’m skipping the assumption-checking step here. 😉</p>
-<p>Adding <code>interval = &quot;confidence&quot;</code> returns a three column matrix, where <code>fit</code> contains the fitted values and <code>lwr</code> and <code>upr</code> contain the lower and upper confidence interval limits of the predicted values, respectively. I used the default and so get a 95% confidence interval for each predicted value.</p>
+<p>Adding <code>interval = "confidence"</code> returns a three column matrix, where <code>fit</code> contains the fitted values and <code>lwr</code> and <code>upr</code> contain the lower and upper confidence interval limits of the predicted values, respectively. I used the default and so get a 95% confidence interval for each predicted value.</p>
 <pre class="r"><code>predslm = predict(fitlm, interval = &quot;confidence&quot;)
 head(predslm)</code></pre>
 <pre><code>#        fit      lwr      upr
