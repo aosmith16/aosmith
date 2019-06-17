@@ -3,6 +3,9 @@ title: Automating exploratory plots with ggplot2 and purrr
 author: Ariel Muldoon
 date: '2018-08-20'
 slug: automating-exploratory-plots
+output:
+  blogdown::html_page:
+    toc: true
 categories:
   - r
 tags:
@@ -13,6 +16,21 @@ description: "In this post I show an example of how to automate the process of m
 ---
 
 
+<div id="TOC">
+<ul>
+<li><a href="#load-r-packages">Load R packages</a></li>
+<li><a href="#the-set-up">The set-up</a></li>
+<li><a href="#create-a-plotting-function"><span>Create a plotting function</span></a></li>
+<li><a href="#looping-through-one-vector-of-variables"><span>Looping through one vector of variables</span></a></li>
+<li><a href="#looping-through-both-vectors"><span>Looping through both vectors</span></a><ul>
+<li><a href="#saving-the-plots"><span>Saving the plots</span></a></li>
+<li><a href="#saving-all-plots-to-one-pdf"><span>Saving all plots to one PDF</span></a></li>
+<li><a href="#saving-groups-of-plots-together"><span>Saving groups of plots together</span></a></li>
+<li><a href="#saving-all-plots-separately"><span>Saving all plots separately</span></a></li>
+<li><a href="#combining-plots"><span>Combining plots</span></a></li>
+</ul></li>
+</ul>
+</div>
 
 <p>When you have a lot of variables and need to make a lot exploratory plots it’s usually worthwhile to automate the process in R instead of manually copying and pasting code for every plot. However, the coding approach needed to automate plots can look pretty daunting to a beginner R user. It can look so daunting, in fact, that it can appear easier to manually make the plots (like in Excel) rather than using R at all.</p>
 <p>Unfortunately making plots manually can backfire. The efficiency of using a software program you already know is quickly out-weighed by being unable to easily reproduce the plots when needed. I know I invariably have to re-make even exploratory plots, and it’d be a bummer if I had to remake them all manually rather than re-running some code.</p>
@@ -91,7 +109,7 @@ scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
 <h1><a href="#looping-through-one-vector-of-variables">Looping through one vector of variables</a></h1>
 <p>One way to make all the plots I want is to loop through each explanatory variable for a fixed response variable. With this approach I would need a separate loop for each response variable.</p>
 <p>I will use <code>map()</code> from package <strong>purrr</strong> for the looping.</p>
-<p>I pass each explanatory variable to the first argument in <code>scatter_fun()</code> and I fix the second argument to <code>&quot;elev&quot;</code>. I use the formula coding in <code>map()</code> and so refer to the element of the explanatory vector via <code>.x</code> within <code>scatter_fun()</code>.</p>
+<p>I pass each explanatory variable to the first argument in <code>scatter_fun()</code> and I fix the second argument to <code>"elev"</code>. I use the formula coding in <code>map()</code> and so refer to the element of the explanatory vector via <code>.x</code> within <code>scatter_fun()</code>.</p>
 <pre class="r"><code>elev_plots = map(expl, ~scatter_fun(.x, &quot;elev&quot;) )</code></pre>
 <p>The output is a list of 4 plots (since there are 4 explanatory variables). You’ll notice that each element of the list has the variable name associated with it. This is why I used <code>set_names()</code> earlier, since this is convenient for printing the plots and, you’ll see later, is convenient when saving the plots in files with understandable names.</p>
 <pre class="r"><code>elev_plots</code></pre>
