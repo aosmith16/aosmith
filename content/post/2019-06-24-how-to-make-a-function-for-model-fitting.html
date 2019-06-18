@@ -1,0 +1,176 @@
+---
+title: 'Many similar models part 1: how to make a function for model fitting'
+author: Ariel Muldoon
+date: '2019-06-24'
+slug: how-to-make-a-function-for-model-fitting
+output:
+  blogdown::html_page:
+    toc: true
+categories:
+  - r
+  - statistics
+tags:
+  - analysis
+  - teaching
+  - functions
+draft: TRUE
+description: "Writing a function is useful when fitting many similar models.  In this post I discuss how build a function for linear models that allow the user to pass different response and explanatory variables to the model and then check assumptions."
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#building-a-formula-from-strings-with-paste-and-formula">Building a formula from strings with paste() and formula()</a></li>
+<li><a href="#using-the-formula-in-lm">Using the formula in lm()</a></li>
+<li><a href="#using-the-formula-building-in-a-function">Using the formula building in a function</a></li>
+<li><a href="#using-bare-names-instead-of-strings-i.e.-non-standard-evaluation">Using bare names instead of strings (i.e., non-standard evaluation)</a></li>
+<li><a href="#getting-output-that-indicates-variables-used-in-the-formula">Getting output that indicates variables used in the formula</a></li>
+<li><a href="#a-function-that-takes-one-or-more-explanatory-variables">A function that takes one or more explanatory variables</a></li>
+<li><a href="#example-function-that-fits-model-and-makes-residuals-plots">Example function that fits model and makes residuals plots</a></li>
+<li><a href="#next-step">Next step</a></li>
+</ul>
+</div>
+
+<pre class="r"><code>library(ggplot2) # v.3.2.0</code></pre>
+<div id="building-a-formula-from-strings-with-paste-and-formula" class="section level1">
+<h1>Building a formula from strings with paste() and formula()</h1>
+<pre class="r"><code>paste(&quot;mpg&quot;, &quot;~ am&quot;)</code></pre>
+<pre><code>## [1] &quot;mpg ~ am&quot;</code></pre>
+<pre class="r"><code>formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) )</code></pre>
+<pre><code>## mpg ~ am</code></pre>
+</div>
+<div id="using-the-formula-in-lm" class="section level1">
+<h1>Using the formula in lm()</h1>
+<pre class="r"><code>lm( formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) ), data = mtcars)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = formula(paste(&quot;mpg&quot;, &quot;~ am&quot;)), data = mtcars)
+## 
+## Coefficients:
+## (Intercept)           am  
+##      17.147        7.245</code></pre>
+</div>
+<div id="using-the-formula-building-in-a-function" class="section level1">
+<h1>Using the formula building in a function</h1>
+<pre class="r"><code>lm_fun = function(response) {
+  lm(formula( paste(response, &quot;~ am&quot;) ), data = mtcars)
+}
+
+lm_fun(&quot;mpg&quot;)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = formula(paste(response, &quot;~ am&quot;)), data = mtcars)
+## 
+## Coefficients:
+## (Intercept)           am  
+##      17.147        7.245</code></pre>
+<pre class="r"><code>lm_fun(&quot;wt&quot;)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = formula(paste(response, &quot;~ am&quot;)), data = mtcars)
+## 
+## Coefficients:
+## (Intercept)           am  
+##       3.769       -1.358</code></pre>
+</div>
+<div id="using-bare-names-instead-of-strings-i.e.-non-standard-evaluation" class="section level1">
+<h1>Using bare names instead of strings (i.e., non-standard evaluation)</h1>
+<pre class="r"><code>lm_fun2 = function(response) {
+  resp = deparse( substitute( response) )
+  lm(formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+}
+
+lm_fun2(mpg)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = formula(paste(resp, &quot;~ am&quot;)), data = mtcars)
+## 
+## Coefficients:
+## (Intercept)           am  
+##      17.147        7.245</code></pre>
+</div>
+<div id="getting-output-that-indicates-variables-used-in-the-formula" class="section level1">
+<h1>Getting output that indicates variables used in the formula</h1>
+<p><a href="http://www.win-vector.com/blog/2018/09/r-tip-how-to-pass-a-formula-to-lm/" class="uri">http://www.win-vector.com/blog/2018/09/r-tip-how-to-pass-a-formula-to-lm/</a></p>
+<pre class="r"><code>lm_fun3 = function(response) {
+  form = formula( paste(response, &quot;~ am&quot;) )
+  eval(bquote( lm(.(form), data = mtcars) ))
+}
+
+lm_fun3(&quot;mpg&quot;)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = mpg ~ am, data = mtcars)
+## 
+## Coefficients:
+## (Intercept)           am  
+##      17.147        7.245</code></pre>
+</div>
+<div id="a-function-that-takes-one-or-more-explanatory-variables" class="section level1">
+<h1>A function that takes one or more explanatory variables</h1>
+<pre class="r"><code>expl = c(&quot;am&quot;, &quot;disp&quot;)
+paste(expl, collapse = &quot;+&quot;)</code></pre>
+<pre><code>## [1] &quot;am+disp&quot;</code></pre>
+<pre class="r"><code>formula( paste(&quot;mpg ~ &quot;, paste(expl, collapse = &quot;+&quot;) ) )</code></pre>
+<pre><code>## mpg ~ am + disp</code></pre>
+<pre class="r"><code>lm_fun_expl = function(expl) {
+  form = formula( paste(&quot;mpg ~ &quot;, paste(expl, collapse = &quot;+&quot;) ) )
+  lm(form, data = mtcars)
+}
+
+lm_fun_expl(expl = c(&quot;am&quot;, &quot;disp&quot;))</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = form, data = mtcars)
+## 
+## Coefficients:
+## (Intercept)           am         disp  
+##    27.84808      1.83346     -0.03685</code></pre>
+<p>The above takes passing a vector to the <code>expl</code> argument. We could use dots instead, avoiding the need to write the vector into the function. This can be useful in some situations, like using the function interactively where writing out the vector takes more typing effort.</p>
+<p>I’ll pass the data as the first argument and then use the dots, <code>...</code>, to indicate additional arguments. I wrap the dots in <code>c()</code> or <code>list()</code> in the function to concatenate all explanatory variables together prior to pasting. For non-standard evaluation, passing bare variable names instead of strings, you could wrap the <code>...</code> in <code>rlang::exprs()</code>.</p>
+<pre class="r"><code>lm_fun_expl2 = function(data, ...) {
+  form = formula( paste(&quot;mpg ~ &quot;, paste( c(...), collapse = &quot;+&quot;) ) )
+  lm(form, data = data)
+}</code></pre>
+<p>The result from this function is the same as above, but now variables are passed individually as strings.</p>
+<pre class="r"><code>lm_fun_expl2(data = mtcars, &quot;am&quot;, &quot;disp&quot;)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = form, data = data)
+## 
+## Coefficients:
+## (Intercept)           am         disp  
+##    27.84808      1.83346     -0.03685</code></pre>
+</div>
+<div id="example-function-that-fits-model-and-makes-residuals-plots" class="section level1">
+<h1>Example function that fits model and makes residuals plots</h1>
+<pre class="r"><code>lm_modfit = function(data, response) {
+  response = deparse( substitute( response) )
+  mod = lm(formula(paste(response, &quot;~ am&quot;)), data = data)
+  resvfit = qplot(mod$fit, mod$res) + theme_bw()
+  resdist = qplot(x = &quot;Residual&quot;, mod$res, geom = &quot;boxplot&quot;) + theme_bw()
+  list(resvfit, resdist, anova(mod) )
+}</code></pre>
+<pre class="r"><code>mpgfit = lm_modfit(mtcars, mpg)</code></pre>
+<p>Then we can pull out individual parts of the output, starting with checking assumptions.</p>
+<pre class="r"><code>mpgfit[1:2]</code></pre>
+<pre><code>## [[1]]</code></pre>
+<p><img src="/post/2019-06-24-how-to-make-a-function-for-model-fitting_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<pre><code>## 
+## [[2]]</code></pre>
+<p><img src="/post/2019-06-24-how-to-make-a-function-for-model-fitting_files/figure-html/unnamed-chunk-13-2.png" width="672" /></p>
+<p>If we deem the model fit acceptable, we can use the overall F tests from the third element of the output.</p>
+<pre class="r"><code>mpgfit[[3]]</code></pre>
+<pre><code>## Analysis of Variance Table
+## 
+## Response: mpg
+##           Df Sum Sq Mean Sq F value   Pr(&gt;F)    
+## am         1 405.15  405.15   16.86 0.000285 ***
+## Residuals 30 720.90   24.03                     
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+</div>
+<div id="next-step" class="section level1">
+<h1>Next step</h1>
+<p>Subsequent post on looping</p>
+</div>

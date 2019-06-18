@@ -1,0 +1,138 @@
+---
+title: 'Many similar models part 1: how to make a function for model fitting'
+author: Ariel Muldoon
+date: '2019-06-24'
+slug: how-to-make-a-function-for-model-fitting
+output:
+  blogdown::html_page:
+    toc: true
+categories:
+  - r
+  - statistics
+tags:
+  - analysis
+  - teaching
+  - functions
+draft: TRUE
+description: "Writing a function is useful when fitting many similar models.  In this post I discuss how build a function for linear models that allow the user to pass different response and explanatory variables to the model and then check assumptions."
+---
+
+```{r}
+library(ggplot2) # v.3.2.0
+```
+
+# Building a formula from strings with paste() and formula()
+
+```{r}
+paste("mpg", "~ am")
+formula( paste("mpg", "~ am") )
+``` 
+
+# Using the formula in lm()
+
+```{r}
+lm( formula( paste("mpg", "~ am") ), data = mtcars)
+```
+
+
+# Using the formula building in a function
+
+```{r}
+lm_fun = function(response) {
+  lm(formula( paste(response, "~ am") ), data = mtcars)
+}
+
+lm_fun("mpg")
+lm_fun("wt")
+```
+
+# Using bare names instead of strings (i.e., non-standard evaluation)
+
+```{r}
+lm_fun2 = function(response) {
+  resp = deparse( substitute( response) )
+  lm(formula( paste(resp, "~ am") ), data = mtcars)
+}
+
+lm_fun2(mpg)
+```
+
+# Getting output that indicates variables used in the formula
+
+http://www.win-vector.com/blog/2018/09/r-tip-how-to-pass-a-formula-to-lm/
+
+```{r}
+lm_fun3 = function(response) {
+  form = formula( paste(response, "~ am") )
+  eval(bquote( lm(.(form), data = mtcars) ))
+}
+
+lm_fun3("mpg")
+```
+
+# A function that takes one or more explanatory variables
+
+```{r}
+expl = c("am", "disp")
+paste(expl, collapse = "+")
+formula( paste("mpg ~ ", paste(expl, collapse = "+") ) )
+```
+
+```{r}
+lm_fun_expl = function(expl) {
+  form = formula( paste("mpg ~ ", paste(expl, collapse = "+") ) )
+  lm(form, data = mtcars)
+}
+
+lm_fun_expl(expl = c("am", "disp"))
+```
+
+The above takes passing a vector to the `expl` argument.  We could use dots instead, avoiding the need to write the vector into the function.  This can be useful in some situations, like using the function interactively where writing out the vector takes more typing effort.
+
+I'll pass the data as the first argument and then use the dots, `...`, to indicate additional arguments.  I wrap the dots in `c()` or `list()` in the function to concatenate all explanatory variables together prior to pasting.  For non-standard evaluation, passing bare variable names instead of strings, you could wrap the `...` in `rlang::exprs()`.
+
+```{r}
+lm_fun_expl2 = function(data, ...) {
+  form = formula( paste("mpg ~ ", paste( c(...), collapse = "+") ) )
+  lm(form, data = data)
+}
+```
+
+The result from this function is the same as above, but now variables are passed individually as strings.
+
+```{r}
+lm_fun_expl2(data = mtcars, "am", "disp")
+```
+
+# Example function that fits model and makes residuals plots
+
+```{r}
+lm_modfit = function(data, response) {
+  response = deparse( substitute( response) )
+  mod = lm(formula(paste(response, "~ am")), data = data)
+  resvfit = qplot(mod$fit, mod$res) + theme_bw()
+  resdist = qplot(x = "Residual", mod$res, geom = "boxplot") + theme_bw()
+  list(resvfit, resdist, anova(mod) )
+}
+```
+
+```{r}
+mpgfit = lm_modfit(mtcars, mpg)
+```
+
+Then we can pull out individual parts of the output, starting with checking assumptions.
+
+```{r}
+mpgfit[1:2]
+```
+
+If we deem the model fit acceptable, we can use the overall F tests from the third element of the output.
+
+```{r}
+mpgfit[[3]]
+```
+
+
+# Next step
+
+Subsequent post on looping
