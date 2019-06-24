@@ -3,9 +3,6 @@ title: 'Many similar models - Part 1: How to make a function for model fitting'
 author: Ariel Muldoon
 date: '2019-06-24'
 slug: function-for-model-fitting
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
   - statistics
@@ -18,23 +15,24 @@ description: "In this post I discuss how to construct the formula that can be pa
 ---
 
 
-<div id="TOC">
-<ul>
-<li><a href="#building-a-formula-with-paste-and-as.formula">Building a formula with paste() and as.formula()</a></li>
-<li><a href="#using-a-constructed-formula-in-lm">Using a constructed formula in lm()</a></li>
-<li><a href="#making-a-function-for-model-fitting">Making a function for model fitting</a></li>
-<li><a href="#using-bare-names-instead-of-strings-i.e.-non-standard-evaluation">Using bare names instead of strings (i.e., non-standard evaluation)</a></li>
-<li><a href="#building-a-formula-with-varying-explanatory-variables">Building a formula with varying explanatory variables</a></li>
-<li><a href="#the-dots-for-passing-many-variables-to-a-function">The dots for passing many variables to a function</a></li>
-<li><a href="#example-function-that-returns-residuals-plots-and-model-output">Example function that returns residuals plots and model output</a></li>
-<li><a href="#next-step-looping">Next step: looping</a></li>
-</ul>
-</div>
 
 <p>I worked with several students over the last few months who were fitting many linear models, all with the same basic structure but different response variables. They were struggling to find an efficient way to do this in R while still taking the time to check model assumptions.</p>
 <p>A first step when working towards a more automated process for fitting many models is to learn how to build model formulas with <code>paste()</code> and <code>as.formula()</code>. Once we learn how to build model formulas we can create functions to streamline the model fitting process.</p>
 <p>I will be making residuals plots with <strong>ggplot2</strong> today so will load it here.</p>
 <pre class="r"><code>library(ggplot2) # v.3.2.0</code></pre>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#building-a-formula-with-paste()-and-as.formula()">Building a formula with paste() and as.formula()</a></li>
+<li><a href="#using-a-constructed-formula-in-lm()">Using a constructed formula in lm()</a></li>
+<li><a href="#making-a-function-for-model-fitting">Making a function for model fitting</a></li>
+<li><a href="#using-bare-names-instead-of-strings-(i.e.,-non-standard-evaluation)">Using bare names instead of strings (i.e., non-standard evaluation)</a></li>
+<li><a href="#building-a-formula-with-varying-explanatory-variables">Building a formula with varying explanatory variables</a></li>
+<li><a href="#the-dots-for-passing-many-variables-to-a-function">The dots for passing many variables to a function</a></li>
+<li><a href="#example-function-that-returns-residuals-plots-and-model-output">Example function that returns residuals plots and model output</a></li>
+<li><a href="#next-step:-looping">Next step: looping</a></li>
+</ul>
+</div>
 <div id="building-a-formula-with-paste-and-as.formula" class="section level1">
 <h1>Building a formula with paste() and as.formula()</h1>
 <p>Model formula of the form <code>y ~ x</code> can be built based on variable names passed as <em>character strings</em>. A character string means the variable name will have quotes around it.</p>

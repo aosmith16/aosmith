@@ -3,9 +3,6 @@ title: 'Many similar models - Part 1: How to make a function for model fitting'
 author: Ariel Muldoon
 date: '2019-06-24'
 slug: function-for-model-fitting
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
   - statistics
@@ -17,8 +14,10 @@ draft: FALSE
 description: "In this post I discuss how to construct the formula that can be passed to model fitting functions like lm(). I then demonstrate how to use this within a user-created function in order to streamline the process of fitting many similar models."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("c83e078bf8c81b035e32c3fc0cf04ee8", 
+                      filename = 'render_toc.R')
 ```
 
 I worked with several students over the last few months who were fitting many linear models, all with the same basic structure but different response variables.  They were struggling to find an efficient way to do this in R while still taking the time to check model assumptions.  
@@ -29,6 +28,12 @@ I will be making residuals plots with **ggplot2** today so will load it here.
 
 ```{r}
 library(ggplot2) # v.3.2.0
+```
+
+## Table of Contents
+
+```{r toc, echo = FALSE} 
+render_toc("2019-06-24-how-to-make-a-function-for-model-fitting.Rmd")
 ```
 
 # Building a formula with paste() and as.formula()
