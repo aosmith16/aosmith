@@ -252,9 +252,16 @@ math = true
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-rss\"></i>"
   url = "/index.xml"
 
-  [[menu.misc]]
+[[menu.misc]]
   weight = 6
   identifier = "rweekly"
   name = "R Weekly"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-thumb-tack\"></i>"
   url = "https://rweekly.org/"
+
+[[menu.misc]]
+  weight = 7
+  identifier = "rbloggers"
+  name = "R-bloggers"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-thumb-tack\"></i>"
+  url = "https://www.r-bloggers.com/"
