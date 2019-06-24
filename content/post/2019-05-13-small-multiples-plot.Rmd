@@ -3,9 +3,6 @@ title: 'The small multiples plot: how to combine ggplot2 plots with one shared a
 author: Ariel Muldoon
 date: '2019-05-13'
 slug: small-multiples-plot
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
 tags:
@@ -15,8 +12,10 @@ draft: FALSE
 description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show three approaches to make such a plot: using facets, with package cowplot, and with package egg."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("c83e078bf8c81b035e32c3fc0cf04ee8", 
+                      filename = 'render_toc.R')
 ```
 
 There are a variety of ways to combine **ggplot2** plots with a single shared axis.  However, things can get tricky if you want a lot of control over all plot elements.  
@@ -25,6 +24,12 @@ I demonstrate three different approaches for this:
 1. Using facets, which is built in to **ggplot2** but doesn't allow much control over the non-shared axes.  
 2. Using package **cowplot**, which has a lot of nice features but the plot spacing doesn't play well with a single shared axis.  
 3. Using package **egg**, which allows nice spacing for plots with a shared axis.  
+
+## Table of Contents
+
+```{r toc, echo = FALSE} 
+render_toc("2019-05-13-small-multiples-plot.Rmd")
+```
 
 # Load R packages
 

@@ -2,9 +2,6 @@
 title: 'Lots of zeros or too many zeros?: Thinking about zero inflation in count data'
 author: Ariel Muldoon
 date: '2019-03-06'
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
   - statistics
@@ -21,20 +18,21 @@ description: When working with counts, having many zeros does not necessarily in
 ---
 
 
-<div id="TOC">
-<ul>
-<li><a href="#load-packages-and-dataset">Load packages and dataset</a></li>
-<li><a href="#negative-binomial-with-many-zeros"><span>Negative binomial with many zeros</span></a></li>
-<li><a href="#generalized-poisson-with-many-zeros"><span>Generalized Poisson with many zeros</span></a></li>
-<li><a href="#lots-of-zeros-or-excess-zeros"><span>Lots of zeros or excess zeros?</span></a></li>
-<li><a href="#simulate-negative-binomial-data">Simulate negative binomial data</a></li>
-<li><a href="#checking-for-excess-zeros"><span>Checking for excess zeros</span></a></li>
-<li><a href="#an-example-with-excess-zeros"><span>An example with excess zeros</span></a></li>
-</ul>
-</div>
 
 <p>In a recent lecture I gave a basic overview of zero-inflation in count distributions. My main take-home message to the students that I thought worth posting about here is that having a lot of zero values does not necessarily mean you have zero inflation.</p>
 <p>Zero inflation is when there are more 0 values in the data than the distribution allows for. But some distributions can have a lot of zeros!</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#load-packages-and-dataset">Load packages and dataset</a></li>
+<li><a href="#negative-binomial-with-many-zeros">Negative binomial with many zeros</a></li>
+<li><a href="#generalized-poisson-with-many-zeros">Generalized Poisson with many zeros</a></li>
+<li><a href="#lots-of-zeros-or-excess-zeros?">Lots of zeros or excess zeros?</a></li>
+<li><a href="#simulate-negative-binomial-data">Simulate negative binomial data</a></li>
+<li><a href="#checking-for-excess-zeros">Checking for excess zeros</a></li>
+<li><a href="#an-example-with-excess-zeros">An example with excess zeros</a></li>
+</ul>
+</div>
 <div id="load-packages-and-dataset" class="section level1">
 <h1>Load packages and dataset</h1>
 <p>I’m going to be simulating counts from different distributions to demonstrate this. First I’ll load the packages I’m using today.</p>
@@ -44,7 +42,7 @@ library(HMMpa) # v. 1.0.1
 library(MASS) # v. 7.3-51.1</code></pre>
 </div>
 <div id="negative-binomial-with-many-zeros" class="section level1">
-<h1><a href="#negative-binomial-with-many-zeros">Negative binomial with many zeros</a></h1>
+<h1>Negative binomial with many zeros</h1>
 <p>First I’ll draw 200 counts from a negative binomial with a mean (<span class="math inline">\(\lambda\)</span>) of <span class="math inline">\(10\)</span> and <span class="math inline">\(\theta = 0.05\)</span>.<br />
 R uses the parameterization of the negative binomial where the variance of the distribution is <span class="math inline">\(\lambda + (\lambda^2/\theta)\)</span>. In this parameterization, as <span class="math inline">\(\theta\)</span> gets small the variance gets big. Using a very small value of theta like I am will generally mean the distribution of counts will have many zeros as well as a few large counts</p>
 <p>I pull a random sample of size 200 from this distribution using <code>rnbinom()</code>. The <code>mu</code> argument is the mean and the <code>size</code> argument is theta.</p>
@@ -64,7 +62,7 @@ dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )</code></pre>
 <p><img src="/post/2019-03-06-lots-of-zeros_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 </div>
 <div id="generalized-poisson-with-many-zeros" class="section level1">
-<h1><a href="#generalized-poisson-with-many-zeros">Generalized Poisson with many zeros</a></h1>
+<h1>Generalized Poisson with many zeros</h1>
 <p>I don’t know the generalized Poisson distribution well, although it appears to be regularly used in some fields. For whatever reason, the negative binomial seems much more common in ecology. 🤷</p>
 <p>From my understanding, the generalized Poisson distribution can have heavier tails than the negative binomial. This would mean that it can have more extreme maximum counts as well as lots of zeros.</p>
 <p>See the documentation for <code>rgenpois()</code> for the formula for the density of the generalized Poisson and definitions of mean and variance. Note that when <code>lambda2</code> is 0, the generalized Poisson reduces to the Poisson.</p>
@@ -84,7 +82,7 @@ dat = data.frame(Y = rgenpois(200, lambda1 = 0.5, lambda2 = 0.95) )</code></pre>
 <p><img src="/post/2019-03-06-lots-of-zeros_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 </div>
 <div id="lots-of-zeros-or-excess-zeros" class="section level1">
-<h1><a href="#lots-of-zeros-or-excess-zeros">Lots of zeros or excess zeros?</a></h1>
+<h1>Lots of zeros or excess zeros?</h1>
 <p>All the simulations above show us is that some distributions <em>can</em> have a lot of zeros. In any given scenario, though, how do we check if we have <em>excess</em> zeros? Having excess zeros means there are more zeros than expected by the distribution we are using for modeling. If we have excess zeros than we may either need a different distribution to model the data or we could think about models that specifically address zero inflation.</p>
 <p>The key to checking for excess zeros is to estimate the number of zeros you would expect to see if the fitted model were truly the model that created your data and compare that to the number of zeros in the actual data. If there are many more zeros in the data than the model allows for then you have zero inflation compared to whatever distribution you are using.</p>
 </div>
@@ -105,7 +103,7 @@ theta = 0.25 # true theta</code></pre>
 <p>In this exercise I’m going to go directly to checking for excess zeros. This means I’m skipping other important checks of model fit, such as checks for overdispersion and examining residual plots. Don’t skip these in a real analysis; having excess zeros certainly isn’t the only problem we can run into with count data.</p>
 </div>
 <div id="checking-for-excess-zeros" class="section level1">
-<h1><a href="#checking-for-excess-zeros">Checking for excess zeros</a></h1>
+<h1>Checking for excess zeros</h1>
 <p>The observed data has 76 zeros (out of 200).</p>
 <pre class="r"><code>sum(y == 0)</code></pre>
 <pre><code># [1] 76</code></pre>
@@ -121,7 +119,7 @@ esttheta = summary(fit1)$theta # estimated theta</code></pre>
 <p>The expected number of 0 values is ~72, very close to the 76 observed in the data. This is no big surprise, since I fit the same model that I used to create the data.</p>
 </div>
 <div id="an-example-with-excess-zeros" class="section level1">
-<h1><a href="#an-example-with-excess-zeros">An example with excess zeros</a></h1>
+<h1>An example with excess zeros</h1>
 <p>The example above demonstrates a model without excess zeros. Let me finish by fitting a model to data that has more zeros than expected by the distribution. This can be done by fitting a Poisson GLM instead of a negative binomial GLM to my simulated data.</p>
 <pre class="r"><code>fit2 = glm(y ~ x, family = poisson)</code></pre>
 <p>Remember the data contain 76 zeros.</p>

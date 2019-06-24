@@ -3,9 +3,6 @@ title: Creating legends when aesthetics are constants in ggplot2
 author: Ariel Muldoon
 date: '2018-07-19'
 slug: manual-legends-ggplot2
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
 tags:
@@ -15,20 +12,21 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
 ---
 
 
-<div id="TOC">
-<ul>
-<li><a href="#the-setup">The setup</a></li>
-<li><a href="#making-a-plot-with-aesthetics-as-constants">Making a plot with aesthetics as constants</a></li>
-<li><a href="#why-wont-scale_color_manual-make-a-legend">Why won’t scale_color_manual() make a legend?</a></li>
-<li><a href="#adding-a-legend-by-moving-aesthetics-into-aes">Adding a legend by moving aesthetics into aes()</a></li>
-<li><a href="#using-scale_color_identity-to-recognize-color-strings">Using scale_color_identity() to recognize color strings</a></li>
-<li><a href="#descriptive-strings-and-scale_color_manual">Descriptive strings and scale_color_manual()</a></li>
-<li><a href="#other-examples-on-stack-overflow">Other examples on Stack Overflow</a></li>
-</ul>
-</div>
 
 <p>In general, if you want to map an aesthetic to a variable and get a legend in <strong>ggplot2</strong> you do it inside <code>aes()</code>. If you want to set an aesthetic to a constant value, like making all your points purple, you do it outside <code>aes()</code>.</p>
 <p>However, there are situations where you might want to set an aesthetic for a layer to a constant but you also want a legend for that aesthetic. One common alternative is to put your dataset into a long format to take advantage of the strengths of <strong>ggplot2</strong>, but that isn’t a straightforward option for every situation. I’ll show another approach here.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#the-setup">The setup</a></li>
+<li><a href="#making-a-plot-with-aesthetics-as-constants">Making a plot with aesthetics as constants</a></li>
+<li><a href="#why-won&#39;t-scale_color_manual()-make-a-legend?">Why won’t scale_color_manual() make a legend?</a></li>
+<li><a href="#adding-a-legend-by-moving-aesthetics-into-aes()">Adding a legend by moving aesthetics into aes()</a></li>
+<li><a href="#using-scale_color_identity()-to-recognize-color-strings">Using scale_color_identity() to recognize color strings</a></li>
+<li><a href="#descriptive-strings-and-scale_color_manual()">Descriptive strings and scale_color_manual()</a></li>
+<li><a href="#other-examples-on-stack-overflow">Other examples on Stack Overflow</a></li>
+</ul>
+</div>
 <div id="the-setup" class="section level1">
 <h1>The setup</h1>
 <p>A few situations where we might want legends without mapping an aesthetic to a variable are:<br />

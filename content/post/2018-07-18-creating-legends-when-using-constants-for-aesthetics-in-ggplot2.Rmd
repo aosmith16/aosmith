@@ -3,9 +3,6 @@ title: Creating legends when aesthetics are constants in ggplot2
 author: Ariel Muldoon
 date: '2018-07-19'
 slug: manual-legends-ggplot2
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
 tags:
@@ -14,13 +11,21 @@ draft: FALSE
 description: 'Getting a legend in ggplot2 when the aesthetic value is set to be constant instead of a variable can be tricky.  I go through an example of a situation where this might be useful and show how to first get a legend and then how to "prettify" that legend.'
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("c83e078bf8c81b035e32c3fc0cf04ee8", 
+                      filename = 'render_toc.R')
 ```
 
 In general, if you want to map an aesthetic to a variable and get a legend in **ggplot2** you do it inside `aes()`.  If you want to set an aesthetic to a constant value, like making all your points purple, you do it outside `aes()`.
 
 However, there are situations where you might want to set an aesthetic for a layer to a constant but you also want a legend for that aesthetic.  One common alternative is to put your dataset into a long format to take advantage of the strengths of **ggplot2**, but that isn't a straightforward option for every situation.  I'll show another approach here.
+
+## Table of Contents
+
+```{r toc, echo = FALSE} 
+render_toc("2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2.Rmd")
+```
 
 # The setup
 

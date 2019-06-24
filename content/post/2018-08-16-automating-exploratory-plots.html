@@ -3,9 +3,6 @@ title: Automating exploratory plots with ggplot2 and purrr
 author: Ariel Muldoon
 date: '2018-08-20'
 slug: automating-exploratory-plots
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
 tags:
@@ -16,26 +13,28 @@ description: "In this post I show an example of how to automate the process of m
 ---
 
 
-<div id="TOC">
-<ul>
-<li><a href="#load-r-packages">Load R packages</a></li>
-<li><a href="#the-set-up">The set-up</a></li>
-<li><a href="#create-a-plotting-function"><span>Create a plotting function</span></a></li>
-<li><a href="#looping-through-one-vector-of-variables"><span>Looping through one vector of variables</span></a></li>
-<li><a href="#looping-through-both-vectors"><span>Looping through both vectors</span></a><ul>
-<li><a href="#saving-the-plots"><span>Saving the plots</span></a></li>
-<li><a href="#saving-all-plots-to-one-pdf"><span>Saving all plots to one PDF</span></a></li>
-<li><a href="#saving-groups-of-plots-together"><span>Saving groups of plots together</span></a></li>
-<li><a href="#saving-all-plots-separately"><span>Saving all plots separately</span></a></li>
-<li><a href="#combining-plots"><span>Combining plots</span></a></li>
-</ul></li>
-</ul>
-</div>
 
 <p>When you have a lot of variables and need to make a lot exploratory plots it’s usually worthwhile to automate the process in R instead of manually copying and pasting code for every plot. However, the coding approach needed to automate plots can look pretty daunting to a beginner R user. It can look so daunting, in fact, that it can appear easier to manually make the plots (like in Excel) rather than using R at all.</p>
 <p>Unfortunately making plots manually can backfire. The efficiency of using a software program you already know is quickly out-weighed by being unable to easily reproduce the plots when needed. I know I invariably have to re-make even exploratory plots, and it’d be a bummer if I had to remake them all manually rather than re-running some code.</p>
 <p>So while I often assure students working under time constraints that it is perfectly OK to use software they already know rather than spending the time to learn how to do something in R, making many plots is a special case. To get them started I will provide students who need to automate plotting in R some example code (with explanation).</p>
 <p>This post is based on an example I was working on recently, which involves plotting bivariate relationships between many continuous variables.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#load-r-packages">Load R packages</a></li>
+<li><a href="#the-set-up">The set-up</a></li>
+<li><a href="#create-a-plotting-function">Create a plotting function</a></li>
+<li><a href="#looping-through-one-vector-of-variables">Looping through one vector of variables</a></li>
+<li><a href="#looping-through-both-vectors">Looping through both vectors</a></li>
+<li><a href="#saving-the-plots">Saving the plots</a>
+<ul>
+<li><a href="#saving-all-plots-to-one-pdf">Saving all plots to one PDF</a></li>
+<li><a href="#saving-groups-of-plots-together">Saving groups of plots together</a></li>
+<li><a href="#saving-all-plots-separately">Saving all plots separately</a></li>
+<li><a href="#combining-plots">Combining plots</a></li>
+</ul></li>
+</ul>
+</div>
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
 <p>I’ll be plotting with <strong>ggplot2</strong> and looping with <strong>purrr</strong>. I’ll also be using package <strong>cowplot</strong> later to combine individual plots into one, but will use the package functions via <code>cowplot::</code> instead of loading the package.</p>
@@ -78,7 +77,7 @@ expl</code></pre>
 #  &quot;slp&quot;  &quot;lat&quot; &quot;long&quot;   &quot;nt&quot;</code></pre>
 </div>
 <div id="create-a-plotting-function" class="section level1">
-<h1><a href="#create-a-plotting-function">Create a plotting function</a></h1>
+<h1>Create a plotting function</h1>
 <p>Since I’m going to make a bunch of plots that will all have the same basic form, I will make a plotting function. I am going to make a function where only the <code>x</code> and <code>y</code> variables can vary (so are arguments to the function).</p>
 <p>Since I’m making a function to plot variables from a single dataset I’m going to hard-code the dataset into the function. If you have multiple datasets or you are making a function for use across projects you’ll probably want to add the dataset as a function argument.</p>
 <p>My functions inputs are based on the variable names, so I need to pass strings into the <strong>ggplot2</strong> functions. Strings cannot be used directly in <code>aes()</code>, but can be used directly in <code>aes_string()</code>.</p>
@@ -106,7 +105,7 @@ scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
 <p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 </div>
 <div id="looping-through-one-vector-of-variables" class="section level1">
-<h1><a href="#looping-through-one-vector-of-variables">Looping through one vector of variables</a></h1>
+<h1>Looping through one vector of variables</h1>
 <p>One way to make all the plots I want is to loop through each explanatory variable for a fixed response variable. With this approach I would need a separate loop for each response variable.</p>
 <p>I will use <code>map()</code> from package <strong>purrr</strong> for the looping.</p>
 <p>I pass each explanatory variable to the first argument in <code>scatter_fun()</code> and I fix the second argument to <code>"elev"</code>. I use the formula coding in <code>map()</code> and so refer to the element of the explanatory vector via <code>.x</code> within <code>scatter_fun()</code>.</p>
@@ -126,7 +125,7 @@ scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
 <p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-10-4.png" width="672" /></p>
 </div>
 <div id="looping-through-both-vectors" class="section level1">
-<h1><a href="#looping-through-both-vectors">Looping through both vectors</a></h1>
+<h1>Looping through both vectors</h1>
 <p>For only a few response variables we could easily copy and paste the code above, changing the hard-coded response variable each time. This process can get burdensome if there are a lot of response variables, though.</p>
 <p>Another option is to loop through both vectors of variables and make all the plots at once. Because we want a plot for each combination of variables, this is a job for a <em>nested</em> loop. This means one <code>map()</code> loop will be nested inside another. I will refer to the first <code>map()</code> loop as the <em>outer</em> loop and the second one as the <em>inner</em> loop.</p>
 <p>I’m going to have the response variables in the outer loop and the explanatory variables in the inner loop. That way I can graph all of the explanatory variables for each response variable before moving on to the next response variable. This puts the output, a nested list, in a logical order.</p>
@@ -148,13 +147,13 @@ scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
 <p>I find the names convenient, but you can also extract plots via position. Here’s the same graph, the third element of the third list.</p>
 <pre class="r"><code>all_plots[[3]][[3]]</code></pre>
 <p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
-<div id="saving-the-plots" class="section level2">
-<h2><a href="#saving-the-plots">Saving the plots</a></h2>
+</div>
+<div id="saving-the-plots" class="section level1">
+<h1>Saving the plots</h1>
 <p>Once all the graphs are made we can look at them in R by printing the list or parts of the list as above. But if you want to peruse them at your leisure later or send them to a collaborator you’ll want to save them outside of R.</p>
 <p>This next section is dedicated to exploring some of the ways you can do this.</p>
-</div>
 <div id="saving-all-plots-to-one-pdf" class="section level2">
-<h2><a href="#saving-all-plots-to-one-pdf">Saving all plots to one PDF</a></h2>
+<h2>Saving all plots to one PDF</h2>
 <p>If you want to save every plot as a separate page in a PDF, you can do so with the <code>pdf()</code> function. The code below shows an example of how this works. First, a graphics device to save the plots into is created and given a name via <code>pdf()</code>. Then all the plots are put into that device. Finally, the device is turned off with <code>dev.off()</code>. The last step is important, as you can’t open the file until the device is turned off.</p>
 <p>This is a pretty coarse way to save everything, but it allows you to easily page through all the plots. I’ve used this method when I had many exploratory plots for a single response variable that I wanted to share with collaborators.</p>
 <p>In this example code I save the file, which I name <code>all_scatterplots.pdf</code>, into the working directory.</p>
@@ -163,7 +162,7 @@ all_plots
 dev.off()</code></pre>
 </div>
 <div id="saving-groups-of-plots-together" class="section level2">
-<h2><a href="#saving-groups-of-plots-together">Saving groups of plots together</a></h2>
+<h2>Saving groups of plots together</h2>
 <p>Another option is to save each group of plots in a separate document. This might make sense in a case like this where there are a set of plots for each response variable and we might want a separate file for each set.</p>
 <p>To save each sublist separately we’ll need to loop through <code>all_plots</code> and save the plots for each response variable into a separate file. The list names can be used in the file names to keep the output organized.</p>
 <p>The functions in <strong>purrr</strong> that start with <code>i</code> are special functions that loop through a list and the names of that list simultaneously. This is useful here where we want to use the list names to identify the output files while we save them.</p>
@@ -177,7 +176,7 @@ dev.off()</code></pre>
 })</code></pre>
 </div>
 <div id="saving-all-plots-separately" class="section level2">
-<h2><a href="#saving-all-plots-separately">Saving all plots separately</a></h2>
+<h2>Saving all plots separately</h2>
 <p>All plots can be saved separately instead of combined in a single document. This might be necessary if you want to insert the plots into some larger document later.</p>
 <p>We’ll want to use the names of both the outer and inner lists to appropriately identify each plot we save. I decided to do this by looping through the <code>all_plots</code> list and the names of the list via <code>imap()</code> to make the file names in a separate step. This time I’m going to save these as PNG files so use <code>.png</code> at the end of the file name.</p>
 <p>The result is a list of lists, so I flatten this into a single list via <code>flatten()</code>. If I were to use <code>flatten()</code> earlier in the process I’d lose the names of the outer list. This process of combining names prior to flattening should be simplified once <a href="https://github.com/tidyverse/purrr/issues/525">the proposed <code>flatten_names()</code> function</a> is added to <strong>purrr</strong>.</p>
@@ -225,7 +224,7 @@ plotnames</code></pre>
                                          height = 7, width = 7))</code></pre>
 </div>
 <div id="combining-plots" class="section level2">
-<h2><a href="#combining-plots">Combining plots</a></h2>
+<h2>Combining plots</h2>
 <p>Another way to get a set of plots together is to combine them into one plot. How useful this is will depend on how many plots you have per set. This option is a lot like faceting, except we didn’t reshape our dataset to allow the use faceting.</p>
 <p>I like the <strong>cowplot</strong> function <code>plot_grid()</code> for combining multiple plots into one. A list of plots can be passed via the <code>plotlist</code> argument.</p>
 <p>Here’s what that looks like for the first response variable, <code>elev</code>.</p>

@@ -3,9 +3,6 @@ title: 'The small multiples plot: how to combine ggplot2 plots with one shared a
 author: Ariel Muldoon
 date: '2019-05-13'
 slug: small-multiples-plot
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
 tags:
@@ -16,22 +13,23 @@ description: "There are a variety of ways to combine ggplot2 plots with a single
 ---
 
 
-<div id="TOC">
-<ul>
-<li><a href="#load-r-packages">Load R packages</a></li>
-<li><a href="#the-set-up">The set-up</a></li>
-<li><a href="#using-facets-for-small-multiples">Using facets for small multiples</a></li>
-<li><a href="#using-cowplot-to-combine-plots">Using <strong>cowplot</strong> to combine plots</a></li>
-<li><a href="#using-egg-to-combine-plots">Using <strong>egg</strong> to combine plots</a></li>
-<li><a href="#adding-plot-labels-with-tag_facet-in-egg">Adding plot labels with tag_facet() in <strong>egg</strong></a></li>
-</ul>
-</div>
 
 <p>There are a variety of ways to combine <strong>ggplot2</strong> plots with a single shared axis. However, things can get tricky if you want a lot of control over all plot elements.</p>
 <p>I demonstrate three different approaches for this:<br />
 1. Using facets, which is built in to <strong>ggplot2</strong> but doesn’t allow much control over the non-shared axes.<br />
 2. Using package <strong>cowplot</strong>, which has a lot of nice features but the plot spacing doesn’t play well with a single shared axis.<br />
 3. Using package <strong>egg</strong>, which allows nice spacing for plots with a shared axis.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#load-r-packages">Load R packages</a></li>
+<li><a href="#the-set-up">The set-up</a></li>
+<li><a href="#using-facets-for-small-multiples">Using facets for small multiples</a></li>
+<li><a href="#using-**cowplot**-to-combine-plots">Using <strong>cowplot</strong> to combine plots</a></li>
+<li><a href="#using-**egg**-to-combine-plots">Using <strong>egg</strong> to combine plots</a></li>
+<li><a href="#adding-plot-labels-with-tag_facet()-in-**egg**">Adding plot labels with tag_facet() in <strong>egg</strong></a></li>
+</ul>
+</div>
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
 <p>I’ll be plotting with <strong>ggplot2</strong>, reshaping with <strong>tidyr</strong>, and combining plots with package <strong>egg</strong>.</p>

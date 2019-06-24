@@ -3,9 +3,6 @@ title: How to plot fitted lines with ggplot2
 author: Ariel Muldoon
 date: '2018-11-16'
 slug: plot-fitted-lines
-output:
-  blogdown::html_page:
-    toc: true
 categories:
   - r
 tags:
@@ -14,13 +11,21 @@ draft: FALSE
 description: "I show a general approach for plotting fitted lines with ggplot2 that works across many different model types."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("c83e078bf8c81b035e32c3fc0cf04ee8", 
+                      filename = 'render_toc.R')
 ```
 
 Most analyses aren't really done until we've found a way to visualize the results graphically, and I've recently been getting some questions from students on how to plot fitted lines from models.  There are some R packages that are made specifically for this purpose; see packages **effects** and **visreg**, for example.
 
 If using the **ggplot2** package for plotting, fitted lines from simple models can be graphed using `geom_smooth()`.  However, once models get more complicated that convenient function is no longer useful.  I'll go over the approach that I use for plotting fitted lines in **ggplot2** that can be used across many model types and situations.
+
+## Table of Contents
+
+```{r toc, echo = FALSE} 
+render_toc("2018-11-16-plot-fitted-lines.Rmd")
+```
 
 # Load packages and dataset
 
@@ -89,7 +94,7 @@ This dataset has one response variable, `resp`, along with two continuous (`x1`,
 head(dat)
 ```
 
-# [Plotting separate slopes with geom_smooth()](#plotting-separate-slopes-with-geom_smooth)
+# Plotting separate slopes with geom_smooth()
 
 The `geom_smooth()` function in **ggplot2** can plot fitted lines from models with a simple structure.  Supported model types include models fit with `lm()`, `glm()`, `nls()`, and `mgcv::gam()`.  
 
@@ -113,7 +118,7 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_smooth(method = "lm", alpha = .15, aes(fill = grp))
 ```
 
-# [Extracting predicted values with predict()](#extracting-predicted-values-with-predict)
+# Extracting predicted values with predict()
 
 In the plots above you can see that the slopes vary by `grp` category.  If you want parallel lines instead of separate slopes per group, `geom_smooth()` isn't going to work for you.
 
@@ -127,7 +132,7 @@ methods("predict")
 
 You can go to the help page for the `predict()` function for a specific model type.  For example, `?predict.lme` will take you to the documentation for the `predict()` function for `lme` objects fit with `nlme::lme()`.
 
-# [Plotting predicted values with geom_line()](#plotting-predicted-values-with_geom_line)
+# Plotting predicted values with geom_line()
 
 The first step of this "prediction" approach to plotting fitted lines is to fit a model.  I'll use a linear model with a different intercept for each `grp` category and a single `x1` slope to end up with parallel lines per group.
 
@@ -149,7 +154,7 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_line(aes(y = predlm), size = 1)
 ```
 
-# [Add confidence intervals for lm objects](#add-confidence-intervals-for-lm-objects)
+# Add confidence intervals for lm objects
 
 What about confidence intervals?  The `predict()` function for `lm` objects has an `interval` argument that returns confidence or prediction intervals, which are appropriate to use if model assumptions have been reasonably met.  I'm skipping the assumption-checking step here. `r emo::ji("wink")`
 
@@ -178,7 +183,7 @@ ggplot(datlm, aes(x = x1, y = resp, color = grp) ) +
      geom_line( aes(y = fit), size = 1)
 ```
 
-# [Using a new dataset with predict()](#using-a-new-dataset-with-predict)
+# Using a new dataset with predict()
 
 The fitted lines in all the plots so far are different lengths.  This is because we have slightly different ranges of `x1` for each `grp` category in the dataset.  By default when using `predict()` we get the *fitted values*; i.e., the predicted values from the dataset used in model fitting.
 
@@ -213,7 +218,7 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_line(data = newdat, aes(y = predlm), size = 1)
 ```
 
-# [Plotting fitted lines from an lme object](#plotting-fitted-lines-from-an-lme-object)
+# Plotting fitted lines from an lme object
 
 The approach I demonstrated above, where the predicted values are extracted and used for plotting the fitted lines, works across many model types and is the general approach I use for most fitted line plotting I do in **ggplot2**.  
 
@@ -254,7 +259,7 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_line(data = newdat.lme, aes(y = predlme), size = 1)
 ```
 
-# [Confidence intervals for lme objects](#confidence-intervals-for-lme-objects)
+# Confidence intervals for lme objects
 
 What if we wanted to add a confidence envelope?  You'll see `predict.lme` does not have an option to get confidence intervals or calculate standard errors that could be used to build confidence intervals.  I use the recipe from the [GLMM FAQ maintained by Ben Bolker](http://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#predictions-andor-confidence-or-prediction-intervals-on-predictions), although this approach does not take the uncertainty of the random effects into account.
 
@@ -292,6 +297,6 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
           geom_line(data = newdat.lme, aes(y = predlme), size = .75)
 ```
 
-# [What if there is no predict() function?](#what-if-there-is-no-predict-function)
+# What if there is no predict() function?
 
 In my experience, the vast majority of modeling packages these days have `predict()` functions.  If the one you are using doesn't, though, you can usually do your own predictions with matrix multiplication of the model matrix and the fixed effects.  You can see an example for the **glmmADMB** package from the GLMM FAQ  [here](http://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#glmmadmb).
