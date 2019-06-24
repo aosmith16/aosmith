@@ -14,7 +14,7 @@ description: "In this post I show an example of how to automate the process of m
 
 ```{r setup, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
-devtools::source_gist("c83e078bf8c81b035e32c3fc0cf04ee8", 
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
 ```
 
