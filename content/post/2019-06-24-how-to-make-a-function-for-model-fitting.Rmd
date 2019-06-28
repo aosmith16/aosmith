@@ -26,8 +26,9 @@ A first step when working towards a more automated process for fitting many mode
 
 I will be making residuals plots with **ggplot2** today so will load it here.
 
-```{r}
+```{r packages}
 library(ggplot2) # v.3.2.0
+
 ```
 
 ## Table of Contents
@@ -48,12 +49,14 @@ The output of this is the formula as a string.  You can see it is in quotes in t
 
 ```{r paste1}
 paste("mpg", "~ am")
+
 ```
 
 We turn this into a formula ready to be passed to a model function using `as.formula()`.
 
 ```{r formula1}
 as.formula( paste("mpg", "~ am") )
+
 ```
 
 # Using a constructed formula in lm()
@@ -64,6 +67,7 @@ Since `am` is a 0/1 variable, this particular analysis is a two-sample t-test wi
 
 ```{r lm1}
 lm( as.formula( paste("mpg", "~ am") ), data = mtcars)
+
 ```
 
 
@@ -79,6 +83,7 @@ The response variable name is passed to the `response` argument as a character s
 lm_fun = function(response) {
   lm( as.formula( paste(response, "~ am") ), data = mtcars)
 }
+
 ```
 
 Here are two examples of this function in action, using `mpg` and then `wt` as the response variables.
@@ -86,6 +91,7 @@ Here are two examples of this function in action, using `mpg` and then `wt` as t
 ```{r usefun1}
 lm_fun(response = "mpg")
 lm_fun(response = "wt")
+
 ```
 
 
@@ -100,12 +106,14 @@ lm_fun2 = function(response) {
   resp = deparse( substitute( response) )
   lm( as.formula( paste(resp, "~ am") ), data = mtcars)
 }
+
 ```
 
 Here's an example of this function in action.  Note the use of the bare column name for the response variable.
 
 ```{r usefun2}
 lm_fun2(response = mpg)
+
 ```
 
 You can see that one thing that happens when using `as.formula()` like this is that the formula in the model output shows the formula-building code instead of the actual variables used in the model.  
@@ -126,6 +134,7 @@ Here's an example with a vector of two explanatory variables.  Passing a vector 
 ```{r expl}
 expl = c("am", "disp")
 paste(expl, collapse = "+")
+
 ```
 
 This additional pasting step can then be included within `as.formula()`.  
@@ -143,12 +152,14 @@ lm_fun_expl = function(expl) {
   form = as.formula( paste("mpg ~ ", paste(expl, collapse = "+") ) )
   lm(form, data = mtcars)
 }
+
 ```
 
 To use the function we pass a vector of variable names as strings to the `expl` argument.
 
 ```{r useexplfun}
 lm_fun_expl(expl = c("am", "disp") )
+
 ```
 
 # The dots for passing many variables to a function
@@ -164,12 +175,14 @@ lm_fun_expl2 = function(...) {
   form = as.formula( paste("mpg ~ ", paste( c(...), collapse = "+") ) )
   lm(form, data = mtcars)
 }
+
 ```
 
 Now variables are passed individually as strings separated by commas instead of as a vector.
 
 ```{r useexplfun2}
 lm_fun_expl2("am", "disp")
+
 ```
 
 # Example function that returns residuals plots and model output
@@ -207,3 +220,16 @@ mpgfit[[3]]
 # Next step: looping
 
 This post focused on using `paste()` and `as.formula()` for building model formula and then making user-defined functions for interactive use.  When working with many models we'd likely want to automate the process more by using some sort of looping.  I'll write a follow-up post on looping through variables and fitting models with the `map` family of functions from package **purrr**.  
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```
+

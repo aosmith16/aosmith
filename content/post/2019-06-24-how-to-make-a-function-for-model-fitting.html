@@ -31,6 +31,7 @@ description: "In this post I discuss how to construct the formula that can be pa
 <li><a href="#the-dots-for-passing-many-variables-to-a-function">The dots for passing many variables to a function</a></li>
 <li><a href="#example-function-that-returns-residuals-plots-and-model-output">Example function that returns residuals plots and model output</a></li>
 <li><a href="#next-step-looping">Next step: looping</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="building-a-formula-with-paste-and-as.formula" class="section level1">
@@ -186,4 +187,59 @@ mpgfit = lm_modfit(mpg)</code></pre>
 <div id="next-step-looping" class="section level1">
 <h1>Next step: looping</h1>
 <p>This post focused on using <code>paste()</code> and <code>as.formula()</code> for building model formula and then making user-defined functions for interactive use. When working with many models we’d likely want to automate the process more by using some sort of looping. I’ll write a follow-up post on looping through variables and fitting models with the <code>map</code> family of functions from package <strong>purrr</strong>.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(ggplot2) # v.3.2.0
+
+paste(&quot;mpg&quot;, &quot;~ am&quot;)
+
+as.formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) )
+
+lm( as.formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) ), data = mtcars)
+
+lm_fun = function(response) {
+  lm( as.formula( paste(response, &quot;~ am&quot;) ), data = mtcars)
+}
+
+lm_fun(response = &quot;mpg&quot;)
+lm_fun(response = &quot;wt&quot;)
+
+lm_fun2 = function(response) {
+  resp = deparse( substitute( response) )
+  lm( as.formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+}
+
+lm_fun2(response = mpg)
+
+expl = c(&quot;am&quot;, &quot;disp&quot;)
+paste(expl, collapse = &quot;+&quot;)
+
+as.formula( paste(&quot;mpg ~&quot;, paste(expl, collapse = &quot;+&quot;) ) )
+lm_fun_expl = function(expl) {
+  form = as.formula( paste(&quot;mpg ~ &quot;, paste(expl, collapse = &quot;+&quot;) ) )
+  lm(form, data = mtcars)
+}
+
+lm_fun_expl(expl = c(&quot;am&quot;, &quot;disp&quot;) )
+
+lm_fun_expl2 = function(...) {
+  form = as.formula( paste(&quot;mpg ~ &quot;, paste( c(...), collapse = &quot;+&quot;) ) )
+  lm(form, data = mtcars)
+}
+
+lm_fun_expl2(&quot;am&quot;, &quot;disp&quot;)
+
+lm_modfit = function(response) {
+  resp = deparse( substitute( response) )
+  mod = lm( as.formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+  resvfit = qplot(x = mod$fit, y = mod$res) + theme_bw()
+  resdist = qplot(x = &quot;Residual&quot;, mod$res, geom = &quot;boxplot&quot;) + theme_bw()
+  list(resvfit, resdist, anova(mod) )
+}
+
+mpgfit = lm_modfit(mpg)
+mpgfit[1:2]
+mpgfit[[3]]</code></pre>
 </div>
