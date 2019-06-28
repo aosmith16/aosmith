@@ -30,6 +30,7 @@ description: "Checking for autocorrelation must be done carefully when some obse
 <li><a href="#pad-the-dataset-with-na">Pad the dataset with NA</a></li>
 <li><a href="#plot-autocorrelation-function-of-appropriately-spaced-residuals">Plot autocorrelation function of appropriately-spaced residuals</a></li>
 <li><a href="#add-confidence-interval-to-the-acf-plot">Add confidence interval to the ACF plot</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="simulate-data-with-autocorrelation" class="section level1">
@@ -223,4 +224,62 @@ library(dplyr) # v. 0.7.5</code></pre>
 lines(1:9,-qnorm(1-.025)/sqrt(nall$n), lty = 2)
 lines(1:9, qnorm(1-.025)/sqrt(nall$n), lty = 2)</code></pre>
 <p><img src="/post/2018-06-21-time-after-time-uneven-grouped-autocorrelation_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(purrr) # v. 0.2.5
+library(dplyr) # v. 0.7.5
+
+set.seed(64)
+
+dat = map_dfr(1:9, 
+               ~tibble(unit = .x,
+                     x = runif(10, 5, 10),
+                     y = 1 + x + arima.sim(list(ar = .7), 10),
+                     time = 1:10)
+)
+head(dat, 15)
+
+dat = dat %&gt;%
+     filter(unit %in% 4:9 | time %in% c(1, 4, 7, 10) ) %&gt;%
+     filter(!unit %in% 4:6 | time %in% c(1, 10) )
+head(dat, 15)
+
+fit1 = lm(y ~ x, data = dat)
+dat$res = residuals(fit1)
+
+dat %&gt;%
+    count(unit)
+
+dat %&gt;%
+    count(unit) %&gt;%
+    filter(n == max(n) )
+
+dat = dat %&gt;%
+     arrange(unit, time)
+
+library(tidyr) # v. 0.8.1
+
+dat_expand = dat %&gt;%
+    group_by(unit) %&gt;%
+    complete(time = 1:20) 
+
+filter(dat_expand, unit == 1)
+
+acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
+
+( nall = map_df(1:9, 
+                ~dat %&gt;%
+                     group_by(unit) %&gt;%
+                     arrange(unit, time) %&gt;%
+                     summarise(lag = list( diff(time, lag = .x ) ) )
+     ) %&gt;%
+       unnest(lag) %&gt;%
+       group_by(lag) %&gt;%
+       summarise(n = n() ) )
+
+acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
+lines(1:9,-qnorm(1-.025)/sqrt(nall$n), lty = 2)
+lines(1:9, qnorm(1-.025)/sqrt(nall$n), lty = 2)</code></pre>
 </div>

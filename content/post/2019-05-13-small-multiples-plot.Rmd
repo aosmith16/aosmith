@@ -41,6 +41,7 @@ I'll also be using package **cowplot** version 0.9.4 to combine individual plots
 library(ggplot2) # v. 3.1.1
 library(tidyr) # v. 0.8.3
 library(egg) # v. 0.4.2
+
 ```
 
 # The set-up
@@ -56,6 +57,7 @@ dat = data.frame(elev = round( runif(20, 100, 500), 1),
                  grad = round( runif(20, 0, 1), 2),
                  slp = round( runif(20, 0, 35),1) )
 head(dat)
+
 ```
 
 # Using facets for small multiples
@@ -67,6 +69,7 @@ Since the three variables are currently in separate columns we'll need to *resha
 ```{r}
 datlong = gather(dat, key = "variable", value = "value", -resp)
 head(datlong)
+
 ```
 
 Now I can use `facet_wrap()` to make a separate scatterplot of `resp` vs each variable.  The argument `scales = "free_x"` allows the x axis scales to differ for each variable but leaves a single y axis.
@@ -76,6 +79,7 @@ ggplot(datlong, aes(x = value, y = resp) ) +
      geom_point() +
      theme_bw() +
      facet_wrap(~variable, scales = "free_x")
+
 ```
 
 I can use the facet strips to give the appearance of axis labels, as shown in [this Stack Overflow answer](https://stackoverflow.com/a/37574221/2461552).
@@ -88,6 +92,7 @@ ggplot(datlong, aes(x = value, y = resp) ) +
      theme(strip.background = element_blank(),
            strip.placement = "outside") +
      labs(x = NULL)
+
 ```
 
 That's a pretty nice plot to start with.  However, controlling the axis breaks in the individual panels [can be complicated](https://stackoverflow.com/questions/51735481/ggplot2-change-axis-limits-for-each-individual-facet-panel), which is something we'd commonly want to do.  
@@ -114,6 +119,7 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
      geom_point() +
      theme_bw() +
      scale_x_continuous(breaks = seq(0, 35, by = 5) )
+
 ```
 
 The function `plot_grid()` in **cowplot** is for combining plots. To make a single row of plots I use `nrow = 1`.  
@@ -126,6 +132,7 @@ cowplot::plot_grid(elevplot,
                    slpplot,
                    nrow = 1,
                    labels = "auto")
+
 ```
 
 But we want a single shared y axis, not a separate y axis on each plot.  I'll remake the combined plot, this time removing the y axis elements from all but the first plot.
@@ -140,6 +147,7 @@ cowplot::plot_grid(elevplot,
                                     axis.title.y = element_blank() ),
                    nrow = 1,
                    labels = "auto")
+
 ```
 
 This makes panels different sizes, though, which isn't ideal.  To have all the plots the same width I need to align them vertically with `align = "v"`.
@@ -157,6 +165,7 @@ cowplot::plot_grid(elevplot,
                    nrow = 1,
                    labels = "auto",
                    align = "v")
+
 ```
 
 But, unfortunately, this puts the axis space back between the plots to make them all the same width.  It turns out that **cowplot** isn't really made for plots with a single shared axis.  The **cowplot** package author points us to package **egg** for this [in this Stack Overflow answer](https://stackoverflow.com/a/47615304/2461552).
@@ -181,6 +190,7 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
      geom_point() +
      theme_bw() +
      scale_x_continuous(breaks = seq(0, 35, by = 5) )
+
 ```
 
 The `ggarrange()` function has an `nrow` argument so I can keep the plots in a single row.  
@@ -198,6 +208,7 @@ ggarrange(elevplot,
                      axis.ticks.y = element_blank(),
                      axis.title.y = element_blank() ),
           nrow = 1)
+
 ```
 
 We can bring panes closer by removing some of the space around the plot margins with the `plot.margin` in `theme()`.  I'll set the spacing for right margin of the first plot, both left and right margins of the second, and the left margin of the third.
@@ -217,6 +228,7 @@ ggarrange(elevplot +
                      axis.title.y = element_blank(),
                      plot.margin = margin(l = 1)  ),
           nrow = 1)
+
 ```
 
 # Adding plot labels with tag_facet() in **egg**
@@ -249,3 +261,15 @@ ggarrange(tag_facet(elevplot +
 ```
 
 We might want to add a right y axis to the right-most plot.  In this case we'd want to change the axis ticks length to 0 via `theme()` elements.  This can be done [separately per axis in the development version of **ggplot2**](https://github.com/tidyverse/ggplot2/pull/2934), and will be included in version 3.2.0.
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```

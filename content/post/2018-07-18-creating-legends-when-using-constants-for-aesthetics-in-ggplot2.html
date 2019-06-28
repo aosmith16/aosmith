@@ -25,6 +25,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
 <li><a href="#using-scale_color_identity-to-recognize-color-strings">Using scale_color_identity() to recognize color strings</a></li>
 <li><a href="#descriptive-strings-and-scale_color_manual">Descriptive strings and scale_color_manual()</a></li>
 <li><a href="#other-examples-on-stack-overflow">Other examples on Stack Overflow</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="the-setup" class="section level1">
@@ -127,4 +128,60 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
 <div id="other-examples-on-stack-overflow" class="section level1">
 <h1>Other examples on Stack Overflow</h1>
 <p>You can see what I would consider some of the canonical questions and answers on this topic from Stack Overflow <a href="https://stackoverflow.com/questions/10349206/add-legend-to-ggplot2-line-plot">here</a> and <a href="https://stackoverflow.com/questions/17148679/construct-a-manual-legend-for-a-complicated-plot">here</a>. (I’m sure there are others, but these are two that I’ve been linking to as duplicates recently. 😺)</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(ggplot2) # v. 3.2.0
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, color = &quot;black&quot;) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, color = &quot;red&quot;) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, color = &quot;blue&quot;)
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, color = &quot;black&quot;) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, color = &quot;red&quot;) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, color = &quot;blue&quot;) +
+     scale_color_manual(values = c(&quot;black&quot;, &quot;red&quot;, &quot;blue&quot;) )
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;black&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;red&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;blue&quot;) )
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;black&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;red&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;blue&quot;) ) +
+     scale_color_identity(guide = &quot;legend&quot;)
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;black&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;red&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;blue&quot;) ) +
+     scale_color_identity(name = &quot;Model fit&quot;,
+                          breaks = c(&quot;black&quot;, &quot;red&quot;, &quot;blue&quot;),
+                          labels = c(&quot;Linear&quot;, &quot;Quadratic&quot;, &quot;Cubic&quot;),
+                          guide = &quot;legend&quot;)
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;Linear&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;Quadratic&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;Cubic&quot;) )
+
+ggplot(mtcars, aes(mpg, hp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;Linear&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;Quadratic&quot;) ) +
+     geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;Cubic&quot;) ) +
+     scale_color_manual(name = &quot;Model fit&quot;,
+                        breaks = c(&quot;Linear&quot;, &quot;Quadratic&quot;, &quot;Cubic&quot;),
+                        values = c(&quot;Cubic&quot; = &quot;blue&quot;, &quot;Quadratic&quot; = &quot;red&quot;, &quot;Linear&quot; = &quot;black&quot;) )</code></pre>
 </div>

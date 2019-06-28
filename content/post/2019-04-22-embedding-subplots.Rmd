@@ -12,8 +12,10 @@ draft: FALSE
 description: "I first learned about embedding many small subplots into a larger plot as a way to visualize large datasets with package ggsubplot.  Embedding subplots is still possible in ggplot2 today with the annotation_custom() function.  I demonstrate one approach to do this, making many subplots in a loop and then adding them to the larger plot."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 The idea of embedded plots for visualizing a large dataset that has an overplotting problem recently came up in some discussions with students.  I first learned about embedded graphics from package **ggsubplot**.  You can still see [an old post](https://blog.revolutionanalytics.com/2012/09/visualize-complex-data-with-subplots.html) about that package and about embedded graphics in general, with examples.  However, **ggsubplot** is no longer maintained and doesn't work with current versions of **ggplot2**.
@@ -21,6 +23,12 @@ The idea of embedded plots for visualizing a large dataset that has an overplott
 I poked around a bit, and found that `annotation_custom()` is the go-to function for embedding plots in a **ggplot2** graphic.  I found a couple of recent examples for how to tackle making such plots on Stack Overflow [here](https://stackoverflow.com/a/44125392/2461552) and [here](https://stackoverflow.com/a/45417727/2461552).
 
 I'm going to work through an example of embedding subplots using the same kind of looping approach outlined in those answers.    
+
+## Table of Contents
+
+```{r toc, echo = FALSE} 
+render_toc("2019-04-22-embedding-subplots.Rmd")
+```
 
 # R packages
 
@@ -31,6 +39,7 @@ library(ggplot2) # 3.1.1
 suppressPackageStartupMessages( library(dplyr) ) # 0.8.0.1
 library(tidyr) # 0.8.3
 library(purrr) # 0.3.2
+
 ```
 
 # Cutting continuous variables into evenly-spaced categories
@@ -54,12 +63,14 @@ cuteven = function(variable, ngroups) {
          labels = paste(seq_all[-(ngroups + 1)], seq_all[-1], sep = ","),
          include.lowest = TRUE)
 }
+
 ```
 
 I'll test the function by cutting `Sepal.Length` from the `iris` dataset into 3 groups.  The new, categorical variable has three groups.  The groups are labeled with their minimum and maximum value.
 
 ```{r}
 with(iris, cuteven(Sepal.Length, ngroups = 3) )
+
 ```
 
 # Categorizing the axis variables
@@ -76,6 +87,7 @@ iris = mutate(iris,
                 group_y = cuteven(Petal.Length, 4) )
 
 glimpse(iris)
+
 ```
 
 # Extracting the coordinates for each subplot
@@ -94,6 +106,7 @@ iris = iris %>%
               sep = ",", convert = TRUE)
 
 glimpse(iris)
+
 ```
 
 # Bar plot subplots
@@ -112,6 +125,7 @@ iris %>%
      count() %>%
      ungroup() %>%
      filter(n == max(n) )
+
 ```
 
 In case a species is missing from one of the subplot groups I'll define the `limits` for the x axis in `scale_x_discrete()`.  This forces each plot to have the same x axis breaks.
@@ -137,6 +151,7 @@ ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
      theme(panel.border = element_rect(color = "grey",
                                        fill = "transparent") ) +
      ylim(0, 47)
+
 ```
 
 Once I have the plot worked out for one group I put the code into a function, `barfun`.  In this case the function takes only a dataset, since I'm hard-coding in all the axis variables, limits, etc.
@@ -155,6 +170,7 @@ barfun = function(data) {
           theme(panel.border = element_rect(color = "grey",
                                             fill = "transparent") ) +
           ylim(0, 47) 
+  
 }
 ```
 
@@ -162,6 +178,7 @@ Does this function make the same plot I made manually?  Yep. `r emo::ji("+1")`
 
 ```{r}
 barfun(data = filter(iris, max_x <= 5.5, max_y <= 2.475) )
+
 ```
 
 # Creating all the bar plot subplots
@@ -206,6 +223,7 @@ grobfun = function(min_x, max_x, min_y, max_y, subplots) {
                        xmin = min_x, ymin = min_y,
                        xmax = max_x, ymax = max_y)
 }
+
 ```
 
 I no longer need the `data` column, so I remove it to end up with only the columns I need to pass to the `grobfun()` function.  This isn't strictly necessary, but I find it makes working with `pmap()` easier.
@@ -218,6 +236,7 @@ I find this can take a little time to run when doing many subplots.
 ( allgrobs = allplots %>%
      select(-data) %>%
      mutate(grobs = pmap(., grobfun) ) )
+
 ```
 
 # Making the large plot
@@ -237,6 +256,7 @@ Here is the plot I will embed the subplots into.
        scale_fill_manual(values = c("setosa" = "#ED90A4", 
                                     "versicolor" = "#ABB150",
                                     "virginica" = "#00C1B2") ) )
+
 ```
 
 # Embedding the bar plot subplots
@@ -251,6 +271,7 @@ I think this looks nice with evenly spaced subplots but there may be times that 
 largeplot +
      allgrobs$grobs +
      ylim(1, NA)
+
 ```
 
 After polishing this plot up a bit as desired, the final plot can be saved with `ggsave()`.
@@ -265,6 +286,7 @@ I want the x axis of each plot to encompass the entire range of `Petal.Width`, s
 
 ```{r}
 range(iris$Petal.Width)
+
 ```
 
 I found the y axis to be a little trickier.  I decided to show the bars as proportions of the maximum count with `ncount` instead of as a raw count.  Since the height of bars is then a proportion of maximum instead of a count I added the sample size per group to the plot as text.  I ended up putting this in a facet strip rather than within the plot.  I went back and forth a bunch and am still not sure the final result is exactly what I want. 
@@ -289,6 +311,7 @@ ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
      facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
      theme(panel.border = element_rect(color = "grey",
                                        fill = "transparent") )
+
 ```
 
 And here's the function to make histograms for each subplot dataset, which I name `histfun`.
@@ -307,6 +330,7 @@ histfun = function(data) {
           theme(panel.border = element_rect(color = "grey",
                                             fill = "transparent") )
 }
+
 ```
 
 # Get the histograms ready to embed
@@ -320,6 +344,7 @@ allgrobs_hist = iris %>%
      mutate(subplots = map(data, histfun) ) %>%
      select(-data) %>%
      mutate(grobs = pmap(., grobfun) )
+
 ```
 
 # Embed the histogram subplots
@@ -335,6 +360,7 @@ This time the large plot needs a continuous legend.  I set the `breaks` so the m
        scale_fill_continuous(type = "viridis",
                              limits = c(.1, 2.5),
                              breaks = seq(.1, 2.5, by = .8) ) )
+
 ```
 
 And, finally, here's the plot embedded with the `Petal.Width` distribution plots. `r emo::ji("smiley")`
@@ -343,6 +369,7 @@ And, finally, here's the plot embedded with the `Petal.Width` distribution plots
 largeplot2 +
      allgrobs_hist$grobs +
      ylim(1, NA)
+
 ```
 
 # A density subplot example
@@ -365,6 +392,7 @@ ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
      facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
      theme(panel.border = element_rect(color = "grey",
                                        fill = "transparent") )
+
 ```
 
 Turning the plot code into a function for looping through groups.
@@ -383,6 +411,7 @@ densfun = function(data) {
           theme(panel.border = element_rect(color = "grey",
                                             fill = "transparent") )
 }
+
 ```
 
 Loop through to create and get the subplots ready to add to the plot.
@@ -402,9 +431,10 @@ And here's the density subplots embedded in the large plot. Not too bad!  I'm gu
 largeplot2 +
      allgrobs_dens$grobs +
      ylim(1, NA)
+
 ```
 
-# [Filled density plots](#filled-density-plots)
+# Filled density plots
 
 I belatedly realized that we can use `geom_density_ridges_gradient()` from package **ggridges** to make density plots with continuous fill.
 
@@ -423,6 +453,7 @@ ggplot(data = filter(iris, max_x <= 5.5, max_y <= 2.475),
      facet_wrap(~paste0("n = ", nrow(filter(iris, max_x <= 5.5, max_y <= 2.475) ) ) ) +
      theme(panel.border = element_rect(color = "grey",
                                        fill = "transparent") )
+
 ```
 
 Let's see how that looks as embedded plots.  I'll do the whole process in one code chunk, taking some extra time to move the legend around in the final plot.
@@ -458,3 +489,14 @@ largeplot2 +
     guides(fill = guide_colorbar(title.position = "top") )
 ```
 
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```

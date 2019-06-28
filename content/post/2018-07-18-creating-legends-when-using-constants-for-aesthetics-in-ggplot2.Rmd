@@ -44,6 +44,7 @@ I'll start by loading the **ggplot2** package.
 
 ```{r}
 library(ggplot2) # v. 3.2.0
+
 ```
 
 I'm going to make a plot of the relationship between `mpg` and `hp`, adding three fitted lines from three different linear regression models.  I will use a linear, a quadratic, and a cubic model.  I use `geom_smooth()` to make the fitted regression lines, and so add a separate `geom_smooth()` layer for each model.
@@ -58,6 +59,7 @@ ggplot(mtcars, aes(mpg, hp) ) +
      geom_smooth(method = "lm", se = FALSE, color = "black") +
      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "red") +
      geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, color = "blue")
+
 ```
 
 It would be nice to know which line came from which model, and adding a legend is one way to do that.  So how can we do this?
@@ -73,6 +75,7 @@ ggplot(mtcars, aes(mpg, hp) ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "red") +
      geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, color = "blue") +
      scale_color_manual(values = c("black", "red", "blue") )
+
 ```
 
 But nothing changes.  Unfortunately, no matter how hard I throw `scale_color_manual()` at the plot, I won't get a legend in this way.  
@@ -91,6 +94,7 @@ ggplot(mtcars, aes(mpg, hp) ) +
      geom_smooth(method = "lm", se = FALSE, aes(color = "black") ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "red") ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "blue") )
+
 ```
 
 My plot now has a legend `r emo::ji("+1")`, but the colors have changed `r emo::ji("-1")`.  The values are no longer recognized as colors since `aes()` treats these as string constants.  To get the desired colors we'll need to turn to one of the `scale_color_*()` functions.
@@ -106,6 +110,7 @@ ggplot(mtcars, aes(mpg, hp) ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "red") ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "blue") ) +
      scale_color_identity(guide = "legend")
+
 ```
 
 The colors are now correct but the legend still leaves a lot to be desired.  The name of the legend isn't useful, the order is alphabetical instead of by model complexity, and the labels are the color names instead of descriptive names that describe each model.
@@ -124,6 +129,7 @@ ggplot(mtcars, aes(mpg, hp) ) +
                           breaks = c("black", "red", "blue"),
                           labels = c("Linear", "Quadratic", "Cubic"),
                           guide = "legend")
+
 ```
 
 # Descriptive strings and scale_color_manual()
@@ -138,6 +144,7 @@ ggplot(mtcars, aes(mpg, hp) ) +
      geom_smooth(method = "lm", se = FALSE, aes(color = "Linear") ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, aes(color = "Quadratic") ) +
      geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, aes(color = "Cubic") )
+
 ```
 
 This has nicer labels, but the legend has other problems, similar to those above.  The legend name isn't informative, the order is again alphabetical instead of by model complexity, and the colors still need to be changed if we really want black, red, and blue lines.  This can all be addressed in `scale_color_manual()`.
@@ -157,8 +164,21 @@ ggplot(mtcars, aes(mpg, hp) ) +
      scale_color_manual(name = "Model fit",
                         breaks = c("Linear", "Quadratic", "Cubic"),
                         values = c("Cubic" = "blue", "Quadratic" = "red", "Linear" = "black") )
+
 ```
 
 # Other examples on Stack Overflow
 
 You can see what I would consider some of the canonical questions and answers on this topic from Stack Overflow [here](https://stackoverflow.com/questions/10349206/add-legend-to-ggplot2-line-plot) and [here](https://stackoverflow.com/questions/17148679/construct-a-manual-legend-for-a-complicated-plot).  (I'm sure there are others, but these are two that I've been linking to as duplicates recently. `r emo::ji("smiley_cat")`) 
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```

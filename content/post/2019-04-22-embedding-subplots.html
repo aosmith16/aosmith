@@ -17,6 +17,26 @@ description: "I first learned about embedding many small subplots into a larger 
 <p>The idea of embedded plots for visualizing a large dataset that has an overplotting problem recently came up in some discussions with students. I first learned about embedded graphics from package <strong>ggsubplot</strong>. You can still see <a href="https://blog.revolutionanalytics.com/2012/09/visualize-complex-data-with-subplots.html">an old post</a> about that package and about embedded graphics in general, with examples. However, <strong>ggsubplot</strong> is no longer maintained and doesn’t work with current versions of <strong>ggplot2</strong>.</p>
 <p>I poked around a bit, and found that <code>annotation_custom()</code> is the go-to function for embedding plots in a <strong>ggplot2</strong> graphic. I found a couple of recent examples for how to tackle making such plots on Stack Overflow <a href="https://stackoverflow.com/a/44125392/2461552">here</a> and <a href="https://stackoverflow.com/a/45417727/2461552">here</a>.</p>
 <p>I’m going to work through an example of embedding subplots using the same kind of looping approach outlined in those answers.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#cutting-continuous-variables-into-evenly-spaced-categories">Cutting continuous variables into evenly-spaced categories</a></li>
+<li><a href="#categorizing-the-axis-variables">Categorizing the axis variables</a></li>
+<li><a href="#extracting-the-coordinates-for-each-subplot">Extracting the coordinates for each subplot</a></li>
+<li><a href="#bar-plot-subplots">Bar plot subplots</a></li>
+<li><a href="#creating-all-the-bar-plot-subplots">Creating all the bar plot subplots</a></li>
+<li><a href="#putting-the-subplots-into-annotation_custom">Putting the subplots into annotation_custom()</a></li>
+<li><a href="#making-the-large-plot">Making the large plot</a></li>
+<li><a href="#embedding-the-bar-plot-subplots">Embedding the bar plot subplots</a></li>
+<li><a href="#histogram-subplots">Histogram subplots</a></li>
+<li><a href="#get-the-histograms-ready-to-embed">Get the histograms ready to embed</a></li>
+<li><a href="#embed-the-histogram-subplots">Embed the histogram subplots</a></li>
+<li><a href="#a-density-subplot-example">A density subplot example</a></li>
+<li><a href="#filled-density-plots">Filled density plots</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
 <p>First I’ll load the R packages I’m using today. All plotting is done via <strong>ggplot2</strong>, I do data manipulation with <strong>dplyr</strong> and <strong>tidyr</strong>, and <strong>purrr</strong> is for looping to make the subplots and then for getting the subplots into <code>annotation_custom()</code> layers.</p>
@@ -153,6 +173,7 @@ glimpse(iris)</code></pre>
           theme(panel.border = element_rect(color = &quot;grey&quot;,
                                             fill = &quot;transparent&quot;) ) +
           ylim(0, 47) 
+  
 }</code></pre>
 <p>Does this function make the same plot I made manually? Yep. 👍</p>
 <pre class="r"><code>barfun(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) )</code></pre>
@@ -361,7 +382,7 @@ allplots</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-25-1.png" width="672" /></p>
 </div>
 <div id="filled-density-plots" class="section level1">
-<h1><a href="#filled-density-plots">Filled density plots</a></h1>
+<h1>Filled density plots</h1>
 <p>I belatedly realized that we can use <code>geom_density_ridges_gradient()</code> from package <strong>ggridges</strong> to make density plots with continuous fill.</p>
 <p>Since this package is really for <a href="https://cran.r-project.org/web/packages/ggridges/vignettes/introduction.html">ridge plots</a>, I use <code>y = 1</code> to get a single density plot. This geom uses a relative scale by default so <code>stat(ndensity)</code> isn’t needed.</p>
 <pre class="r"><code>library(ggridges) # v 0.5.1
@@ -408,4 +429,229 @@ largeplot2 +
     guides(fill = guide_colorbar(title.position = &quot;top&quot;) )</code></pre>
 <pre><code># Warning: Removed 150 rows containing missing values (geom_col).</code></pre>
 <p><img src="/post/2019-04-22-embedding-subplots_files/figure-html/unnamed-chunk-27-1.png" width="672" /></p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(ggplot2) # 3.1.1
+suppressPackageStartupMessages( library(dplyr) ) # 0.8.0.1
+library(tidyr) # 0.8.3
+library(purrr) # 0.3.2
+
+cuteven = function(variable, ngroups) {
+     seq_all = seq(min(variable), max(variable), length.out = ngroups + 1)
+     cut(variable,
+         breaks = seq_all,
+         labels = paste(seq_all[-(ngroups + 1)], seq_all[-1], sep = &quot;,&quot;),
+         include.lowest = TRUE)
+}
+
+with(iris, cuteven(Sepal.Length, ngroups = 3) )
+
+iris = mutate(iris,
+                group_x = cuteven(Sepal.Length, 3),
+                group_y = cuteven(Petal.Length, 4) )
+
+glimpse(iris)
+
+iris = iris %&gt;%
+     separate(group_x, into = c(&quot;min_x&quot;, &quot;max_x&quot;), 
+              sep = &quot;,&quot;, convert = TRUE) %&gt;%
+     separate(group_y, into = c(&quot;min_y&quot;, &quot;max_y&quot;), 
+              sep = &quot;,&quot;, convert = TRUE)
+
+glimpse(iris)
+
+iris %&gt;%
+     group_by(min_x, max_x, min_y, max_y, Species) %&gt;%
+     count() %&gt;%
+     ungroup() %&gt;%
+     filter(n == max(n) )
+
+ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475), 
+       aes(x = Species, fill = Species) ) +
+     geom_bar() +
+     theme_void() +
+     scale_x_discrete(limits = c(&quot;setosa&quot;, &quot;versicolor&quot;, &quot;virginica&quot;) ) +
+     scale_fill_manual(values = c(&quot;setosa&quot; = &quot;#ED90A4&quot;, 
+                                  &quot;versicolor&quot; = &quot;#ABB150&quot;,
+                                  &quot;virginica&quot; = &quot;#00C1B2&quot;),
+                       guide  = &quot;none&quot;) +
+     theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                       fill = &quot;transparent&quot;) ) +
+     ylim(0, 47)
+
+barfun = function(data) {
+     ggplot(data = data, 
+            aes(x = Species, fill = Species) ) +
+          geom_bar() +
+          theme_void() +
+          scale_x_discrete(limits = c(&quot;setosa&quot;, &quot;versicolor&quot;, &quot;virginica&quot;) ) +
+          scale_fill_manual(values = c(&quot;setosa&quot; = &quot;#ED90A4&quot;, 
+                                       &quot;versicolor&quot; = &quot;#ABB150&quot;,
+                                       &quot;virginica&quot; = &quot;#00C1B2&quot;),
+                            guide  = &quot;none&quot;) +
+          theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                            fill = &quot;transparent&quot;) ) +
+          ylim(0, 47) 
+  
+}
+barfun(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) )
+
+allplots = iris %&gt;%
+     group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
+     group_nest() %&gt;%
+     mutate(subplots = map(data, barfun) )
+
+allplots
+allplots$subplots[[1]]
+allplots$subplots[[6]]
+grobfun = function(min_x, max_x, min_y, max_y, subplots) {
+     annotation_custom(ggplotGrob(subplots),
+                       xmin = min_x, ymin = min_y,
+                       xmax = max_x, ymax = max_y)
+}
+
+( allgrobs = allplots %&gt;%
+     select(-data) %&gt;%
+     mutate(grobs = pmap(., grobfun) ) )
+
+( largeplot = ggplot(iris, aes(x = Sepal.Length, 
+                               y = Petal.Length, 
+                               fill = Species) ) +
+       geom_blank() +
+       geom_col( aes(Inf, Inf) ) +
+       scale_fill_manual(values = c(&quot;setosa&quot; = &quot;#ED90A4&quot;, 
+                                    &quot;versicolor&quot; = &quot;#ABB150&quot;,
+                                    &quot;virginica&quot; = &quot;#00C1B2&quot;) ) )
+
+largeplot +
+     allgrobs$grobs +
+     ylim(1, NA)
+
+range(iris$Petal.Width)
+
+ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
+       aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
+     geom_histogram(binwidth = .2, center = .1) +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1 - .1, 2.5 + .1) ) +
+     scale_fill_continuous(type = &quot;viridis&quot;,
+                           guide  = &quot;none&quot;,
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                       fill = &quot;transparent&quot;) )
+
+histfun = function(data) {
+     ggplot(data = data,
+            aes(x = Petal.Width, y = stat(ncount), fill = stat(x) ) ) +
+          geom_histogram(binwidth = .2, center = .1) +
+          theme_void(base_size = 14) +
+          scale_x_continuous(limits = c(0.1 - .1, 2.5 + .1) ) +
+          scale_fill_continuous(type = &quot;viridis&quot;,
+                                guide  = &quot;none&quot;,
+                                limits = c(.1, 2.5) ) +
+          facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
+          theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                            fill = &quot;transparent&quot;) )
+}
+
+allgrobs_hist = iris %&gt;%
+     group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
+     group_nest() %&gt;%
+     mutate(subplots = map(data, histfun) ) %&gt;%
+     select(-data) %&gt;%
+     mutate(grobs = pmap(., grobfun) )
+
+( largeplot2 = ggplot(iris, aes(x = Sepal.Length, 
+                                y = Petal.Length, 
+                                fill = Petal.Width) ) +
+       geom_blank() +
+       geom_col( aes(Inf, Inf) ) +
+       scale_fill_continuous(type = &quot;viridis&quot;,
+                             limits = c(.1, 2.5),
+                             breaks = seq(.1, 2.5, by = .8) ) )
+
+largeplot2 +
+     allgrobs_hist$grobs +
+     ylim(1, NA)
+
+ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
+       aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
+     stat_density(geom = &quot;line&quot;, size = 1.25) +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1, 2.5),
+                        expand = c(0, 0) ) +
+     scale_color_viridis_c(guide  = &quot;none&quot;,
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                       fill = &quot;transparent&quot;) )
+
+densfun = function(data) {
+     ggplot(data = data,
+            aes(x = Petal.Width, y = stat(ndensity), color = stat(x) ) ) +
+          stat_density(geom = &quot;line&quot;, size = 1.25) +
+          theme_void(base_size = 14) +
+          scale_x_continuous(limits = c(0.1, 2.5),
+                             expand = c(0, 0) ) +
+          scale_color_viridis_c(guide  = &quot;none&quot;,
+                                limits = c(.1, 2.5) ) +
+          facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
+          theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                            fill = &quot;transparent&quot;) )
+}
+
+allgrobs_dens = iris %&gt;%
+     group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
+     group_nest() %&gt;%
+     mutate(subplots = map(data, densfun) ) %&gt;%
+     select(-data) %&gt;%
+     mutate(grobs = pmap(., grobfun) )
+largeplot2 +
+     allgrobs_dens$grobs +
+     ylim(1, NA)
+
+library(ggridges) # v 0.5.1
+ggplot(data = filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475),
+       aes(x = Petal.Width, y = 1, fill = stat(x) ) ) +
+     geom_density_ridges_gradient() +
+     theme_void(base_size = 14) +
+     scale_x_continuous(limits = c(0.1, 2.5),
+                        expand = c(0, 0) ) +
+     scale_fill_viridis_c(guide  = &quot;none&quot;,
+                           limits = c(.1, 2.5) ) +
+     facet_wrap(~paste0(&quot;n = &quot;, nrow(filter(iris, max_x &lt;= 5.5, max_y &lt;= 2.475) ) ) ) +
+     theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                       fill = &quot;transparent&quot;) )
+
+densfun2 = function(data) {
+  ggplot(data = data,
+         aes(x = Petal.Width, y = 1, fill = stat(x) ) ) +
+    geom_density_ridges_gradient() +
+    theme_void(base_size = 14) +
+    scale_x_continuous(limits = c(0.1, 2.5),
+                       expand = c(0, 0) ) +
+    scale_fill_viridis_c(guide  = &quot;none&quot;,
+                         limits = c(.1, 2.5) ) +
+    facet_wrap(~paste0(&quot;n = &quot;, nrow(data) ) ) +
+    theme(panel.border = element_rect(color = &quot;grey&quot;,
+                                      fill = &quot;transparent&quot;) )
+}
+allgrobs_dens2 = iris %&gt;%
+    group_by_at( vars( matches(&quot;min|max&quot;) ) ) %&gt;%
+    group_nest() %&gt;%
+    mutate(subplots = map(data, densfun2) ) %&gt;%
+    select(-data) %&gt;%
+    mutate(grobs = pmap(., grobfun) )
+
+largeplot2 +
+    allgrobs_dens2$grobs +
+    ylim(1, NA) +
+    theme_bw() +
+    theme(legend.direction = &quot;horizontal&quot;,
+          legend.position = c(.8, .25),
+          legend.background = element_blank() ) +
+    guides(fill = guide_colorbar(title.position = &quot;top&quot;) )</code></pre>
 </div>

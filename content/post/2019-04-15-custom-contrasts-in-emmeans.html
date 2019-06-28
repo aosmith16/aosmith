@@ -18,6 +18,22 @@ description: "One of the nice things about emmeans is that you can build custom 
 
 <p>Following up on a <a href="https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/">previous post</a>, where I demonstrated the basic usage of package <strong>emmeans</strong> for doing post hoc comparisons, here I’ll demonstrate how to make custom comparisons (aka <em>contrasts</em>). These are comparisons that aren’t encompassed by the built-in functions in the package.</p>
 <p>Remember that you can explore the available built-in <strong>emmeans</strong> functions for doing comparisons via <code>?"contrast-methods"</code>.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#reasons-for-custom-comparisons">Reasons for custom comparisons</a></li>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#the-dataset-and-model">The dataset and model</a></li>
+<li><a href="#treatment-vs-control-comparisons">Treatment vs control comparisons</a></li>
+<li><a href="#building-custom-contrasts">Building custom contrasts</a></li>
+<li><a href="#the-contrast-function-for-custom-comparisons">The contrast() function for custom comparisons</a></li>
+<li><a href="#using-named-lists-for-better-output">Using named lists for better output</a></li>
+<li><a href="#using-at-for-simple-comparisons">Using “at” for simple comparisons</a></li>
+<li><a href="#multiple-custom-contrasts-at-once">Multiple custom contrasts at once</a></li>
+<li><a href="#more-complicated-custom-contrasts">More complicated custom contrasts</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="reasons-for-custom-comparisons" class="section level1">
 <h1>Reasons for custom comparisons</h1>
 <p>There are a variety of reasons you might need custom comparisons instead of some of the standard, built-in ones. One common scenario that I see a lot is when we have a single control group for multiple factors, so the factors aren’t perfectly crossed. This comes up, e.g., when doing experiments that involve applying different substances (like fertilizers) at varying rates. One factor is the different substances applied and the other is different application rates. However, the control is applying nothing or water or something like that. There aren’t different rates of the control to apply, so there is a single control group for both factors.</p>
@@ -72,7 +88,7 @@ str(dat)</code></pre>
 <p>We may also be interested in some other comparisons, though. In particular, we might want to do some overall comparisons across the two factors. We will need custom contrasts for this.</p>
 </div>
 <div id="building-custom-contrasts" class="section level1">
-<h1><a href="#building-custom-contrasts">Building custom contrasts</a></h1>
+<h1>Building custom contrasts</h1>
 <p>Custom contrasts are based on the estimated marginal means output from <code>emmeans()</code>. The first step to building custom contrasts is to calculate the estimated marginal means so we have them to work with. I will name this output <code>emm1</code>.</p>
 <pre class="r"><code>emm1 = emmeans(fit1, specs = ~ sub.rate)
 emm1</code></pre>
@@ -111,7 +127,7 @@ emm1</code></pre>
 #  A2 - B2     -1.96 0.66 20 -2.972  0.0075</code></pre>
 </div>
 <div id="using-at-for-simple-comparisons" class="section level1">
-<h1><a href="#using-at-for-simple-comparisons">Using “at” for simple comparisons</a></h1>
+<h1>Using “at” for simple comparisons</h1>
 <p>Note that I didn’t need to do a custom contrast to do this particular comparison. I could have gotten the comparison I wanted by using the <code>at</code> argument with <code>pairwise</code> in <code>emmeans()</code> and choosing just the two groups I was interested in.</p>
 <pre class="r"><code>emmeans(fit1, specs = pairwise ~ sub.rate, 
          at = list(sub.rate = c(&quot;A.2&quot;, &quot;B.2&quot;) ) )</code></pre>
@@ -127,7 +143,7 @@ emm1</code></pre>
 #  A.2 - B.2    -1.96 0.66 20 -2.972  0.0075</code></pre>
 </div>
 <div id="multiple-custom-contrasts-at-once" class="section level1">
-<h1><a href="#multiple-custom-contrasts-at-once">Multiple custom contrasts at once</a></h1>
+<h1>Multiple custom contrasts at once</h1>
 <p>Multiple custom contrasts can be done simultaneously in <code>contrast()</code> by adding more comparisons to the <code>method</code> list. I’ll demonstrate this by doing the simple example comparison twice, changing only which group mean is subtracted from the other.</p>
 <p>I name both elements of the list for ease of interpretation. I find naming the list of comparisons to be a key part of doing these custom contrasts.</p>
 <pre class="r"><code>contrast(emm1, method = list(&quot;A2 - B2&quot; = A2 - B2,
@@ -177,4 +193,55 @@ Boverall = (B1 + B2)/2</code></pre>
 <pre><code>#  contrast estimate    SE df t.ratio p.value
 #  A - B       -1.47 0.466 20 -3.152  0.0050</code></pre>
 <p>Custom contrasts are all built in this same basic way. You can also build your own contrast function if there is some contrast you do all the time that is not part of <strong>emmeans</strong>. See the <a href="https://cran.r-project.org/web/packages/emmeans/vignettes/comparisons.html#linfcns">custom contrasts section</a> of the <strong>emmeans</strong> vignette for more info.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(emmeans) # v. 1.3.3
+library(magrittr) # v. 1.5
+
+dat = structure(list(sub.rate = structure(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 
+2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 4L, 4L, 4L, 4L, 4L, 5L, 5L, 5L, 
+5L, 5L), .Label = c(&quot;A.1&quot;, &quot;A.2&quot;, &quot;B.1&quot;, &quot;B.2&quot;, &quot;control&quot;), class = &quot;factor&quot;), 
+    resp = c(5.5, 4.9, 6.1, 3.6, 6.1, 3.5, 3, 4.1, 5, 4.6, 7.3, 
+    5.6, 4.8, 7.2, 6.2, 4.3, 6.6, 6.5, 5.5, 7.1, 5.4, 6.7, 6.8, 
+    8.5, 6.1)), row.names = c(NA, -25L), class = &quot;data.frame&quot;)
+
+str(dat)
+
+fit1 = lm(resp ~ sub.rate, data = dat)
+
+emmeans(fit1, specs = trt.vs.ctrlk ~ sub.rate)
+
+emm1 = emmeans(fit1, specs = ~ sub.rate)
+emm1
+
+A2 = c(0, 1, 0, 0, 0)
+B2 = c(0, 0, 0, 1, 0)
+contrast(emm1, method = list(A2 - B2) )
+
+contrast(emm1, method = list(&quot;A2 - B2&quot; = A2 - B2) )
+
+emmeans(fit1, specs = pairwise ~ sub.rate, 
+         at = list(sub.rate = c(&quot;A.2&quot;, &quot;B.2&quot;) ) )
+
+contrast(emm1, method = list(&quot;A2 - B2&quot; = A2 - B2,
+                             &quot;B2 - A2&quot; = B2 - A2) )
+
+twocomp = contrast(emm1, method = list(&quot;A2 minus B2&quot; = A2 - B2,
+                             &quot;B2 minus A2&quot; = B2 - A2),
+         adjust = &quot;mvt&quot;) %&gt;%
+     confint()
+twocomp
+
+emm1
+A1 = c(1, 0, 0, 0, 0)
+A2 = c(0, 1, 0, 0, 0)
+B1 = c(0, 0, 1, 0, 0)
+B2 = c(0, 0, 0, 1, 0)
+
+Aoverall = (A1 + A2)/2
+Boverall = (B1 + B2)/2
+
+contrast(emm1, method = list(&quot;A - B&quot; = Aoverall - Boverall) ) </code></pre>
 </div>

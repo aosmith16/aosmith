@@ -43,6 +43,7 @@ Package **HMMpa** is for a function to draw random samples from the generalized 
 library(ggplot2) # v. 3.1.0
 library(HMMpa) # v. 1.0.1
 library(MASS) # v. 7.3-51.1
+
 ```
 
 # Negative binomial with many zeros
@@ -55,6 +56,7 @@ I pull a random sample of size 200 from this distribution using `rnbinom()`.  Th
 ```{r}
 set.seed(16)
 dat = data.frame(Y = rnbinom(200, mu = 10, size = .05) )
+
 ```
 
 Below is a histogram of these data.  I've annotated the plot with the proportion of the 200 values that are 0 as well as the maximum observed count in the dataset.  There are lots of zeros!  But these data are not zero-inflated because we expect to have many 0 values under this particular distribution.
@@ -85,6 +87,7 @@ See the documentation for `rgenpois()` for the formula for the density of the ge
 ```{r}
 set.seed(16)
 dat = data.frame(Y = rgenpois(200, lambda1 = 0.5, lambda2 = 0.95) )
+
 ```
 
 Below is a histogram of these data.  Just over 50% of the values are zeros but the maximum count is over 1000! `r emo::ji("boom")`
@@ -128,12 +131,14 @@ I can use these true means along with my chosen value of `theta` to simulate dat
 
 ```{r}
 y = rnbinom(200, mu = means, size = theta)
+
 ```
 
 Now that I've made some data I can fit a model.  Since I'm using a negative binomial GLM with `x` as the explanatory variable, which is how I created the data, this model should work well.  The `glm.nb()` function is from package **MASS**.
 
 ```{r}
 fit1 = glm.nb(y ~ x)
+
 ```
 
 In this exercise I'm going to go directly to checking for excess zeros.  This means I'm skipping other important checks of model fit, such as checks for overdispersion and examining residual plots.  Don't skip these in a real analysis; having excess zeros certainly isn't the only problem we can run into with count data.
@@ -144,6 +149,7 @@ The observed data has 76 zeros (out of 200).
 
 ```{r}
 sum(y == 0)
+
 ```
 
 How many zeros is expected given the model?  I need the model estimated means and theta to answer this question.  I can get the means via `predict()` and I can pull `theta` out of the model `summary()`.
@@ -151,6 +157,7 @@ How many zeros is expected given the model?  I need the model estimated means an
 ```{r}
 preds = predict(fit1, type = "response") # estimated means
 esttheta = summary(fit1)$theta # estimated theta
+
 ```
 
 For discrete distributions like the negative binomial, the *density* distribution functions (which start with the letter "d") return the probability that the observation is equal to a given value.  This means I can use `dnbinom()` to calculate the probability of an observation being 0 for every row in the dataset.  To do this I need to provide values for the parameters of the distribution of each observation.  
@@ -165,6 +172,7 @@ The sum of these probabilities is an estimate of the number of zero values expec
 
 ```{r}
 round( sum(prop0) )
+
 ```
 
 The expected number of 0 values is ~72, very close to the 76 observed in the data.  This is no big surprise, since I fit the same model that I used to create the data.
@@ -181,6 +189,7 @@ Remember the data contain 76 zeros.
 
 ```{r}
 sum(y == 0)
+
 ```
 
 Using `dpois()`, the number of zeros given be the Poisson model is 0. `r emo::ji("open_mouth")` These data are zero-inflated compared to the Poisson distribution, and I clearly need a different approach for modeling these data.
@@ -188,7 +197,20 @@ Using `dpois()`, the number of zeros given be the Poisson model is 0. `r emo::ji
 ```{r}
 round( sum( dpois(x = 0,
            lambda = predict(fit2, type = "response") ) ) )
+
 ```
 
 This brings me back to my earlier point about checking model fit.  If I had done other standard checks of model fit for `fit2` I would have seen additional problems that would indicate the Poisson distribution did not fit these data (such as severe overdispersion).
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```
 

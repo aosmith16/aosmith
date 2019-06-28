@@ -39,6 +39,7 @@ I'll be plotting with **ggplot2** and looping with **purrr**.  I'll also be usin
 ```{r}
 library(ggplot2) # v. 3.0.0
 library(purrr) # v. 0.2.5
+
 ```
 
 # The set-up
@@ -55,6 +56,7 @@ dat = data.frame(elev = round( runif(20, 100, 500), 1),
                  long = runif(20, 122.5, 123.1),
                  nt = rpois(20, lambda = 25) )
 head(dat)
+
 ```
 
 The goal is to make scatterplots for every response variable vs every explanatory variable.  I've deemed the first three variables in the dataset to be the response variables (`elev`, `resp`, `grad`).
@@ -66,6 +68,7 @@ If all of your response or explanatory variables share some unique pattern in th
 ```{r}
 response = names(dat)[1:3]
 expl = names(dat)[4:7]
+
 ```
 
 When I know I'm going to be looping through character vectors I like to use *named* vectors.  This helps me keep track of things in the output.  
@@ -75,11 +78,13 @@ The `set_names()` function in **purrr** is super handy for naming character vect
 ```{r}
 response = set_names(response)
 response
+
 ```
 
 ```{r}
 expl = set_names(expl)
 expl
+
 ```
 
 # Create a plotting function
@@ -99,12 +104,14 @@ scatter_fun = function(x, y) {
           geom_smooth(method = "loess", se = FALSE, color = "grey74") +
           theme_bw()
 }
+
 ```
 
 Here's an example of the function output, passing in `x` and `y` as strings.  
 
 ```{r}
 scatter_fun("lat", "elev")
+
 ```
 
 *Aside*:  The `aes_string()` function has been soft-deprecated as of **ggplot2** 3.0.0 and `tidyeval` methods are now available.  For basic functions like mine this new framework is pretty straightforward to use.  However, right or wrong, I've been hesitant to send code that contains `tidyeval` code to the beginner R users I generally work with on these tasks.  I think the code looks complicated and "scary" compared to using `aes_string()`; I may change my mind with time.
@@ -122,6 +129,7 @@ scatter_fun2 = function(x, y) {
 }
 
 scatter_fun2("lat", "elev")
+
 ```
 
 # Looping through one vector of variables
@@ -140,6 +148,7 @@ The output is a list of 4 plots (since there are 4 explanatory variables).  You'
 
 ```{r, message = FALSE}
 elev_plots
+
 ```
 
 # Looping through both vectors
@@ -157,6 +166,7 @@ Since my scatterplot function is so simple I ended up using formula coding for t
 ```{r}
 all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )
+
 ```
 
 The output is a list of lists.  Each sublist contains all the plots for a single response variable.  Because I set the names for both vectors of variable names, the inner and outer lists both have names.  These names can be used to pull out individual plots.  
@@ -201,6 +211,7 @@ In this example code I save the file, which I name `all_scatterplots.pdf`, into 
 pdf("all_scatterplots.pdf")
 all_plots
 dev.off()
+
 ```
 
 ## Saving groups of plots together
@@ -223,6 +234,7 @@ iwalk(all_plots, ~{
      print(.x)
      dev.off()
 })
+
 ```
 
 ## Saving all plots separately
@@ -237,6 +249,7 @@ The result is a list of lists, so I flatten this into a single list via `flatten
 plotnames = imap(all_plots, ~paste0(.y, "_", names(.x), ".png")) %>%
      flatten()
 plotnames
+
 ```
 
 Once the file names are created I can loop through all the file names and plots simultaneously with `walk2()` and save things via `ggsave()`.  The height and width of each output file can be set as needed in `ggsave()`.  
@@ -246,6 +259,7 @@ You can see I flattened the nested list of plots into a single list to use in `w
 ```{r, eval = FALSE}
 walk2(plotnames, flatten(all_plots), ~ggsave(filename = .x, plot = .y, 
                                          height = 7, width = 7))
+
 ```
 
 ## Combining plots
@@ -258,6 +272,7 @@ Here's what that looks like for the first response variable, `elev`.
 
 ```{r, message = FALSE}
 cowplot::plot_grid(plotlist = all_plots[[1]])
+
 ```
 
 We can use a loop to combine the plots for each response variable sublist. The result could then be saved using any of the approaches shown above.  If you have many subplots per combined plot you likely will want to save the plots at a larger size so the individual plots can be clearly seen.
@@ -265,4 +280,17 @@ We can use a loop to combine the plots for each response variable sublist. The r
 ```{r, message = FALSE}
 response_plots = map(all_plots, ~cowplot::plot_grid(plotlist = .x))
 response_plots
+
+```
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
 ```

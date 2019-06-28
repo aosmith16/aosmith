@@ -27,6 +27,7 @@ description: "I show a general approach for plotting fitted lines with ggplot2 t
 <li><a href="#plotting-fitted-lines-from-an-lme-object">Plotting fitted lines from an lme object</a></li>
 <li><a href="#confidence-intervals-for-lme-objects">Confidence intervals for lme objects</a></li>
 <li><a href="#what-if-there-is-no-predict-function">What if there is no predict() function?</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="load-packages-and-dataset" class="section level1">
@@ -78,12 +79,12 @@ library(ggplot2) # v. 3.1.0</code></pre>
 <pre class="r"><code>ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_smooth(method = &quot;lm&quot;, se = FALSE)</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Here is the same plot with a 95% confidence envelope (the default interval size) as a ribbon around the fitted lines. I used <code>fill</code> to make the ribbons the same color as the lines. I increased the transparency of the ribbons by decreasing <code>alpha</code>, as well, since adding confidence ribbons for many fitted lines in one plot can end up looking pretty messy.</p>
 <pre class="r"><code>ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_smooth(method = &quot;lm&quot;, alpha = .15, aes(fill = grp))</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 </div>
 <div id="extracting-predicted-values-with-predict" class="section level1">
 <h1>Extracting predicted values with predict()</h1>
@@ -115,7 +116,7 @@ library(ggplot2) # v. 3.1.0</code></pre>
 <pre class="r"><code>ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_line(aes(y = predlm), size = 1)</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 </div>
 <div id="add-confidence-intervals-for-lm-objects" class="section level1">
 <h1>Add confidence intervals for lm objects</h1>
@@ -146,7 +147,7 @@ head(datlm)</code></pre>
      geom_point() +
      geom_ribbon( aes(ymin = lwr, ymax = upr, fill = grp, color = NULL), alpha = .15) +
      geom_line( aes(y = fit), size = 1)</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 </div>
 <div id="using-a-new-dataset-with-predict" class="section level1">
 <h1>Using a new dataset with predict()</h1>
@@ -165,7 +166,7 @@ head(datlm)</code></pre>
 <pre class="r"><code>ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_line(data = newdat, aes(y = predlm), size = 1)</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 </div>
 <div id="plotting-fitted-lines-from-an-lme-object" class="section level1">
 <h1>Plotting fitted lines from an lme object</h1>
@@ -195,7 +196,7 @@ head(newdat.lme)</code></pre>
 <pre class="r"><code>ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_rug(sides = &quot;b&quot;, size = 1) +
      geom_line(data = newdat.lme, aes(y = predlme), size = 1)</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
 </div>
 <div id="confidence-intervals-for-lme-objects" class="section level1">
 <h1>Confidence intervals for lme objects</h1>
@@ -216,9 +217,109 @@ newdat.lme$upper = with(newdat.lme, predlme + 2*sqrt(predvar) )</code></pre>
                                         color = NULL, fill = grp),
                  alpha = .15) +
           geom_line(data = newdat.lme, aes(y = predlme), size = .75)</code></pre>
-<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-26-1.png" width="672" /></p>
+<p><img src="/post/2018-11-16-plot-fitted-lines_files/figure-html/unnamed-chunk-25-1.png" width="672" /></p>
 </div>
 <div id="what-if-there-is-no-predict-function" class="section level1">
 <h1>What if there is no predict() function?</h1>
 <p>In my experience, the vast majority of modeling packages these days have <code>predict()</code> functions. If the one you are using doesn’t, though, you can usually do your own predictions with matrix multiplication of the model matrix and the fixed effects. You can see an example for the <strong>glmmADMB</strong> package from the GLMM FAQ <a href="http://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#glmmadmb">here</a>.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(nlme) # v. 3.1-137
+library(ggplot2) # v. 3.1.0
+
+theme_set(theme_bw())
+
+dat = structure(list(block = structure(c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 
+2L, 3L, 3L, 3L, 3L, 4L, 4L, 4L, 4L, 5L, 5L, 5L, 5L, 6L, 6L, 6L, 
+6L, 7L, 7L, 7L, 7L, 8L, 8L, 8L, 8L, 9L, 9L, 9L, 9L, 10L, 10L, 
+10L, 10L), .Label = c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;, &quot;F&quot;, &quot;G&quot;, &quot;H&quot;, 
+&quot;I&quot;, &quot;J&quot;), class = &quot;factor&quot;), grp = structure(c(1L, 2L, 3L, 
+4L, 1L, 2L, 3L, 4L, 1L, 2L, 3L, 4L, 1L, 2L, 3L, 4L, 1L, 2L, 3L, 
+4L, 1L, 2L, 3L, 4L, 1L, 2L, 3L, 4L, 1L, 2L, 3L, 4L, 1L, 2L, 3L, 
+4L, 1L, 2L, 3L, 4L), .Label = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;), class = &quot;factor&quot;), 
+    x1 = c(11.1, 7.9, 6.6, 7.1, 10.6, 8, 9.8, 8.2, 9.5, 5.4, 
+    15, 15.3, 10.4, 5.5, 9.1, 15.3, 12.9, 9.9, 5, 7.4, 10.4, 
+    8.2, 14.1, 4.7, 11.9, 12.5, 8.7, 7, 5.5, 5.7, 13.7, 11.8, 
+    7, 14.8, 4.9, 14.3, 7.8, 15.4, 15.2, 12.2), x2 = c(109.9, 
+    149.2, 187.4, 124.1, 190.7, 145, 110.1, 114.1, 119.9, 163.8, 
+    192.7, 158.3, 180.5, 127.7, 133.1, 137.5, 167.8, 181.8, 156.4, 
+    109.7, 143.9, 194.2, 139.1, 112.4, 194, 125.7, 127, 149.1, 
+    117.8, 170.4, 167.3, 101.1, 128, 157.8, 139.7, 193.6, 121.1, 
+    161.1, 112, 137.3), resp = c(86.5, 63.1, 10.5, 44.4, 61.9, 
+    67.7, 64.1, 59.4, 66.1, 33.2, 91.6, 116.4, 59.4, 38.6, 44.6, 
+    122.9, 87.1, 75.1, -0.8, 49.1, 70.2, 57.8, 96.4, 22.5, 74.7, 
+    116.7, 46, 39.8, 28.3, 34.1, 87, 97.1, 37.3, 126.8, 2.2, 
+    96.1, 45.3, 131.9, 107.6, 92.7)), class = &quot;data.frame&quot;, row.names = c(NA, 
+-40L))
+head(dat)
+
+ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE)
+
+ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
+     geom_point() +
+     geom_smooth(method = &quot;lm&quot;, alpha = .15, aes(fill = grp))
+
+methods(&quot;predict&quot;)
+
+fitlm = lm(resp ~ grp + x1, data = dat)
+dat$predlm = predict(fitlm)
+
+ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
+     geom_point() +
+     geom_line(aes(y = predlm), size = 1)
+
+predslm = predict(fitlm, interval = &quot;confidence&quot;)
+head(predslm)
+
+datlm = cbind(dat, predslm)
+head(datlm)
+
+ggplot(datlm, aes(x = x1, y = resp, color = grp) ) +
+     geom_point() +
+     geom_ribbon( aes(ymin = lwr, ymax = upr, fill = grp, color = NULL), alpha = .15) +
+     geom_line( aes(y = fit), size = 1)
+
+head( seq(min(dat$x1), max(dat$x1), by = .1) )
+
+newdat = expand.grid(x1 = seq(min(dat$x1), max(dat$x1), by = .1),
+                     grp = unique(dat$grp) )
+
+newdat$predlm = predict(fitlm, newdata = newdat)
+
+ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
+     geom_point() +
+     geom_line(data = newdat, aes(y = predlm), size = 1)
+
+fitlme = lme(resp ~ grp + x1 + x2, 
+             random = ~1|block,
+             data = dat)
+
+newdat.lme = data.frame(grp = dat$grp,
+                        x1 = dat$x1,
+                        x2 = median(dat$x2) )
+head(newdat.lme)
+
+newdat.lme$predlme = predict(fitlme, newdata = newdat.lme, level = 0)
+
+ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
+     geom_rug(sides = &quot;b&quot;, size = 1) +
+     geom_line(data = newdat.lme, aes(y = predlme), size = 1)
+
+des = model.matrix(formula(fitlme)[-2], newdat.lme)
+
+predvar = diag( des %*% vcov(fitlme) %*% t(des) )
+
+newdat.lme$lower = with(newdat.lme, predlme - 2*sqrt(predvar) )
+newdat.lme$upper = with(newdat.lme, predlme + 2*sqrt(predvar) )
+
+ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
+     geom_rug(sides = &quot;b&quot;, size = 1) +
+     geom_ribbon(data = newdat.lme, aes(y = NULL, ymin = lower, ymax = upper, 
+                                        color = NULL, fill = grp),
+                 alpha = .15) +
+          geom_line(data = newdat.lme, aes(y = predlme), size = .75)</code></pre>
 </div>

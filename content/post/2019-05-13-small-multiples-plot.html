@@ -28,6 +28,7 @@ description: "There are a variety of ways to combine ggplot2 plots with a single
 <li><a href="#using-cowplot-to-combine-plots">Using <strong>cowplot</strong> to combine plots</a></li>
 <li><a href="#using-egg-to-combine-plots">Using <strong>egg</strong> to combine plots</a></li>
 <li><a href="#adding-plot-labels-with-tag_facet-in-egg">Adding plot labels with tag_facet() in <strong>egg</strong></a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="load-r-packages" class="section level1">
@@ -212,4 +213,138 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
           nrow = 1)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>We might want to add a right y axis to the right-most plot. In this case we’d want to change the axis ticks length to 0 via <code>theme()</code> elements. This can be done <a href="https://github.com/tidyverse/ggplot2/pull/2934">separately per axis in the development version of <strong>ggplot2</strong></a>, and will be included in version 3.2.0.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion.</p>
+<pre class="r"><code>library(ggplot2) # v. 3.1.1
+library(tidyr) # v. 0.8.3
+library(egg) # v. 0.4.2
+
+set.seed(16)
+dat = data.frame(elev = round( runif(20, 100, 500), 1),
+                 resp = round( runif(20, 0, 10), 1),
+                 grad = round( runif(20, 0, 1), 2),
+                 slp = round( runif(20, 0, 35),1) )
+head(dat)
+
+datlong = gather(dat, key = &quot;variable&quot;, value = &quot;value&quot;, -resp)
+head(datlong)
+
+ggplot(datlong, aes(x = value, y = resp) ) +
+     geom_point() +
+     theme_bw() +
+     facet_wrap(~variable, scales = &quot;free_x&quot;)
+
+ggplot(datlong, aes(x = value, y = resp) ) +
+     geom_point() +
+     theme_bw() +
+     facet_wrap(~variable, scales = &quot;free_x&quot;, strip.position = &quot;bottom&quot;) +
+     theme(strip.background = element_blank(),
+           strip.placement = &quot;outside&quot;) +
+     labs(x = NULL)
+
+elevplot = ggplot(dat, aes(x = elev, y = resp) ) +
+     geom_point() +
+     theme_bw()
+
+gradplot = ggplot(dat, aes(x = grad, y = resp) ) +
+     geom_point() +
+     theme_bw() +
+     scale_x_continuous(breaks = seq(0, 1, by = 0.2) )
+
+slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
+     geom_point() +
+     theme_bw() +
+     scale_x_continuous(breaks = seq(0, 35, by = 5) )
+
+cowplot::plot_grid(elevplot, 
+                   gradplot, 
+                   slpplot,
+                   nrow = 1,
+                   labels = &quot;auto&quot;)
+
+cowplot::plot_grid(elevplot, 
+                   gradplot + theme(axis.text.y = element_blank(),
+                                    axis.ticks.y = element_blank(),
+                                    axis.title.y = element_blank() ), 
+                   slpplot + theme(axis.text.y = element_blank(),
+                                    axis.ticks.y = element_blank(),
+                                    axis.title.y = element_blank() ),
+                   nrow = 1,
+                   labels = &quot;auto&quot;)
+
+cowplot::plot_grid(elevplot, 
+                   gradplot + 
+                        theme(axis.text.y = element_blank(),
+                              axis.ticks.y = element_blank(),
+                              axis.title.y = element_blank() ), 
+                   slpplot + 
+                        theme(axis.text.y = element_blank(),
+                              axis.ticks.y = element_blank(),
+                              axis.title.y = element_blank() ),
+                   nrow = 1,
+                   labels = &quot;auto&quot;,
+                   align = &quot;v&quot;)
+
+elevplot = ggplot(dat, aes(x = elev, y = resp) ) +
+     geom_point() +
+     theme_bw()
+
+gradplot = ggplot(dat, aes(x = grad, y = resp) ) +
+     geom_point() +
+     theme_bw() +
+     scale_x_continuous(breaks = seq(0, 1, by = 0.2) )
+
+slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
+     geom_point() +
+     theme_bw() +
+     scale_x_continuous(breaks = seq(0, 35, by = 5) )
+
+ggarrange(elevplot, 
+          gradplot + 
+               theme(axis.text.y = element_blank(),
+                     axis.ticks.y = element_blank(),
+                     axis.title.y = element_blank() ), 
+          slpplot + 
+               theme(axis.text.y = element_blank(),
+                     axis.ticks.y = element_blank(),
+                     axis.title.y = element_blank() ),
+          nrow = 1)
+
+ggarrange(elevplot +
+               theme(axis.ticks.y = element_blank(),
+                     plot.margin = margin(r = 1) ), 
+          gradplot + 
+               theme(axis.text.y = element_blank(),
+                     axis.ticks.y = element_blank(),
+                     axis.title.y = element_blank(),
+                     plot.margin = margin(r = 1, l = 1) ), 
+          slpplot + 
+               theme(axis.text.y = element_blank(),
+                     axis.ticks.y = element_blank(),
+                     axis.title.y = element_blank(),
+                     plot.margin = margin(l = 1)  ),
+          nrow = 1)
+
+ggarrange(tag_facet(elevplot +
+                          theme(axis.ticks.y = element_blank(),
+                                plot.margin = margin(r = 1) ) +
+                          facet_wrap(~&quot;elev&quot;),
+                     tag_pool = &quot;a&quot;), 
+          tag_facet(gradplot + 
+                          theme(axis.text.y = element_blank(),
+                                axis.ticks.y = element_blank(),
+                                axis.title.y = element_blank(),
+                                plot.margin = margin(r = 1, l = 1) ) +
+                          facet_wrap(~&quot;grad&quot;), 
+                    tag_pool = &quot;b&quot; ), 
+          tag_facet(slpplot + 
+                          theme(axis.text.y = element_blank(),
+                                axis.ticks.y = element_blank(),
+                                axis.title.y = element_blank(),
+                                plot.margin = margin(l = 1)  ) +
+                          facet_wrap(~&quot;slp&quot;),
+                     tag_pool = &quot;c&quot;),
+          nrow = 1)</code></pre>
 </div>

@@ -34,17 +34,19 @@ First I'll load the packages I'm using today.
 ```{r, message = FALSE}
 library(nlme) # v. 3.1-137
 library(ggplot2) # v. 3.1.0
+
 ```
 
 I'm going to set the **ggplot2** theme to `theme_bw()`.
 
 ```{r}
 theme_set(theme_bw())
+
 ```
 
 I created a dataset to use for fitting models and used `dput()` to copy and paste it here.
 
-```{r, eval = FALSE, echo = FALSE}
+```{r setup2, eval = FALSE, echo = FALSE}
 # Code for making dataset 
      # (although I didn't set seed so making again will be different)
 dat = data.frame(block = rep(LETTERS[1:10], each = 4),
@@ -92,6 +94,7 @@ This dataset has one response variable, `resp`, along with two continuous (`x1`,
 
 ```{r}
 head(dat)
+
 ```
 
 # Plotting separate slopes with geom_smooth()
@@ -108,6 +111,7 @@ This is a linear model fit, so I use `method = "lm"`.
 ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_smooth(method = "lm", se = FALSE)
+
 ```
 
 Here is the same plot with a 95% confidence envelope (the default interval size) as a ribbon around the fitted lines.  I used `fill` to make the ribbons the same color as the lines.  I increased the transparency of the ribbons by decreasing `alpha`, as well, since adding confidence ribbons for many fitted lines in one plot can end up looking pretty messy.
@@ -116,6 +120,7 @@ Here is the same plot with a 95% confidence envelope (the default interval size)
 ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_smooth(method = "lm", alpha = .15, aes(fill = grp))
+
 ```
 
 # Extracting predicted values with predict()
@@ -128,6 +133,7 @@ You can check if the model you are using has a predict function via `methods()`.
 
 ```{r}
 methods("predict")
+
 ```
 
 You can go to the help page for the `predict()` function for a specific model type.  For example, `?predict.lme` will take you to the documentation for the `predict()` function for `lme` objects fit with `nlme::lme()`.
@@ -144,6 +150,7 @@ I can add the predicted values to the dataset.
 
 ```{r}
 dat$predlm = predict(fitlm)
+
 ```
 
 And then use these in `geom_line()` to add fitted lines based on the new `predlm` variable.
@@ -152,6 +159,7 @@ And then use these in `geom_line()` to add fitted lines based on the new `predlm
 ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_line(aes(y = predlm), size = 1)
+
 ```
 
 # Add confidence intervals for lm objects
@@ -163,6 +171,7 @@ Adding `interval = "confidence"` returns a three column matrix, where `fit` cont
 ```{r}
 predslm = predict(fitlm, interval = "confidence")
 head(predslm)
+
 ```
 
 These columns can be bound to `dat` for plotting.
@@ -170,6 +179,7 @@ These columns can be bound to `dat` for plotting.
 ```{r}
 datlm = cbind(dat, predslm)
 head(datlm)
+
 ```
 
 Now we can plot the lines using `geom_line()` and add a confidence envelope via `geom_ribbon()`.  Note I have to use an `alpha` value less than 1 to make the ribbon transparent.  I put the ribbon layer before the line in the plot so the line is drawn on top of the ribbon.
@@ -181,6 +191,7 @@ ggplot(datlm, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_ribbon( aes(ymin = lwr, ymax = upr, fill = grp, color = NULL), alpha = .15) +
      geom_line( aes(y = fit), size = 1)
+
 ```
 
 # Using a new dataset with predict()
@@ -193,6 +204,7 @@ Let's make group lines using the entire range of `x1` instead of the within-grou
 
 ```{r}
 head( seq(min(dat$x1), max(dat$x1), by = .1) )
+
 ```
 
 Then to get this full range `x1` associated with each `grp` category we can use `expand.grid()`.
@@ -200,6 +212,7 @@ Then to get this full range `x1` associated with each `grp` category we can use 
 ```{r}
 newdat = expand.grid(x1 = seq(min(dat$x1), max(dat$x1), by = .1),
                      grp = unique(dat$grp) )
+
 ```
 
 The key to making a dataset for prediction is that it *must have every variable used in the model in it*.  You will get an error if you forget a variable or make a typo in one of the variable names.  Note that the prediction dataset does not need to contain the response variable.
@@ -208,6 +221,7 @@ We use this prediction dataset with the `newdata` argument in `predict()`.  I'll
 
 ```{r}
 newdat$predlm = predict(fitlm, newdata = newdat)
+
 ```
 
 When we make the plot of the fitted lines now we can see that the line for each group covers the same range.  There are now two datasets used in the plotting code: the original for the points and `newdat` within `geom_line()`.
@@ -216,6 +230,7 @@ When we make the plot of the fitted lines now we can see that the line for each 
 ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_point() +
      geom_line(data = newdat, aes(y = predlm), size = 1)
+
 ```
 
 # Plotting fitted lines from an lme object
@@ -228,6 +243,7 @@ I'll show one more example, this time using the "real" model. `r emo::ji("grinni
 fitlme = lme(resp ~ grp + x1 + x2, 
              random = ~1|block,
              data = dat)
+
 ```
 
 We can make predictions via the `predict()` function for `lme` objects.  However, since I have two continuous explanatory variables I'll have to do this for one variable while holding the other fixed.  This is called an *added variable plot*, [which I've written about before](https://aosmith.rbind.io/2018/01/31/added-variable-plots/).
@@ -241,6 +257,7 @@ newdat.lme = data.frame(grp = dat$grp,
                         x1 = dat$x1,
                         x2 = median(dat$x2) )
 head(newdat.lme)
+
 ```
 
 I use `level = 0` in `predict()` to get the *marginal* or *population* predictions (this is equivalent to `re.form = NA` for **lme4** models).  See `?predict.lme` for more info.  
@@ -249,6 +266,7 @@ If I wanted to make conditional predictions, `block` would need to be part of `n
 
 ```{r}
 newdat.lme$predlme = predict(fitlme, newdata = newdat.lme, level = 0)
+
 ```
 
 Since this is an added variable plot (from a model with multiple continuous variables), it doesn't make a lot of sense to plot the line directly on top of the raw data points.  I switch to using a rug plot for the `x` axis so we can see where we have data.
@@ -257,6 +275,7 @@ Since this is an added variable plot (from a model with multiple continuous vari
 ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
      geom_rug(sides = "b", size = 1) +
      geom_line(data = newdat.lme, aes(y = predlme), size = 1)
+
 ```
 
 # Confidence intervals for lme objects
@@ -269,12 +288,14 @@ First we get the model matrix using the prediction dataset.  The code looks extr
 
 ```{r}
 des = model.matrix(formula(fitlme)[-2], newdat.lme)
+
 ```
 
 Then we use matrix multiplication on the model matrix and variance-covariance matrix extracted from the model with `vcov()`.  We pull out the values on the diagonal, which are the variances of the predicted values.
 
 ```{r}
 predvar = diag( des %*% vcov(fitlme) %*% t(des) )
+
 ```
 
 To construct approximate confidence intervals we can use the standard errors (square root of `predvar`) along with an appropriate multiplier.  I'm using 2 as a multiplier, but you could also figure out the appropriate $t$ multiplier based on the degrees of freedom or use 1.96 as a $z$ multiplier.
@@ -284,6 +305,7 @@ I add the confidence interval limits to the dataset for plotting.
 ```{r}
 newdat.lme$lower = with(newdat.lme, predlme - 2*sqrt(predvar) )
 newdat.lme$upper = with(newdat.lme, predlme + 2*sqrt(predvar) )
+
 ```
 
 Here's the plot, with a (very small!) confidence envelope for each line.
@@ -295,8 +317,21 @@ ggplot(dat, aes(x = x1, y = resp, color = grp) ) +
                                         color = NULL, fill = grp),
                  alpha = .15) +
           geom_line(data = newdat.lme, aes(y = predlme), size = .75)
+
 ```
 
 # What if there is no predict() function?
 
 In my experience, the vast majority of modeling packages these days have `predict()` functions.  If the one you are using doesn't, though, you can usually do your own predictions with matrix multiplication of the model matrix and the fixed effects.  You can see an example for the **glmmADMB** package from the GLMM FAQ  [here](http://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#glmmadmb).
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```

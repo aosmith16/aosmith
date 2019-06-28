@@ -44,12 +44,14 @@ I'll use functions from **purrr** to do the looping and **dplyr** for data manip
 ```{r, message = FALSE}
 library(purrr) # v. 0.2.5
 library(dplyr) # v. 0.7.5
+
 ```
 
 I'll start the simulation by setting the seed.  I mix things up in this post by using a seed of 64 instead of my go-to seed, 16. `r emo::ji("laughing")`
 
 ```{r}
 set.seed(64)
+
 ```
 
 I decided to simulate a 10-observation time series for 9 different sample units.  Each sample unit is an independent time series so I do a loop via `map_dfr()` to simulate 9 separate datasets and then bind them together into one.  
@@ -75,6 +77,7 @@ Here's the top 15 rows of this dataset.
 
 ```{r}
 head(dat, 15)
+
 ```
 
 The dataset I made has 9 sample units, all with the full time series of length 10.  I want to have three units with samples taken only every fourth sampling time and three with samples on only the first and last sampling time.  The last three units will have samples at every time.  
@@ -91,6 +94,7 @@ Now you can see the time series is no longer even in every sample unit.
 
 ```{r}
 head(dat, 15)
+
 ```
 
 # Fit model and extract residuals
@@ -107,6 +111,7 @@ I add the residuals to the dataset to keep things organized and to get ready for
 
 ```{r}
 dat$res = residuals(fit1)
+
 ```
 
 # Problems with naively using acf()
@@ -128,6 +133,7 @@ Since the units are considered to be independent of each other, the maximum lag 
 ```{r}
 dat %>%
     count(unit)
+
 ```
 
 Printing out the result wouldn't be useful for a large number of groups, so here's an alternative to look at just the maximum group size.
@@ -136,6 +142,7 @@ Printing out the result wouldn't be useful for a large number of groups, so here
 dat %>%
     count(unit) %>%
     filter(n == max(n) )
+
 ```
 
 # Order the dataset by time
@@ -145,6 +152,7 @@ Since the `acf()` function is expecting a vector that is in order by time, alway
 ```{r}
 dat = dat %>%
      arrange(unit, time)
+
 ```
 
 # Pad the dataset with NA
@@ -153,6 +161,7 @@ When I was working through this problem for the first time, I found these [lectu
 
 ```{r}
 library(tidyr) # v. 0.8.1
+
 ```
 
 You must have a variable representing the autocorrelation variable in the dataset for this approach to work.  (This may seem obvious, but I've seen datasets that rely on the order of the dataset rather than having a specific time variable.)  In this case that variable is `time`.
@@ -165,12 +174,14 @@ Since I'm working with an integer variable for `time` I can make the full sequen
 dat_expand = dat %>%
     group_by(unit) %>%
     complete(time = 1:20) 
+
 ```
 
 Here is an example of what the first group looks like in the newly expanded dataset.  It has rows added for the times that weren't sampled along with 10 rows of `NA` at the end.  
 
 ```{r}
 filter(dat_expand, unit == 1)
+
 ```
 
 # Plot autocorrelation function of appropriately-spaced residuals
@@ -183,6 +194,7 @@ This is now a plot we can use to check for the presence and amount of autocorrel
 
 ```{r}
 acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
+
 ```
 
 # Add confidence interval to the ACF plot
@@ -201,6 +213,7 @@ You can calculate your own confidence interval based on the actual number of obs
        unnest(lag) %>%
        group_by(lag) %>%
        summarise(n = n() ) )
+
 ```
 
 Here's the ACF plot with 95% CI added via `lines()`.
@@ -209,5 +222,17 @@ Here's the ACF plot with 95% CI added via `lines()`.
 acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
 lines(1:9,-qnorm(1-.025)/sqrt(nall$n), lty = 2)
 lines(1:9, qnorm(1-.025)/sqrt(nall$n), lty = 2)
+
 ```
 
+# Just the code, please
+
+```{r getlabels, echo = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+```
+
+Here's the code without all the discussion.
+
+```{r allcode, ref.label = labs, eval = FALSE}
+```
