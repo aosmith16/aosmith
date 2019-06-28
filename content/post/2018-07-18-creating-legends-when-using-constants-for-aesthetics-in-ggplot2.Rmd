@@ -175,7 +175,7 @@ You can see what I would consider some of the canonical questions and answers on
 
 ```{r getlabels, echo = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
 ```
 
 Here's the code without all the discussion.

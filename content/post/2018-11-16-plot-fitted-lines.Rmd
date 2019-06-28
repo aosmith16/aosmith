@@ -11,10 +11,26 @@ draft: FALSE
 description: "I show a general approach for plotting fitted lines with ggplot2 that works across many different model types."
 ---
 
-```{r setup, echo = FALSE, message = FALSE}
+```{r setup, include = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
+# Code for making dataset 
+     # (although I didn't set seed so making again will be different)
+dat = data.frame(block = rep(LETTERS[1:10], each = 4),
+                 grp = rep(letters[1:4], times = 10),
+                 x1 = runif(40, min = 4, max = 16),
+                 x2 = runif(40, min = 100, max = 200))
+
+dat$resp = with(dat, 2*(grp == "a") + 20*(grp == "b") +
+                     -10*(grp == "c") + 4*(grp == "d") +
+                     10*x1 + -.25*x2 +
+                     rep(rnorm(10, mean = 0, sd = 1), each = 4) +
+                     rnorm(40, mean = 0, sd = 2))
+
+dat = dplyr::mutate_if(dat, is.numeric, round, digits = 1)
+
+dput(dat)
 ```
 
 Most analyses aren't really done until we've found a way to visualize the results graphically, and I've recently been getting some questions from students on how to plot fitted lines from models.  There are some R packages that are made specifically for this purpose; see packages **effects** and **visreg**, for example.
@@ -45,25 +61,6 @@ theme_set(theme_bw())
 ```
 
 I created a dataset to use for fitting models and used `dput()` to copy and paste it here.
-
-```{r setup2, eval = FALSE, echo = FALSE}
-# Code for making dataset 
-     # (although I didn't set seed so making again will be different)
-dat = data.frame(block = rep(LETTERS[1:10], each = 4),
-                 grp = rep(letters[1:4], times = 10),
-                 x1 = runif(40, min = 4, max = 16),
-                 x2 = runif(40, min = 100, max = 200))
-
-dat$resp = with(dat, 2*(grp == "a") + 20*(grp == "b") +
-                     -10*(grp == "c") + 4*(grp == "d") +
-                     10*x1 + -.25*x2 +
-                     rep(rnorm(10, mean = 0, sd = 1), each = 4) +
-                     rnorm(40, mean = 0, sd = 2))
-
-dat = mutate_if(dat, is.numeric, round, digits = 1)
-
-dput(dat)
-```
 
 ```{r}
 dat = structure(list(block = structure(c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 
@@ -328,7 +325,7 @@ In my experience, the vast majority of modeling packages these days have `predic
 
 ```{r getlabels, echo = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
 ```
 
 Here's the code without all the discussion.

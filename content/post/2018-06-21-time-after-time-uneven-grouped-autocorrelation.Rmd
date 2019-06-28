@@ -229,7 +229,7 @@ lines(1:9, qnorm(1-.025)/sqrt(nall$n), lty = 2)
 
 ```{r getlabels, echo = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "setup2", "toc", "getlabels", "allcode")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
 ```
 
 Here's the code without all the discussion.

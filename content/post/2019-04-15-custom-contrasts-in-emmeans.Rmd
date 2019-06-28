@@ -14,7 +14,7 @@ draft: FALSE
 description: "One of the nice things about emmeans is that you can build custom comparisons for any groups or combinations of groups.  I give an example showing how to set these up."
 ---
 
-```{r setup, echo = FALSE, message = FALSE}
+```{r setup, include = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')

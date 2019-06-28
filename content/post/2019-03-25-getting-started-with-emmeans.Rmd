@@ -14,7 +14,7 @@ draft: FALSE
 description: "Post hoc comparisons are made easy in package emmeans.  This post goes through some of the basics for those just getting started with the package."
 ---
 
-```{r setup, echo = FALSE, message = FALSE}
+```{r setup, include = FALSE, message = FALSE}
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
@@ -29,6 +29,7 @@ y = with(dat, 0 +
               -.5*(f1 == "c" & f2 == "1") +
               1*(f1 == "c" & f2 == "c") +
               rnorm(n = 20, mean = 0, sd = 1) )
+
 dat$resp = round(exp(y), 1)
 ```
 
