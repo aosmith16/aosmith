@@ -57,8 +57,10 @@ math = true
   # Default format is: January 2, 2006
   dateFormat = "January 2, 2006"
 
+  subtitle = "Blog by Ariel Muldoon"
+
   # Github source
- githubsource = "https://github.com/aosmith16/aosmith/blob/master/content/post/"
+  githubsource = "https://github.com/aosmith16/aosmith/blob/master/content/post/"
 
    # Your Twitter username without the @. E.g : thibaudlepretre
   twitter = "aosmith16"
@@ -80,7 +82,7 @@ math = true
   # If false it will flat categories.
   hierarchicalCategories = true
 
-  description = "A blog on various R and statistics topics by Ariel Muldoon"
+  description = "A blog about R and statistics by Ariel Muldoon"
 
   # Customization
   # Define the behavior of the sidebar
