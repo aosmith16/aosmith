@@ -49,7 +49,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
      geom_smooth(method = &quot;lm&quot;, se = FALSE, color = &quot;black&quot;) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, color = &quot;red&quot;) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, color = &quot;blue&quot;)</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>It would be nice to know which line came from which model, and adding a legend is one way to do that. So how can we do this?</p>
 </div>
 <div id="why-wont-scale_color_manual-make-a-legend" class="section level1">
@@ -61,7 +61,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, color = &quot;red&quot;) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, color = &quot;blue&quot;) +
      scale_color_manual(values = c(&quot;black&quot;, &quot;red&quot;, &quot;blue&quot;) )</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>But nothing changes. Unfortunately, no matter how hard I throw <code>scale_color_manual()</code> at the plot, I won’t get a legend in this way.</p>
 <p>Why doesn’t this work?</p>
 <p>From the description in the <code>scale_manual</code> documentation, the manual scale functions <em>allow you to specify your own set of mappings from levels in the data to aesthetic values.</em> You can change already created mappings but not <em>construct</em> them. In <strong>ggplot2</strong>, mappings are constructed by <code>aes()</code>. Aesthetics therefore must be inside <code>aes()</code> to get a legend.</p>
@@ -74,7 +74,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
      geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;black&quot;) ) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;red&quot;) ) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;blue&quot;) )</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>My plot now has a legend 👍, but the colors have changed 👎. The values are no longer recognized as colors since <code>aes()</code> treats these as string constants. To get the desired colors we’ll need to turn to one of the <code>scale_color_*()</code> functions.</p>
 </div>
 <div id="using-scale_color_identity-to-recognize-color-strings" class="section level1">
@@ -86,7 +86,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;red&quot;) ) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;blue&quot;) ) +
      scale_color_identity(guide = &quot;legend&quot;)</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>The colors are now correct but the legend still leaves a lot to be desired. The name of the legend isn’t useful, the order is alphabetical instead of by model complexity, and the labels are the color names instead of descriptive names that describe each model.</p>
 <p>The legend name can be changed via <code>name</code>, the order can be changes via <code>breaks</code> and the labels can be changed via <code>labels</code> in <code>scale_color_identity()</code>. The order of the <code>labels</code> must be the same as the order of the <code>breaks</code>.</p>
 <p>This all means the <code>scale_color_identity()</code> code gets quite a bit more complicated. I’ve found this to be pretty standard when mapping aesthetics to constants.</p>
@@ -99,7 +99,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
                           breaks = c(&quot;black&quot;, &quot;red&quot;, &quot;blue&quot;),
                           labels = c(&quot;Linear&quot;, &quot;Quadratic&quot;, &quot;Cubic&quot;),
                           guide = &quot;legend&quot;)</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 </div>
 <div id="descriptive-strings-and-scale_color_manual" class="section level1">
 <h1>Descriptive strings and scale_color_manual()</h1>
@@ -110,7 +110,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
      geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(color = &quot;Linear&quot;) ) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 2), se = FALSE, aes(color = &quot;Quadratic&quot;) ) +
      geom_smooth(method = &quot;lm&quot;, formula = y ~ poly(x, 3), se = FALSE, aes(color = &quot;Cubic&quot;) )</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>This has nicer labels, but the legend has other problems, similar to those above. The legend name isn’t informative, the order is again alphabetical instead of by model complexity, and the colors still need to be changed if we really want black, red, and blue lines. This can all be addressed in <code>scale_color_manual()</code>.</p>
 <p>For the first two issues I will again use <code>name</code> and <code>breaks</code> to get things named and in the desired order.</p>
 <p>Colors are set via passing a vector of color names to the <code>values</code> argument in <code>scale_color_manual()</code>. Note the <code>values</code> argument is a required aesthetic in <code>scale_color_manual()</code>; if you don’t want to change the colors in the plot use <code>scale_color_discrete()</code>.</p>
@@ -123,7 +123,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
      scale_color_manual(name = &quot;Model fit&quot;,
                         breaks = c(&quot;Linear&quot;, &quot;Quadratic&quot;, &quot;Cubic&quot;),
                         values = c(&quot;Cubic&quot; = &quot;blue&quot;, &quot;Quadratic&quot; = &quot;red&quot;, &quot;Linear&quot; = &quot;black&quot;) )</code></pre>
-<p><img src="/post/2018-07-18-creating-legends-when-using-constants-for-aesthetics-in-ggplot2_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="/post/2018-07-18-manual-legends-ggplot2_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 </div>
 <div id="other-examples-on-stack-overflow" class="section level1">
 <h1>Other examples on Stack Overflow</h1>
@@ -131,7 +131,7 @@ description: 'Getting a legend in ggplot2 when the aesthetic value is set to be 
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
-<p>Here’s the code without all the discussion.</p>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-07-18-manual-legends-ggplot2.R">from here</a>.</p>
 <pre class="r"><code>library(ggplot2) # v. 3.2.0
 
 ggplot(mtcars, aes(mpg, hp) ) +

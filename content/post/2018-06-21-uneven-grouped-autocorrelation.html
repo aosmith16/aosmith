@@ -2,7 +2,7 @@
 title: 'Time after time: calculating the autocorrelation function for uneven or grouped time series'
 author: Ariel Muldoon
 date: '2018-06-27'
-slug: uneven-group-autocorrelation
+slug: uneven-grouped-autocorrelation
 categories:
   - r
   - statistics
@@ -192,7 +192,7 @@ library(dplyr) # v. 0.7.5</code></pre>
 <p>Note the use of <code>na.action = na.pass</code>, which is what makes this approach to work. The <code>lag.max</code> argument is used to set the maximum lag at which to calculate autocorrelation.</p>
 <p>This is now a plot we can use to check for the presence and amount of autocorrelation. 🎉</p>
 <pre class="r"><code>acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)</code></pre>
-<p><img src="/post/2018-06-21-time-after-time-uneven-grouped-autocorrelation_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="/post/2018-06-21-uneven-grouped-autocorrelation_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
 <div id="add-confidence-interval-to-the-acf-plot" class="section level1">
 <h1>Add confidence interval to the ACF plot</h1>
@@ -223,11 +223,11 @@ library(dplyr) # v. 0.7.5</code></pre>
 <pre class="r"><code>acf(dat_expand$res, lag.max = 9, na.action = na.pass, ci = 0)
 lines(1:9,-qnorm(1-.025)/sqrt(nall$n), lty = 2)
 lines(1:9, qnorm(1-.025)/sqrt(nall$n), lty = 2)</code></pre>
-<p><img src="/post/2018-06-21-time-after-time-uneven-grouped-autocorrelation_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="/post/2018-06-21-uneven-grouped-autocorrelation_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
-<p>Here’s the code without all the discussion.</p>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-06-21-uneven-grouped-autocorrelation.R">from here</a>.</p>
 <pre class="r"><code>library(purrr) # v. 0.2.5
 library(dplyr) # v. 0.7.5
 

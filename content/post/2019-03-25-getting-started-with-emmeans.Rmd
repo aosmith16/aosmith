@@ -14,7 +14,7 @@ draft: FALSE
 description: "Post hoc comparisons are made easy in package emmeans.  This post goes through some of the basics for those just getting started with the package."
 ---
 
-```{r setup, include = FALSE, message = FALSE}
+```{r setup, include = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
@@ -43,7 +43,7 @@ I've put together some basic examples for using **emmeans**, meant to be a compl
 
 ## Table of Contents
 
-```{r toc, echo = FALSE} 
+```{r toc, echo = FALSE, purl = FALSE} 
 render_toc("2019-03-25-getting-started-with-emmeans.Rmd")
 ```
 
@@ -289,12 +289,19 @@ We can follow the `contrast()` argument with `summary()` or `confint()` and then
 
 # Just the code, please
 
-```{r getlabels, echo = FALSE}
+```{r getlabels, echo = FALSE, purl = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
 ```
 
-Here's the code without all the discussion.
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
 
-```{r allcode, ref.label = labs, eval = FALSE}
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2019-03-25-getting-started-with-emmeans.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
 ```

@@ -12,7 +12,7 @@ draft: FALSE
 description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show three approaches to make such a plot: using facets, with package cowplot, and with package egg."
 ---
 
-```{r setup, echo = FALSE, message = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
@@ -27,7 +27,7 @@ I demonstrate three different approaches for this:
 
 ## Table of Contents
 
-```{r toc, echo = FALSE} 
+```{r toc, echo = FALSE, purl = FALSE} 
 render_toc("2019-05-13-small-multiples-plot.Rmd")
 ```
 
@@ -264,12 +264,19 @@ We might want to add a right y axis to the right-most plot.  In this case we'd w
 
 # Just the code, please
 
-```{r getlabels, echo = FALSE}
+```{r getlabels, echo = FALSE, purl = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
 ```
 
-Here's the code without all the discussion.
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
 
-```{r allcode, ref.label = labs, eval = FALSE}
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2019-05-13-small-multiples-plot.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
 ```

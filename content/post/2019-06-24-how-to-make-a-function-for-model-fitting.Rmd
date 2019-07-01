@@ -235,7 +235,7 @@ output = here::here("static", "script", paste(tools::file_path_sans_ext(input), 
 knitr::purl(input, output, documentation = 0, quiet = TRUE)
 ```
 
-Here's the code without all the discussion.  Copy and paste the code below or you can download the R script with code but no text [from here](/script/2019-06-24-how-to-make-a-function-for-model-fitting.R).
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2019-06-24-how-to-make-a-function-for-model-fitting.R).
 
 ```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
 ```
