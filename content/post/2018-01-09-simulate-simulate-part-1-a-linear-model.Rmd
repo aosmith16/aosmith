@@ -9,8 +9,10 @@ draft: FALSE
 description: "Where I discuss simulations, why I love them, and get started on a simulation series with a simple two-group linear model simulation."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 Confession:  I love simulations.  
@@ -20,6 +22,12 @@ In simulations you get to define everything about a model and then see how that 
 I find simulations incredibly useful in understanding statistical theory and assumptions of linear models.  When someone tells me with great certainty "I don't need to meet that assumption because [fill in the blank]" or asks "Does it matter that [something complicated]?", I often turn to simulations instead of textbooks to check.
 
 I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference.  Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because I must use them explicitly.  Plus it's fun to put the code together and explore the results. `r emo::ji("slightly_smiling_face")`
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-01-09-simulate-simulate-part-1-a-linear-model.Rmd")
+```
 
 # Simulate, simulate, dance to the music
 
@@ -47,6 +55,19 @@ $$y_t = \beta_0 + \beta_1*I_{(group_t=\textit{group2})} + \epsilon_t$$
 + The indicator variable, $I_{(group_t=\textit{group2})}$, is 1 when the group is "group2" and 0 otherwise, as $\beta_1$ only affects the response variable for observations in "group2"
 + $\epsilon_t$ is the random variation present for each observation that is not explained by the group variable.  These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, $\sigma^2$: $\epsilon_t \thicksim N(0, \sigma^2)$
 
+# R packages
+
+I'll use package **purrr** for looping, **broom** for extracting output of models, **dplyr** for any data manipulation, and **ggplot2** for plotting.
+
+```{r packages, message = FALSE, warning = FALSE}
+library(purrr)
+library(broom)
+suppressMessages( library(dplyr) )
+library(ggplot2)
+
+```
+
+
 # A single simulation from a two-group model
 
 I use the statistical model to build a simulation.  In this case I'll call my response variable "growth", and the two groups "group1" and "group2".  I'll have 10 observations per group (it's possible to simulate unbalanced groups but balanced groups is a good place to start).
@@ -71,6 +92,7 @@ nrep = 10
 b0 = 5
 b1 = -2
 sd = 2
+
 ```
 
 I need to create the variable I'll call "group" to use as the explanatory variable when fitting a model in R.  I use `rep()` a lot when doing simulations in order to repeat values of variables to appropriately match the scenario I'm working in.  Here I'll repeat each level of `group` 10 times (`nrep`).
@@ -95,6 +117,7 @@ is my guide for how to combine these pieces to create the simulated response var
 
 ```{r}
 ( growth = b0 + b1*(group == "group2") + eps )
+
 ```
 
 It's not necessary for this simple case, but I often store the variables I will use in fitting the model in a dataset to help keep things organized.  This becomes more important when working with more variables.  I'll skip this step today.
@@ -104,6 +127,7 @@ Once the response and explanatory variables have been created, it's time for mod
 ```{r}
 growthfit = lm(growth ~ group)
 summary(growthfit)
+
 ```
 
 # Make a function for the simulation
@@ -123,6 +147,7 @@ twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
      growthfit = lm(growth ~ group)
      growthfit
 }
+
 ```
 
 I test the function, using the same seed, to make things are working as expected and that I get the same results as above.
@@ -130,12 +155,14 @@ I test the function, using the same seed, to make things are working as expected
 ```{r}
 set.seed(16)
 twogroup_fun()
+
 ```
 
 If I want to change some element of the simulation, I can.  Here's a simulation from the same model but with a smaller standard deviation.
 
 ```{r}
 twogroup_fun(sigma = 1)
+
 ```
 
 # Repeat the simulation many times
@@ -144,14 +171,11 @@ Now that I have a working function to simulate data and fit the model, it's time
 
 This is a task I've commonly used `replicate()` for.  The `rerun()` function from package **purrr** is equivalent to `replicate()` with `simplify = FALSE`, and I'll use it here for convenience.  
 
-```{r}
-library(purrr)
-```
-
 I'll run this simulation 1000 times, resulting in a list of fitted two-group linear models based on the simulation parameters I've set.
 
 ```{r}
 sims = rerun(1000, twogroup_fun() )
+
 ```
 
 # Extracting results from the linear model
@@ -160,20 +184,18 @@ There are many elements of our model that we might be interested in exploring, i
 
 To get the coefficients and statistical tests of coefficients we can use `tidy()` from package **broom**.    
 
-```{r}
-library(broom)
-```
-
 This returns the information on coefficients and tests of those coefficients in a tidy format that is easy to work with.
 
 ```{r}
 tidy(growthfit)
+
 ```
 
 I have often been interested in understanding how the variances/standard deviations behave over the long run, in particular in mixed models.  For a linear model we can extract an estimate of the residual standard deviation from the `summary()` output.  This can be squared to get the variance as needed.
 
 ```{r}
 summary(growthfit)$sigma
+
 ```
 
 # Simulation results
@@ -182,10 +204,6 @@ Now for the fun part!  Given we know the truth, how do the parameters behave ove
 
 To extract any results of interest I loop through the list of models, which I've stored in `sims`, and pull out the element of interest.  Functions from package **purrr** are useful here for looping through the list of models.  I'll use functions from **dplyr** for any data manipulation and plot distributions via **ggplot2**.
 
-```{r}
-suppressMessages( library(dplyr) )
-library(ggplot2)
-```
 
 **Estimated differences in mean response**
 
@@ -198,6 +216,7 @@ sims %>%
      ggplot( aes(estimate) ) +
           geom_density(fill = "blue", alpha = .5) +
           geom_vline( xintercept = -2)
+
 ```
 
 It's a simulation result like this one, from a scenario involving relatively few samples of a noisy measurement that I think can be so compelling.  Sure, "on average" we get the correct result, as the peak is right around the true value of `-2`.  However, there is quite a range in the estimated coefficient across simulations, with some samples leading to overestimation and some to underestimation of the parameter.  Some models even get the sign of the coefficient wrong.  See Gelman and Carlin's 2014 paper, [Beyond Power Calculations: Assessing Type S (Sign) and Type M (Magnitude) Errors](http://www.stat.columbia.edu/~gelman/research/published/retropower_final.pdf) if you are interested in further discussion.
@@ -213,6 +232,7 @@ sims %>%
      ggplot( aes(sigma) ) +
           geom_density(fill = "blue", alpha = .5) +
           geom_vline(xintercept = 2)
+
 ```
 
 The estimated variation ranges between 1 to just over 3, and the distribution is roughly centered on the true value of 2.  Like with the coefficient above, the model performs pretty well on average but any single model can have a biased estimate of the standard deviation.   
@@ -224,6 +244,7 @@ sims %>%
      map_dbl(~summary(.x)$sigma) %>%
      {. < 2} %>%
      mean()
+
 ```
 
 **Statistical results**
@@ -239,6 +260,7 @@ sims %>%
      pull(p.value) %>%
      {. <  0.05} %>%
      mean()
+
 ```
 
 Those are the basics that I generally pull out of models, but any output from the model is fair game.  For linear models you could pull out $R^2$ or the overall F-test, etc.  
@@ -247,3 +269,21 @@ Those are the basics that I generally pull out of models, but any output from th
 
 I'll do future posts about simulating from more complicated linear models, likely starting with linear mixed models.  In particular I will explore interesting issues that crop up when estimating variances.
 
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-01-09-simulate-simulate-part-1-a-linear-model.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

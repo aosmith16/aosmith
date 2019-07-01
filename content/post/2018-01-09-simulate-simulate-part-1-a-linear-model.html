@@ -15,6 +15,21 @@ description: "Where I discuss simulations, why I love them, and get started on a
 <p>In simulations you get to define everything about a model and then see how that model behaves over the long run. It’s like getting the luxury of taking many samples instead of only the one real one we have resources for in an actual study.</p>
 <p>I find simulations incredibly useful in understanding statistical theory and assumptions of linear models. When someone tells me with great certainty “I don’t need to meet that assumption because [fill in the blank]” or asks “Does it matter that [something complicated]?”, I often turn to simulations instead of textbooks to check.</p>
 <p>I like simulations for the same reasons I like building Bayesian models and using resampling methods (i.e., Monte Carlo) for inference. Building the simulation increases my understanding of the problem and makes all the assumptions clearer to me because I must use them explicitly. Plus it’s fun to put the code together and explore the results. 🙂</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#simulate-simulate-dance-to-the-music">Simulate, simulate, dance to the music</a></li>
+<li><a href="#the-statistical-model">The statistical model</a></li>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#a-single-simulation-from-a-two-group-model">A single simulation from a two-group model</a></li>
+<li><a href="#make-a-function-for-the-simulation">Make a function for the simulation</a></li>
+<li><a href="#repeat-the-simulation-many-times">Repeat the simulation many times</a></li>
+<li><a href="#extracting-results-from-the-linear-model">Extracting results from the linear model</a></li>
+<li><a href="#simulation-results">Simulation results</a></li>
+<li><a href="#where-to-go-from-here">Where to go from here?</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="simulate-simulate-dance-to-the-music" class="section level1">
 <h1>Simulate, simulate, dance to the music</h1>
 <p>Simulations have been so helpful in my own understanding of statistical models that I find myself wishing I knew how to use them more in teaching and consulting. Being able to build a simulation could really help folks understand the strengths and weaknesses of their analysis. I haven’t managed to fit it in so far, but it’s always on my mind. Hence, this post.</p>
@@ -37,6 +52,14 @@ description: "Where I discuss simulations, why I love them, and get started on a
 <li>The indicator variable, <span class="math inline">\(I_{(group_t=\textit{group2})}\)</span>, is 1 when the group is “group2” and 0 otherwise, as <span class="math inline">\(\beta_1\)</span> only affects the response variable for observations in “group2”</li>
 <li><span class="math inline">\(\epsilon_t\)</span> is the random variation present for each observation that is not explained by the group variable. These are assumed to come from an iid normal distribution with a mean of 0 and some shared variance, <span class="math inline">\(\sigma^2\)</span>: <span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span></li>
 </ul>
+</div>
+<div id="r-packages" class="section level1">
+<h1>R packages</h1>
+<p>I’ll use package <strong>purrr</strong> for looping, <strong>broom</strong> for extracting output of models, <strong>dplyr</strong> for any data manipulation, and <strong>ggplot2</strong> for plotting.</p>
+<pre class="r"><code>library(purrr)
+library(broom)
+suppressMessages( library(dplyr) )
+library(ggplot2)</code></pre>
 </div>
 <div id="a-single-simulation-from-a-two-group-model" class="section level1">
 <h1>A single simulation from a two-group model</h1>
@@ -69,7 +92,7 @@ sd = 2</code></pre>
 <p>Now I have the fixed estimates of parameters, the variable <code>group</code> on which to base the indicator variable, and the simulated errors drawn from the defined distribution. That’s all the pieces I need to calculate my response variable.</p>
 <p>The statistical model</p>
 <p><span class="math display">\[y_t = \beta_0 + \beta_1*I_{(group_t=\textit{group2})} + \epsilon_t\]</span></p>
-<p>is my guide for how to combine these pieces to create the simulated response variable, <span class="math inline">\(y_t\)</span>. Notice I create the indicator variable in R with <code>group == &quot;group2&quot;</code> and call the simulated response variable <code>growth</code>.</p>
+<p>is my guide for how to combine these pieces to create the simulated response variable, <span class="math inline">\(y_t\)</span>. Notice I create the indicator variable in R with <code>group == "group2"</code> and call the simulated response variable <code>growth</code>.</p>
 <pre class="r"><code>( growth = b0 + b1*(group == &quot;group2&quot;) + eps )</code></pre>
 <pre><code>#  [1]  5.952827  4.749240  7.192432  2.111542  7.295659  4.063176  2.988099
 #  [8]  5.127125  7.049945  6.146284  6.694364  3.223867  1.507925  6.316427
@@ -134,7 +157,6 @@ twogroup_fun()</code></pre>
 <h1>Repeat the simulation many times</h1>
 <p>Now that I have a working function to simulate data and fit the model, it’s time to do the simulation many times. The model from each individual simulation is saved to allow exploration of long run model performance.</p>
 <p>This is a task I’ve commonly used <code>replicate()</code> for. The <code>rerun()</code> function from package <strong>purrr</strong> is equivalent to <code>replicate()</code> with <code>simplify = FALSE</code>, and I’ll use it here for convenience.</p>
-<pre class="r"><code>library(purrr)</code></pre>
 <p>I’ll run this simulation 1000 times, resulting in a list of fitted two-group linear models based on the simulation parameters I’ve set.</p>
 <pre class="r"><code>sims = rerun(1000, twogroup_fun() )</code></pre>
 </div>
@@ -142,7 +164,6 @@ twogroup_fun()</code></pre>
 <h1>Extracting results from the linear model</h1>
 <p>There are many elements of our model that we might be interested in exploring, including estimated coefficients, estimated standard deviations/variances, and the statistical results (test statistics/p-values).</p>
 <p>To get the coefficients and statistical tests of coefficients we can use <code>tidy()</code> from package <strong>broom</strong>.</p>
-<pre class="r"><code>library(broom)</code></pre>
 <p>This returns the information on coefficients and tests of those coefficients in a tidy format that is easy to work with.</p>
 <pre class="r"><code>tidy(growthfit)</code></pre>
 <pre><code># # A tibble: 2 x 5
@@ -158,8 +179,6 @@ twogroup_fun()</code></pre>
 <h1>Simulation results</h1>
 <p>Now for the fun part! Given we know the truth, how do the parameters behave over many samples?</p>
 <p>To extract any results of interest I loop through the list of models, which I’ve stored in <code>sims</code>, and pull out the element of interest. Functions from package <strong>purrr</strong> are useful here for looping through the list of models. I’ll use functions from <strong>dplyr</strong> for any data manipulation and plot distributions via <strong>ggplot2</strong>.</p>
-<pre class="r"><code>suppressMessages( library(dplyr) )
-library(ggplot2)</code></pre>
 <p><strong>Estimated differences in mean response</strong></p>
 <p>As this is a linear model about differences among groups, the estimate of <span class="math inline">\(\beta_1\)</span> is one of the statistics of primary interest. What does the distribution of differences in mean growth between groups look like? Here’s a density plot.</p>
 <pre class="r"><code>sims %&gt;%
@@ -168,7 +187,7 @@ library(ggplot2)</code></pre>
      ggplot( aes(estimate) ) +
           geom_density(fill = &quot;blue&quot;, alpha = .5) +
           geom_vline( xintercept = -2)</code></pre>
-<p><img src="/post/2018-01-09-simulate-simulate-part-1-a-linear-model_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<p><img src="/post/2018-01-09-simulate-simulate-part-1-a-linear-model_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>It’s a simulation result like this one, from a scenario involving relatively few samples of a noisy measurement that I think can be so compelling. Sure, “on average” we get the correct result, as the peak is right around the true value of <code>-2</code>. However, there is quite a range in the estimated coefficient across simulations, with some samples leading to overestimation and some to underestimation of the parameter. Some models even get the sign of the coefficient wrong. See Gelman and Carlin’s 2014 paper, <a href="http://www.stat.columbia.edu/~gelman/research/published/retropower_final.pdf">Beyond Power Calculations: Assessing Type S (Sign) and Type M (Magnitude) Errors</a> if you are interested in further discussion.</p>
 <p><strong>Estimates of the standard deviation</strong></p>
 <p>I can do a similar plot exploration of the residual standard deviation, extracting <code>sigma</code> from the model object and plotting it as a density plot.</p>
@@ -178,7 +197,7 @@ library(ggplot2)</code></pre>
      ggplot( aes(sigma) ) +
           geom_density(fill = &quot;blue&quot;, alpha = .5) +
           geom_vline(xintercept = 2)</code></pre>
-<p><img src="/post/2018-01-09-simulate-simulate-part-1-a-linear-model_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="/post/2018-01-09-simulate-simulate-part-1-a-linear-model_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <p>The estimated variation ranges between 1 to just over 3, and the distribution is roughly centered on the true value of 2. Like with the coefficient above, the model performs pretty well on average but any single model can have a biased estimate of the standard deviation.</p>
 <p>The standard deviation is underestimated a bit more than 50% of the time.</p>
 <pre class="r"><code>sims %&gt;%
@@ -201,4 +220,72 @@ library(ggplot2)</code></pre>
 <div id="where-to-go-from-here" class="section level1">
 <h1>Where to go from here?</h1>
 <p>I’ll do future posts about simulating from more complicated linear models, likely starting with linear mixed models. In particular I will explore interesting issues that crop up when estimating variances.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-01-09-simulate-simulate-part-1-a-linear-model.R">from here</a>.</p>
+<pre class="r"><code>library(purrr)
+library(broom)
+suppressMessages( library(dplyr) )
+library(ggplot2)
+
+set.seed(16)
+ngroup = 2
+nrep = 10
+b0 = 5
+b1 = -2
+sd = 2
+
+( group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep) )
+( eps = rnorm(ngroup*nrep, 0, sd) )
+( growth = b0 + b1*(group == &quot;group2&quot;) + eps )
+
+growthfit = lm(growth ~ group)
+summary(growthfit)
+
+twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
+     ngroup = 2
+     group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep)
+     eps = rnorm(ngroup*nrep, 0, sigma)
+     growth = b0 + b1*(group == &quot;group2&quot;) + eps
+     growthfit = lm(growth ~ group)
+     growthfit
+}
+
+set.seed(16)
+twogroup_fun()
+
+twogroup_fun(sigma = 1)
+
+sims = rerun(1000, twogroup_fun() )
+
+tidy(growthfit)
+
+summary(growthfit)$sigma
+
+sims %&gt;%
+     map_df(tidy) %&gt;%
+     filter(term == &quot;groupgroup2&quot;) %&gt;%
+     ggplot( aes(estimate) ) +
+          geom_density(fill = &quot;blue&quot;, alpha = .5) +
+          geom_vline( xintercept = -2)
+
+sims %&gt;%
+     map_dbl(~summary(.x)$sigma) %&gt;%
+     data.frame(sigma = .) %&gt;%
+     ggplot( aes(sigma) ) +
+          geom_density(fill = &quot;blue&quot;, alpha = .5) +
+          geom_vline(xintercept = 2)
+
+sims %&gt;%
+     map_dbl(~summary(.x)$sigma) %&gt;%
+     {. &lt; 2} %&gt;%
+     mean()
+
+sims %&gt;%
+     map_df(tidy) %&gt;%
+     filter(term == &quot;groupgroup2&quot;) %&gt;%
+     pull(p.value) %&gt;%
+     {. &lt;  0.05} %&gt;%
+     mean()</code></pre>
 </div>

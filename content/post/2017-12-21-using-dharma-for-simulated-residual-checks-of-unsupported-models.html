@@ -10,10 +10,27 @@ description: "Checking for model fit from generalized linear mixed models (GLMM)
 
 
 
+<p>One of the difficult things about working with generalized linear models (GLM) and generalized linear mixed models (GLMM) is figuring out how to interpret residual plots. We don’t really expect residual plots from a GLMM to look like one from a linear model, sure, but how do we tell when something looks “bad”?</p>
+<p>This is the situation I was in several years ago, working on an analysis involving counts from a fairly complicated study design. I was using a negative binomial generalized linear mixed models, and the residual vs fitted values plot looked, well, “funny”. But I wasn’t sure if something was wrong or if this was just how the residuals from a complicated model like this looked sometimes. At this point I dipped my toe into using simulations for model checking for the first time.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#why-use-simulations-for-model-checking">Why use simulations for model checking?</a></li>
+<li><a href="#the-dharma-package">The DHARMa package</a></li>
+<li><a href="#how-to-use-createdharma">How to use createDHARMa()</a></li>
+<li><a href="#simulations-for-models-that-have-a-simulate-function">Simulations for models that have a simulate() function</a>
+<ul>
+<li><a href="#example-using-glmmtmb">Example using glmmTMB()</a></li>
+</ul></li>
+<li><a href="#simulations-for-models-without-a-simulate-function">Simulations for models without a simulate() function</a>
+<ul>
+<li><a href="#example-using-zeroinfl">Example using zeroinfl()</a></li>
+</ul></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="why-use-simulations-for-model-checking" class="section level1">
 <h1>Why use simulations for model checking?</h1>
-<p>One of the difficult things about working with generalized linear models (GLM) and generalized linear mixed models (GLMM) is figuring out how to interpret residual plots. We don’t really expect residual plots from a GLMM to look like one from a linear model, sure, but how do we tell when something looks “bad”?</p>
-<p>This is the situation I was in several years ago, working on an analysis involving counts from a fairly complicated study design. I was using a negative binomial generalized linear mixed models, and the residual vs fitted values plot looked, well, “funny”. But was something wrong or was this just how the residuals from a complicated model like this look sometimes?</p>
 <p>Here is an example of a plot I wasn’t feeling too good about but also wasn’t certain if what I was seeing indicated a lack of fit.</p>
 <p><img src="/img/2017-12-21_bad_residual_plot.png" /><!-- --></p>
 <p>To try to figure out if what I was seeing was a problem, I fit models to response data simulated from my model. The beauty of such simulations is that I know that the model definitely <em>does</em> fit the simulated response data; the model is what created the data! I compared residuals plots from simulated data models to my real plot to help decide if what I was seeing was unusual. I looked at a fair number of simulated residual plots and decided that, yes, something was wrong with my model. I ended up moving on to a different model that worked better.</p>
@@ -24,11 +41,11 @@ description: "Checking for model fit from generalized linear mixed models (GLMM)
 <h1>The DHARMa package</h1>
 <p>I found my “brute force” simulation approach useful, but I spent a lot of time visually comparing the simulated plots to my real plot. I didn’t have a metric to help me decide if my actual residual plot seemed unusual compared to residual plots from my “true” models. This left me unable to recommend this as a general approach to folks I consult with.</p>
 <p>Since then, the author of the <a href="https://github.com/florianhartig/DHARMa"><strong>DHARMa</strong> package</a> has come up with a clever way to use a simulation-based approach for residuals checks of GLMM’s. If you are interested in trying the package out, it has <a href="https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html">a very nice vignette</a> to get you started.</p>
-<p>These days I’m been happily recommending the <strong>DHARMa</strong> packages to students I work with for residual checks of GLMM’s. However, students aren’t always working with models that <strong>DHARMa</strong> currently supports. Luckily, <strong>DHARMa</strong> can simulate residuals for any model as long as the user can provide simulated values to the <code>createDHARMa</code> function. Below I show how to do this for a couple of different situations.</p>
+<p>These days I’m been happily recommending the <strong>DHARMa</strong> packages to students I work with for residual checks of GLMM’s. However, students aren’t always working with models that <strong>DHARMa</strong> currently supports. Luckily, <strong>DHARMa</strong> can simulate residuals for any model as long as the user can provide simulated values to the <code>createDHARMa()</code> function. Below I show how to do this for a couple of different situations.</p>
 </div>
 <div id="how-to-use-createdharma" class="section level1">
 <h1>How to use createDHARMa()</h1>
-<p>In order to use <code>createDHARMa</code>, the user needs to provide three pieces of information.</p>
+<p>In order to use <code>createDHARMa()</code>, the user needs to provide three pieces of information.</p>
 <ul>
 <li>Simulated response vectors</li>
 <li>Observed data</li>
@@ -38,77 +55,73 @@ description: "Checking for model fit from generalized linear mixed models (GLMM)
 </div>
 <div id="simulations-for-models-that-have-a-simulate-function" class="section level1">
 <h1>Simulations for models that have a simulate() function</h1>
-<p>When a function has a <code>simulate</code> function, getting the simulations needed to use <code>createDHARMa</code> can be comparatively straightforward.</p>
+<p>When a function has a <code>simulate()</code> function, getting the simulations needed to use <code>createDHARMa()</code> can be comparatively straightforward.</p>
 <div id="example-using-glmmtmb" class="section level2">
 <h2>Example using glmmTMB()</h2>
-<p>The <code>glmmTMB</code> function from package <strong>glmmTMB</strong> is one of those models that <strong>DHARMa</strong> doesn’t currently support. (<em>2018-04-05 update: the development version of DHARMA <a href="https://github.com/florianhartig/DHARMa/issues/16">now supports glmmTMB objects for glmmTMB 0.2.1</a>. I believe the example below is still useful for showing how to work with DHARMa-unsupported model types that have a simulate() function.</em>)</p>
-<p>The <code>glmmTMB</code> function does have a <code>simulate</code> function.</p>
+<p>The <code>glmmTMB()</code> function from package <strong>glmmTMB</strong> is one of those models that <strong>DHARMa</strong> doesn’t currently support. (<em>2018-04-05 update: the development version of DHARMA <a href="https://github.com/florianhartig/DHARMa/issues/16">now supports glmmTMB objects for glmmTMB 0.2.1</a>. I believe the example below is still useful for showing how to work with DHARMa-unsupported model types that have a simulate() function.</em>)</p>
+<p>There is a <code>simulate()</code> function for glmmTMB objects.</p>
 <pre class="r"><code>library(DHARMa) # version 0.1.5
 library(glmmTMB) # version 0.1.1</code></pre>
-<p>I’m going to use one of the models from the <strong>glmmTMB</strong> documentation to demonstrate how to make the simulations and then use them in <code>createDHARMa</code>.</p>
-<p>Below I fit zero-inflated negative binomial model with <code>glmmTMB</code>.</p>
+<p>I’m going to use one of the models from the <strong>glmmTMB</strong> documentation to demonstrate how to make the simulations and then use them in <code>createDHARMa()</code>.</p>
+<p>Below I fit zero-inflated negative binomial model with <code>glmmTMB()</code>.</p>
 <pre class="r"><code>fit_nbz = glmmTMB(count ~ spp + mined + (1|site), 
                   zi = ~spp + mined, 
                   family = nbinom2, data = Salamanders)</code></pre>
-<p>If I try to calculate the scaled residuals via <strong>DHARMa</strong> functions, I get a warning and then an error. <strong>DHARMa</strong> attempts to make predictions from the model to simulate with, but it fails.</p>
-<pre class="r"><code>simulateResiduals(fittedModel = fit_nbz, n = 250)</code></pre>
-<pre><code># Object of Class DHARMa with simulated residuals based on 250 simulations with refit = FALSE . See ?DHARMa::simulateResiduals for help. 
-#  
-# Scaled residual values: 0.12 0.492 0.424 0.672 0.644 0.568 0.456 0.672 0.836 0.556 0.392 0.004 0.452 0.116 0.084 0.296 0.184 0.54 0.576 0.56 ...</code></pre>
-<p>This is an indication I’ll need to use <code>createDHARMa</code> to make the residuals instead.</p>
-<p>I can simulate from my model via the <code>simulate</code> function (see the documentation for <code>simulate.glmmTMB</code> for details). I usually do at least 1000 simulations if it isn’t too time-consuming. I’ll do only 10 here as an example.</p>
+<p>If you try to calculate the scaled residuals via <strong>DHARMa</strong> functions for an unsupported model, you will get a warning and then an error. <strong>DHARMa</strong> attempts to make predictions from the model to simulate with, but it will then fail.</p>
+<p>This is an indication that you’d to use <code>createDHARMa()</code> to make the residuals instead.</p>
+<p>I can simulate from my model via the <code>simulate()</code> function (see the documentation for <code>?simulate.glmmTMB</code> for details). I usually do at least 1000 simulations if it isn’t too time-consuming. I’ll do only 10 here as an example.</p>
 <pre class="r"><code>sim_nbz = simulate(fit_nbz, nsim = 10)</code></pre>
 <p>The result is a list of simulated response vectors.</p>
 <pre class="r"><code>str(sim_nbz)</code></pre>
 <pre><code># &#39;data.frame&#39;: 644 obs. of  10 variables:
-#  $ sim_1 : num  0 0 0 1 2 0 6 1 2 3 ...
-#  $ sim_2 : num  0 0 0 0 1 4 0 7 0 1 ...
-#  $ sim_3 : num  0 0 0 0 0 0 8 0 5 3 ...
-#  $ sim_4 : num  0 0 0 0 0 0 0 6 11 3 ...
-#  $ sim_5 : num  0 0 0 3 0 0 0 0 7 1 ...
-#  $ sim_6 : num  0 0 0 2 6 0 0 5 1 0 ...
-#  $ sim_7 : num  0 0 0 0 0 4 0 0 1 2 ...
-#  $ sim_8 : num  1 0 0 2 1 2 3 0 5 3 ...
-#  $ sim_9 : num  0 0 0 1 1 2 1 2 5 0 ...
-#  $ sim_10: num  0 0 0 0 2 1 3 1 0 0 ...</code></pre>
-<p>I need these in a matrix, not a list, where each column contains a simulated response vector and each row is an observation. I’ll collapse the list into a matrix by using <code>cbind</code> in <code>do.call</code>.</p>
+#  $ sim_1 : num  1 1 0 0 2 0 1 0 14 1 ...
+#  $ sim_2 : num  0 0 0 2 0 1 2 0 6 5 ...
+#  $ sim_3 : num  0 0 0 1 3 1 2 0 0 0 ...
+#  $ sim_4 : num  0 0 0 0 1 3 6 0 3 1 ...
+#  $ sim_5 : num  1 0 5 0 1 3 2 5 2 2 ...
+#  $ sim_6 : num  0 0 0 2 1 2 0 1 9 0 ...
+#  $ sim_7 : num  0 0 0 0 3 4 6 0 0 0 ...
+#  $ sim_8 : num  0 0 0 1 0 1 0 3 2 3 ...
+#  $ sim_9 : num  0 0 0 0 1 0 4 0 3 9 ...
+#  $ sim_10: num  0 0 0 0 2 1 1 2 3 12 ...
+#  - attr(*, &quot;seed&quot;)= int  10403 1 -537199090 444372601 -1868766709 1060936506 -1912847812 -237895297 1019579093 -2071819540 ...</code></pre>
+<p>I need these in a matrix, not a list, where each column contains a simulated response vector and each row is an observation. I’ll collapse the list into a matrix by using <code>cbind()</code> in <code>do.call</code>.</p>
 <pre class="r"><code>sim_nbz = do.call(cbind, sim_nbz)
 head(sim_nbz)</code></pre>
 <pre><code>#      sim_1 sim_2 sim_3 sim_4 sim_5 sim_6 sim_7 sim_8 sim_9 sim_10
-# [1,]     0     0     0     0     0     0     0     1     0      0
-# [2,]     0     0     0     0     0     0     0     0     0      0
-# [3,]     0     0     0     0     0     0     0     0     0      0
-# [4,]     1     0     0     0     3     2     0     2     1      0
-# [5,]     2     1     0     0     0     6     0     1     1      2
-# [6,]     0     4     0     0     0     0     4     2     2      1</code></pre>
-<p>Now I can pass these to <code>createDHARMa</code> along with observed values and model predictions. I set <code>integerResponse</code> to <code>TRUE</code>, as well, as I’m working with counts.</p>
+# [1,]     1     0     0     0     1     0     0     0     0      0
+# [2,]     1     0     0     0     0     0     0     0     0      0
+# [3,]     0     0     0     0     5     0     0     0     0      0
+# [4,]     0     2     1     0     0     2     0     1     0      0
+# [5,]     2     0     3     1     1     1     3     0     1      2
+# [6,]     0     1     1     3     3     2     4     1     0      1</code></pre>
+<p>Now I can pass these to <code>createDHARMa()</code> along with observed values and model predictions. I set <code>integerResponse</code> to <code>TRUE</code>, as well, as I’m working with counts.</p>
 <pre class="r"><code>sim_res_nbz = createDHARMa(simulatedResponse = sim_nbz, 
                            observedResponse = Salamanders$count,
                            fittedPredictedResponse = predict(fit_nbz),
                            integerResponse = TRUE)</code></pre>
-<p>This function creates the scaled residuals that can be used to make residual plots via <strong>DHARMa</strong>’s <code>plotSimulatedResiduals</code>.</p>
+<p>This function creates the scaled residuals that can be used to make residual plots via <strong>DHARMa</strong>’s <code>plotSimulatedResiduals()</code>. (In current versions of <strong>DHARMa</strong> just use <code>plot()</code> instead of <code>plotSimulatedResiduals()</code>.)</p>
 <p>Remember I’ve only done 10 simulations here, so this particular set of plots don’t look very nice.</p>
 <pre class="r"><code>plotSimulatedResiduals(sim_res_nbz)</code></pre>
-<pre><code># plotSimulatedResiduals is deprecated, switch your code to using the plot function</code></pre>
-<p><img src="/post/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="/post/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 </div>
 </div>
 <div id="simulations-for-models-without-a-simulate-function" class="section level1">
-<h1><a href="#simulations-for-models-without-a-simulate-function">Simulations for models without a simulate() function</a></h1>
-<p>The <code>simulate</code> function did most of the heavy lifting for me in the <code>glmmTMB</code> example. Not all models have a <code>simulate</code> function, though. This doesn’t mean I can’t use <strong>DHARMa</strong>, but it does mean I have to put more effort in up front.</p>
+<h1>Simulations for models without a simulate() function</h1>
+<p>The <code>simulate()</code> function did most of the heavy lifting for me in the <code>glmmTMB</code> example. Not all models have a <code>simulate()</code> function, though. This doesn’t mean I can’t use <strong>DHARMa</strong>, but it does mean I have to put more effort in up front.</p>
 <p>I will do the following simulations“by hand” in R, more-or-less following the method shown <a href="https://stats.stackexchange.com/a/189052/29350">in this answer on CrossValidated</a>.</p>
 <div id="example-using-zeroinfl" class="section level2">
 <h2>Example using zeroinfl()</h2>
-<p>The <code>zeroinfl</code> function from package <strong>pscl</strong> is an example of a model that doesn’t have a <code>simulate</code> function and is unsupported by <strong>DHARMa</strong>. I will use this in my next example.</p>
+<p>The <code>zeroinfl()</code> function from package <strong>pscl</strong> is an example of a model that doesn’t have a <code>simulate()</code> function and is unsupported by <strong>DHARMa</strong>. I will use this in my next example.</p>
 <p>I will also load package <strong>VGAM</strong>, which has a function for making random draws from a zero-inflated negative binomial distribution.</p>
 <pre class="r"><code>library(pscl) # version 1.5.2
 library(VGAM) # version 1.0-4</code></pre>
-<p>I will use a <code>zeroinfl</code> documentation example in this section. The zero-inflated negative binomial model is below.</p>
+<p>I will use a <code>zeroinfl()</code> documentation example in this section. The zero-inflated negative binomial model is below.</p>
 <pre class="r"><code>fit_zinb = zeroinfl(art ~ . | 1, 
                     data = bioChemists, 
                     dist = &quot;negbin&quot;)</code></pre>
 <p>In order to make my own simulations, I’ll need both the model-predicted count and the model-predicted probability of a 0 for each observation in the dataset. I’ll also need an estimate of the negative binomial dispersion parameter, <span class="math inline">\(\theta\)</span>.</p>
-<p>The <code>predict</code> function for <code>zeroinfl</code> models lets the user define the kind of prediction desired. I use <code>predict</code> twice, once to extra the predicted counts and once to extract the predicted probability of 0.</p>
+<p>The <code>predict()</code> function for <code>zeroinfl</code> models lets the user define the kind of prediction desired. I use <code>predict()</code> twice, once to extra the predicted counts and once to extract the predicted probability of 0.</p>
 <pre class="r"><code># Predicted probabilities
 p = predict(fit_zinb, type = &quot;zero&quot;)
 # Predicted counts
@@ -117,32 +130,83 @@ mus = predict(fit_zinb, type = &quot;count&quot;)</code></pre>
 <pre class="r"><code>fit_zinb$theta</code></pre>
 <pre><code># [1] 2.264391</code></pre>
 <p>Now that I have these, I can make random draws from a zero-inflated negative distribution using <code>rzinegbin</code> from package <strong>VGAM</strong>.</p>
-<p>It took me awhile to figure out which arguments I needed to use in <code>rzinegbin</code>. I need to provide the predicted counts to the <code>&quot;munb&quot;</code> argument and the predicted probabilities to the <code>&quot;pstr0&quot;</code> argument. The <code>&quot;size&quot;</code> argument is the estimate of the dispersion parameter. And the <code>&quot;n&quot;</code> arguments indicates the number of simulated values needed, in this case the same number as the rows in the original dataset.</p>
+<p>It took me awhile to figure out which arguments I needed to use in <code>rzinegbin</code>. I need to provide the predicted counts to the <code>"munb"</code> argument and the predicted probabilities to the <code>"pstr0"</code> argument. The <code>"size"</code> argument is the estimate of the dispersion parameter. And the <code>"n"</code> arguments indicates the number of simulated values needed, in this case the same number as the rows in the original dataset.</p>
 <pre class="r"><code>sim1 = rzinegbin(n = nrow(bioChemists),
                  size = fit_zinb$theta,
                  pstr0 = p,
                  munb = mus)</code></pre>
-<p>I use <code>replicate</code> to draw more than one simulated vector. The first argument of <code>replicate</code>, <code>&quot;n&quot;</code>, indicates the number of times to evaluate the given expression. Here I make 10 simulated response vectors.</p>
+<p>I use <code>replicate()</code> to draw more than one simulated vector. The first argument of <code>replicate()</code>, <code>"n"</code>, indicates the number of times to evaluate the given expression. Here I make 10 simulated response vectors.</p>
 <pre class="r"><code>sim_zinb = replicate(10, rzinegbin(n = nrow(bioChemists),
                                    size = fit_zinb$theta,
                                    pstr0 = p,
                                    munb = mus) )</code></pre>
-<p>The output of <code>replicate</code> in this case is a matrix, with one simulated response vector in every column and an observation in every row. This is ready for use in <code>createDHARMa</code>.</p>
+<p>The output of <code>replicate()</code> in this case is a matrix, with one simulated response vector in every column and an observation in every row. This is ready for use in <code>createDHARMa()</code>.</p>
 <pre class="r"><code>head(sim_zinb)</code></pre>
 <pre><code>#      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
-# [1,]    0    2    1    5    0    4    0    5    0     2
-# [2,]    1    0    2    0    0    0    2    1    0     1
-# [3,]    2    2    0    1    0    1    0    1    0     1
-# [4,]    3    4    1    0    0    0    0    0    1     2
-# [5,]    0    2    1    4    1    1    2    0    1     0
-# [6,]    0    0    1    1    0    0    0    1    0     1</code></pre>
-<p>Making the simulations was the hard part. Now that I have them, <code>createDHARMa</code> works exactly the same way as in the <code>glmmTMB</code> example.</p>
+# [1,]    3    1    1    1    3    3    0    4    1     1
+# [2,]    0    0    2    0    0    1    1    2    1     0
+# [3,]    0    0    4    0    0    0    1    0    3     0
+# [4,]    1    3    0    6    0    0    4    5    1     0
+# [5,]    7    4    4    5    1    3    3    5    7     0
+# [6,]    0    0    5    0    0    0    0    1    4     1</code></pre>
+<p>Making the simulations was the hard part. Now that I have them, <code>createDHARMa()</code> works exactly the same way as in the <code>glmmTMB</code> example.</p>
 <pre class="r"><code>sim_res_zinb = createDHARMa(simulatedResponse = sim_zinb,
                             observedResponse = bioChemists$art,
                             fittedPredictedResponse = predict(fit_zinb, type = &quot;response&quot;),
                             integerResponse = TRUE)</code></pre>
 <pre class="r"><code>plotSimulatedResiduals(sim_res_zinb)</code></pre>
-<pre><code># plotSimulatedResiduals is deprecated, switch your code to using the plot function</code></pre>
-<p><img src="/post/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="/post/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 </div>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2017-12-21-using-dharma-for-simulated-residual-checks-of-unsupported-models.R">from here</a>.</p>
+<pre class="r"><code>library(DHARMa) # version 0.1.5
+library(glmmTMB) # version 0.1.1
+
+fit_nbz = glmmTMB(count ~ spp + mined + (1|site), 
+                  zi = ~spp + mined, 
+                  family = nbinom2, data = Salamanders)
+
+sim_nbz = simulate(fit_nbz, nsim = 10)
+str(sim_nbz)
+
+sim_nbz = do.call(cbind, sim_nbz)
+head(sim_nbz)
+
+sim_res_nbz = createDHARMa(simulatedResponse = sim_nbz, 
+                           observedResponse = Salamanders$count,
+                           fittedPredictedResponse = predict(fit_nbz),
+                           integerResponse = TRUE)
+plotSimulatedResiduals(sim_res_nbz)
+
+library(pscl) # version 1.5.2
+library(VGAM) # version 1.0-4
+
+fit_zinb = zeroinfl(art ~ . | 1, 
+                    data = bioChemists, 
+                    dist = &quot;negbin&quot;)
+
+# Predicted probabilities
+p = predict(fit_zinb, type = &quot;zero&quot;)
+# Predicted counts
+mus = predict(fit_zinb, type = &quot;count&quot;)
+fit_zinb$theta
+
+sim1 = rzinegbin(n = nrow(bioChemists),
+                 size = fit_zinb$theta,
+                 pstr0 = p,
+                 munb = mus)
+
+sim_zinb = replicate(10, rzinegbin(n = nrow(bioChemists),
+                                   size = fit_zinb$theta,
+                                   pstr0 = p,
+                                   munb = mus) )
+head(sim_zinb)
+
+sim_res_zinb = createDHARMa(simulatedResponse = sim_zinb,
+                            observedResponse = bioChemists$art,
+                            fittedPredictedResponse = predict(fit_zinb, type = &quot;response&quot;),
+                            integerResponse = TRUE)
+plotSimulatedResiduals(sim_res_zinb)</code></pre>
 </div>

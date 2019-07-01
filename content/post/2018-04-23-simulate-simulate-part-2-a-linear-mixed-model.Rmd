@@ -14,13 +14,21 @@ draft: FALSE
 description: "In my second simulation example I show how to simulate data from a basic two-level hierarchical design.  I go on to explore how well the random effects variance component is estimated for different sample sizes."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation.  I've seen instances where residual autocorrelation isn't detectable when I *know* it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance.  Such results are often due to small sample sizes, which even in this era of big data still isn't so unusual in ecology.  I've found exploring the effect of sample size on statistical results to be quite eye-opening `r emo::ji("eye")`.
 
 In [my first simulation post](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) I showed how to simulate data for a basic linear model. Today I'll be talking about how to simulate data for a linear mixed model. So I'm still working with normally distributed residuals but will add an additional level of variation.
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-04-23-simulate-simulate-part-2-a-linear-mixed-model.Rmd")
+```
 
 # Simulate, simulate, dance to the music
 
@@ -73,6 +81,7 @@ nplot = 4
 mu = 10
 sds = 2
 sd = 1
+
 ```
 
 I need to create a `stand` variable, containing unique names for the five sampled stands.  I use capital letters for this.  Each stand name will be repeated four times, because each one was measured four times (i.e., there are four plots in each stand).
@@ -107,12 +116,14 @@ I make 20 draws from this distribution, one for every plot/observation.
 
 ```{r}
 ( ploteff = rnorm(nstand*nplot, 0, sd) )
+
 ```
 
 I'm going to put all of these variables in a dataset together.  This helps me keep things organized for modelling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect.  This becomes clear when you peruse the 20-row dataset shown below.
 
 ```{r}
 ( dat = data.frame(stand, standeff, plot, ploteff) )
+
 ```
 
 I now have the fixed values of the parameters, the variable `stand` to represent the random effect in a model, and the simulated effects of stands and plots drawn from their defined distributions. That's all the pieces I need to calculate my response variable.
@@ -125,12 +136,14 @@ is my guide for how to combine these pieces to create the simulated response var
 
 ```{r}
 ( dat$resp = with(dat, mu + standeff + ploteff ) )
+
 ```
 
 It's time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer()` function from package **lme4**.
 
 ```{r}
 library(lme4)
+
 ```
 
 The results for the estimated overall mean and standard deviations of random effects in this model look pretty similar to my defined parameter values.
@@ -138,6 +151,7 @@ The results for the estimated overall mean and standard deviations of random eff
 ```{r}
 fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
 fit1
+
 ```
 
 # Make a function for the simulation
@@ -157,6 +171,7 @@ twolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 2, sigma = 1) 
      dat = data.frame(stand, resp)
      lmer(resp ~ 1 + (1|stand), data = dat)
 }
+
 ```
 
 I test the function, using the same `seed`, to make sure things are working as expected and that I get the same results as above.
@@ -164,6 +179,7 @@ I test the function, using the same `seed`, to make sure things are working as e
 ```{r}
 set.seed(16)
 twolevel_fun()
+
 ```
 
 # Repeat the simulation many times
@@ -175,6 +191,7 @@ This is a task for `replicate()`, which repeatedly calls a function and saves th
 ```{r}
 sims = replicate(100, twolevel_fun() )
 sims[[100]]
+
 ```
 
 # Extract results from the linear mixed model
@@ -186,18 +203,21 @@ Below is an example on the practice model.  You'll notice there are no p-values 
 ```{r}
 library(broom)
 tidy(fit1)
+
 ```
 
 If we want to extract only the fixed effects:
 
 ```{r}
 tidy(fit1, effects = "fixed")
+
 ```
 
 And for the random effects, which can be pulled out as variances via `scales` instead of the default standard deviations:
 
 ```{r}
 tidy(fit1, effects = "ran_pars", scales = "vcov")
+
 ```
 
 # Explore the effect of sample size on variance estimation
@@ -206,10 +226,11 @@ Today I'll look at how well we estimate variances of random effects for differen
 
 I'm going to load some helper packages for this, including **purrr** for looping, **dplyr** for data manipulation tasks, and **ggplot2** for plotting.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 library(purrr) # v. 0.2.4
 suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
 library(ggplot2) # v. 2.2.1
+
 ```
 
 I'm going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one.  I'm using **purrr** functions for this, and I end up with a list of lists (1000 models for each sample size). It takes a minute or two to fit the 3000 models.
@@ -218,6 +239,7 @@ I'm going to loop through a vector of the three stand sample sizes and then simu
 stand_sims = c(5, 20, 100) %>%
      set_names() %>%
      map(~replicate(1000, twolevel_fun(nstand = .x) ) )
+
 ```
 
 Next I'll pull out the stand variance for each model via `tidy()`.  
@@ -230,6 +252,7 @@ stand_vars = stand_sims %>%
      map_dfr(bind_rows, .id = "stand_num") %>%
      filter(group == "stand")
 head(stand_vars)
+
 ```
 
 Let's take a look at the distributions of the variances for each sample size via density plots.  We know the true variance is 4, so I'll add a vertical line at 4.
@@ -239,12 +262,14 @@ ggplot(stand_vars, aes(x = estimate) ) +
      geom_density(fill = "blue", alpha = .25) +
      facet_wrap(~stand_num) +
      geom_vline(xintercept = 4)
+
 ```
 
 Whoops, I need to get my factor levels in order.
 
 ```{r}
 stand_vars = mutate(stand_vars, stand_num = forcats::fct_inorder(stand_num) )
+
 ```
 
 I'll also add some clearer labels for the facets.
@@ -253,6 +278,7 @@ I'll also add some clearer labels for the facets.
 add_prefix = function(string) {
      paste("Number stands:", string, sep = " ")
 }
+
 ```
 
 And finally I'll add the median of each distribution as a second vertical line.
@@ -261,6 +287,7 @@ And finally I'll add the median of each distribution as a second vertical line.
 groupmed = stand_vars %>%
      group_by(stand_num) %>%
      summarise(mvar = median(estimate) )
+
 ```
 
 Looking at the plots we can really see how poorly we can estimate variances when we have few replications.  When only 5 stands are sampled, the variance can be estimated as low as 0 and as high as ~18 (`r emo::ji("open_mouth")`) when it's really 4.  
@@ -279,6 +306,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
      theme(legend.position = "bottom",
            legend.key.width = unit(.1, "cm") ) +
      labs(x = "Estimated Variance", y = NULL)
+
 ```
 
 Here are some additional descriptive statistics of the distribution of variances in each group to complement the info in the plot.
@@ -287,6 +315,7 @@ Here are some additional descriptive statistics of the distribution of variances
 stand_vars %>%
      group_by(stand_num) %>%
      summarise_at("estimate", funs(min, mean, median, max) )
+
 ```
 
 So how much of the distribution is below 4 for each estimate?  
@@ -299,6 +328,7 @@ Every time I do this sort of simulation I am newly surprised that even large sam
 stand_vars %>%
      group_by(stand_num) %>%
      summarise(mean(estimate < 4) )
+
 ```
 
 My take home from all of this? We may need to be cautious with results for studies where the goal is to make inference about the estimates of the variances or for testing variables measured at the level of the largest unit when the number of units is small.
@@ -335,6 +365,7 @@ b1 = .005
 b2 = .1
 sds = 2
 sd = 1
+
 ```
 
 Here are the variables I simulated previously.
@@ -344,6 +375,7 @@ set.seed(16)
 stand = rep(LETTERS[1:nstand], each = nplot)
 standeff = rep( rnorm(nstand, 0, sds), each = nplot)
 ploteff = rnorm(nstand*nplot, 0, sd)
+
 ```
 
 I will simulate the explanatory variables by randomly drawing from uniform distributions via `runif()`.  I change the minimum and maximum values of the uniform distribution as needed to get an appropriate spread for a given variable.  If the distribution of your explanatory variables are more skewed you could use a different distribution (like the Gamma distribution).
@@ -368,6 +400,7 @@ the response variable will be calculated via
 
 ```{r}
 ( resp2 = b0 + b1*elevation + b2*slope + standeff + ploteff )
+
 ```
 
 Now we can fit a mixed model for `resp2` with `elevation` and `slope` as fixed effects, `stand` as the random effect and the residual error term based on plot-to-plot variation. (*Notice I didn't put these variables in a dataset, which I usually like to do to keep things organized and to avoid problems of vectors in my environment getting overwritten by mistake.*)
@@ -378,3 +411,21 @@ We can see some of the estimates in this one model aren't very similar to our se
 lmer(resp2 ~ elevation + slope + (1|stand) )
 ```
 
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-04-23-simulate-simulate-part-2-a-linear-mixed-model.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

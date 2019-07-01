@@ -12,13 +12,21 @@ tags:
 description: "I talk about why I'm seeing more students who have many datasets to read in and combine and then go through an example to show one way to approach the problem."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 At least once a year I meet with a graduate student who has many separate datasets that need to be combined into a single file.  The data are usually from a series of data loggers (e.g., iButtons or RFID readers) that record data remotely over a specified time period. The researcher periodically downloads the data from each data logger and then redeploys it for further data collection.  
 
-I'm going to set up the background for my particular use case before jumping into the R code to perform this sort of task.  **Go straight to "List all files to read in" if you want to get right into R code.**
+I'm going to set up the background for my particular use case before jumping into the R code to perform this sort of task.  **Go straight to [List all files to read in] if you want to get right into R code.**
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2017-12-31-combining-many-datasets-in-r.Rmd")
+```
 
 # What's so hard about reading in many datasets?
 
@@ -26,9 +34,7 @@ For someone who is at least somewhat familiar with a programming language (e.g.,
 
 However, in my experience this work doesn't feel very simple to beginner programmers.  Most of the graduate students I meet with have never worked with any sort of programming language prior to entering their degree program.  By the time I meet with them they usually have had a very basic introduction to R in their intro statistics courses.  They may have read in a dataset into R only a couple of times at most, and now they have hundreds of them to manage.  To further complicate things, there is usually more work that needs to be done beyond reading the datasets in, such as adding important identifying information to each dataset.
 
-*Aside:  I am couching this around R because that's what taught in the intro courses in the Statisics Department at my university.  I still get a few requests every year for help with SAS programming from faculty and post-docs and so far over six years I've had exactly one student client who worked primarily with Python*
-
-# Why would I want to have to do this in R (or SAS or Python or ...)?
+# Why would I want to have to do this in R?
 
 That is the question I got from the first student I ever advised on this topic.  She was collecting data using many data loggers in a field experiment set up as randomized complete block design with repeated measures.  She had 300 comma-delimited files that needed to be concatenated together from her first field season and was planning on a second season that was at least twice as long (so would have at least twice as many files).
 
@@ -42,17 +48,28 @@ Her research collaborators had used these loggers previously, and had given her 
 6. Name columns
 
 Me:
-```{r, echo = FALSE}
+```{r plot1, echo = FALSE, purl = FALSE}
 knitr::include_graphics("/img/2017-12-31_cat_disgusted.png")
 ```
 
-But really this gave me a chance to discuss reproducibility and the convenience of using computers to do repetitive tasks with the next generation of researchers.  While she would need to expend effort understanding R code, the effort in the short term would be valuable in the long term given she was going to do a second field season.
+But really this gave me a chance to discuss reproducibility and the convenience of using software to do repetitive tasks with the next generation of researchers.  While she would need to expend effort understanding R code, the effort would be valuable in the long term given she was going to do a second field season.
 
 To be honest, she was pretty skeptical that it made sense to use a programming language to do the work.  From her perspective, doing the work via R looked more difficult and more "black-box" than manually copying and pasting in Excel.  It helped that we found mistakes in the files she'd already edited when when we were setting up the R code (it's so easy to make mistakes when copying and pasting 300 times!).  
 
 Her skepticism continues to be a good reminder to me of what it feels like to be a beginner in a programming language, where you don't quite trust that the program is doing what you want it to and you don't exactly fully understand the code.  The manual approach you already know how to do can look pretty darn attractive by comparison.
 
-# [List all files to read in](#list-all-files-to-read-in)
+# R packages
+
+Today I'll use package **here** for relative directory paths, **stringr** for string manipulation, and **purrr** for looping through to read all the files.
+
+```{r packages, message = FALSE}
+library(here) # v. 0.1
+library(stringr) # v. 1.2.0
+library(purrr) # v. 0.2.3
+
+```
+
+# List all files to read in
 
 When reading in many files, my first two tasks are:  
 
@@ -61,11 +78,11 @@ When reading in many files, my first two tasks are:
 
 Here I'll start by getting a list of the files.  I'm using some toy files I made to mirror what the real files looked like. These CSV files are available on the [blog GitHub repository](https://github.com/aosmith16/aosmith/tree/master/static/data).
 
-Listing all files can be done in R via `list.files` or `dir`.  I'll use `list.files` here (no reason, just habit most likely based on what I learned first).  
+Listing all files can be done in R via `list.files()` or `dir()`.  I'll use `list.files()` here (no reason, just habit most likely based on what I learned first).  
 
-For this particular case I will use four of the arguments in `list.files`:
+For this particular case I will use four of the arguments in `list.files()`:
 
-1. The directory containing the files needs to be defined in the `"path"` argument of `list.files`.  I'm working within an RStudio Project, and will use the `here` package to indicate the directory the files are in relative to the root directory.  See [Jenny Bryan's post here](https://www.tidyverse.org/articles/1/01/) on the merits of `here` and self-contained projects.
+1. The directory containing the files needs to be defined in the `"path"` argument of `list.files()`.  I'm working within an RStudio Project, and will use the **here** package to indicate the directory the files are in relative to the root directory.  See [Jenny Bryan's post here](https://www.tidyverse.org/articles/1/01/) on the merits of **here** and self-contained projects.
 
 2. The `"pattern"` argument is used to tell R which file paths should be listed.  If you want to read in all CSV files in a directory, for example, the pattern to match might by `".csv"`.  In the real scenario, there were additional CSV files in the directory that we didn't want to read.  All the files we wanted to read ended in "AB.csv", so we first defined the pattern as `"AB.csv"`.  Later we realized that some file names were all lowercase, so used `"AB.csv|ab.csv"`.  The vertical pipe, `|`, stands for "or".
 
@@ -73,9 +90,6 @@ For this particular case I will use four of the arguments in `list.files`:
 
 4. The `"full.names"` argument is used to indicate if the complete file paths should be returned or only the relative file paths.  In this case, the only place in the information about some of the physical units of the study ("Blocks" and "Sites") are in the directory path. We needed the full path names in order to extract that information and add it to the dataset.
 
-```{r, message = FALSE}
-library(here) # v. 0.1
-```
 
 The `list.files` function returns a vector of file paths.
 
@@ -84,9 +98,10 @@ The `list.files` function returns a vector of file paths.
                         pattern = "AB.csv|ab.csv",
                         full.names = TRUE,
                         recursive = TRUE) )
+
 ```
 
-# [Practice reading in one file](#practice-reading-in-one-file)
+# Practice reading in one file
 
 I find things go more smoothly if I work out the file-reading process with a single file before I try to read a bunch of files.  It's an easy step to want to skip because it feels more efficient to do "everything at once".  I've never found that to actually be the case. `r emo::ji("tongue")`
 
@@ -97,7 +112,10 @@ I'll practice with the first file listed in `allfiles`.  The top 6 lines of the 
                 skip = 6,
                 header = FALSE,
                 col.names = c("date", "temperature") ) )
+
 ```
+
+## Add identifying information in file path to dataset
 
 That went pretty smoothly, but things get a little hairy from here.  The information on the physical units of the study, "Blocks" and "Sites", are contained only in the file directory path.  These need to be extracted from the file path and added to the dataset.  
 
@@ -107,11 +125,6 @@ Last, the final two digits of the file name is a code to indicate where the data
 
 All the tasks above are string manipulation tasks.  I will tackle these with the functions from the **stringr** package.
 
-```{r}
-library(stringr) # v. 1.2.0
-```
-
-
 **Extract "Block" names from the file path**
 
 Since some information is located within the file path string, splitting the file path up into separate pieces seems like a reasonable first step.  This can be done via `str_split` using `"/"` as the symbol to split on.  As there is only a single character string to split for each dataset, it is convenient to return a matrix instead of a list via `simplify = TRUE`.
@@ -120,8 +133,8 @@ The result is a matrix containing strings in each column.
 
 ```{r}
 ( allnames = str_split( allfiles[1], pattern = "/", simplify = TRUE) )
-```
 
+```
 
 The "Block" information is always the third column if counting from the end (it's the 10th in this case if counting from the beginning).  It's "safer" (i.e., less likely to fail on a different computer) to count from the last column and work backwards here; on a different computer the full file paths may change length but the directory containing the files to read will be the same.
 
@@ -129,6 +142,7 @@ To extract the third column from the end I take the total number of columns and 
 
 ```{r}
 allnames[, ncol(allnames) - 2]
+
 ```
 
 This can be added to the dataset as a "block" variable.
@@ -136,6 +150,7 @@ This can be added to the dataset as a "block" variable.
 ```{r}
 test$block = allnames[, ncol(allnames) - 2]
 test
+
 ```
 
 **Extract "Site" names from the file path**
@@ -144,6 +159,7 @@ This will be the same as above, except site names are contained in the second-to
 
 ```{r}
 test$site = allnames[, ncol(allnames) - 1]
+
 ```
 
 **Extract "Plot" names from the file name**
@@ -152,6 +168,7 @@ The last character string in our matrix is the file name, which contains the plo
 
 ```{r}
 allnames[, ncol(allnames)]
+
 ```
 
 This can be split on the underscores and periods and the "Plot" information extracted in much the same was as the "Block" information.  I think this option can feel more approachable to beginners and is a reasonable way to solve the problem.  
@@ -160,30 +177,33 @@ Another option is to define which part of the file name we want to pull out.  Th
 
 A basic introduction to regular expressions is on the second page of the "Work with Strings" [cheatsheet from RStudio](https://www.rstudio.com/resources/cheatsheets/).  A more in depth set of examples can be found on the [UBC ST 545 page here](http://stat545.com/block022_regular-expression.html).
 
-I used `str_extract` from **stringr** with a regular expression for the `"pattern"` to extract the plot number.  In this case I used a [lookaround](http://www.regular-expressions.info/lookaround.html) following this [Stack Overflow answer](https://stackoverflow.com/a/35404422/2461552).  These can be apparently be costly in terms of performance, which I did not find that to be a deterrent in my case. `r emo::ji("smile")`
+I used `str_extract()` from **stringr** with a regular expression for the `"pattern"` to extract the plot number.  In this case I used a [lookaround](http://www.regular-expressions.info/lookaround.html) following this [Stack Overflow answer](https://stackoverflow.com/a/35404422/2461552).  These can be apparently be costly in terms of performance, which I did not find that to be a deterrent in my case. `r emo::ji("smile")`
 
 The regular expression I use indicates I want to extract a digit (`[0-9]`) that comes immediately before a period.  The `(?=\\.)` is a *positive lookahead*, telling R that the digit to match will be followed by a period. The plot names are always just in front of a period, which is why this works.
 
 ```{r}
 str_extract(allnames[, ncol(allnames)], pattern = "[0-9](?=\\.)")
+
 ```
 
 This can then be added to the dataset.
 
 ```{r}
 test$plot = str_extract(allnames[, ncol(allnames)], pattern = "[0-9](?=\\.)")
+
 ```
 
 **Extract data logger location from the file name**
 
 The last thing to do is extract the data logger location code from the file names.  These are the last two digits of the file name, immediately before ".csv".
 
-The `str_sub` function from **stringr** is useful for extracting characters from fixed locations in a string.  The logger location information is in the same position in every file name if counting from the end of the string.  The `str_sub` function allows the user to pull information counting from the end of the string as well as from the beginning.  Because our file names differ in length due to the way that dates are stored, the location data does *not* always have the same indices if counting characters from the beginning of the string.
+The `str_sub()` function from **stringr** is useful for extracting characters from fixed locations in a string.  The logger location information is in the same position in every file name if counting from the end of the string.  The `str_sub()` function allows the user to pull information counting from the end of the string as well as from the beginning.  Because our file names differ in length due to the way that dates are stored, the location data does *not* always have the same indices if counting characters from the beginning of the string.
 
 Negative indices are used to extract from the end of the string.  The location information is stored in the 5th and 6th positions from the end.  The negative number largest in absolute value is passed to `start` and the smallest in absolute value to `end`.  (I forget this pretty much every time I subset strings from the end.)
 
 ```{r}
 str_sub(allnames[, ncol(allnames)], start = -6, end = -5)
+
 ```
 
 The location data can then be added to the dataset.  Since at least one of the file names is all lowercase, I make sure the data logger location information is converted to all caps via `toupper`.
@@ -196,9 +216,10 @@ Here's what the test dataset looks like now.
 
 ```{r}
 test
+
 ```
 
-# [Make a function to read all the files](#make-a-function-to-read-all-the-files)
+# Make a function to read all the files
 
 Once the process is worked out for one file, I can "functionize" it (i.e., make a function).  This allows me to apply the exact same procedure to every dataset as it is read in.  
 
@@ -217,30 +238,29 @@ read_fun = function(path) {
      test$logloc = toupper( str_sub(allnames[, ncol(allnames)], start = -6, end = -5) )
      test
 }
+
 ```
 
 I'll test the function with that first file path again to make sure it works like I expect it to.  
 
 ```{r}
 read_fun(allfiles[1])
+
 ```
 
 Looks good!
 
-# [Read all the files](#read-all-the-files)
+# Read all the files
 
-All that's left to do now is to loop through all the file paths in `allfiles`, read and modify each one with my function, and stack them together into a single dataset.  This can be done in base R with a `for` or `lapply` loop.  If using either of those options, the final concatenation step can be done via `rbind` in `do.call`.  
+All that's left to do now is to loop through all the file paths in `allfiles`, read and modify each one with my function, and stack them together into a single dataset.  This can be done in base R with a `for()` or `lapply()` loop.  If using either of those options, the final concatenation step can be done via `rbind()` in `do.call()`.  
 
-These days I've been using the `map` functions from package **purrr** for this, mostly because the `map_dfr` variant conveniently binds everything together by rows for me.
+These days I've been using the `map` functions from package **purrr** for this, mostly because the `map_dfr()` variant conveniently binds everything together by rows.
 
-```{r}
-library(purrr) # v. 0.2.3
-```
-
-Here's what using `map_dfr` looks like, looping through each element of `allfiles` to read and modify the datasets with the `read_fun` function and then stacking everything together into a final combined dataset.
+Here's what using `map_dfr()` looks like, looping through each element of `allfiles` to read and modify the datasets with the `read_fun()` function and then stacking everything together into a final combined dataset.
 
 ```{r}
 ( combined_dat = map_dfr(allfiles, read_fun) )
+
 ```
 
 # Are we finally done?
@@ -251,4 +271,23 @@ In working with real data, the final "combining" step can lead to errors due to 
 
 In the real files for this particular example, it turned out some of the files had been previously modified manually to remove the header information. We ended up adding an `if` statement to the function to test each file as we read it in.  If it had the header information we'd use `skip` while reading in the dataset and if it didn't we wouldn't.  I did something similar in the case where some of the datasets were blank.
 
-After the combined dataset has been created, you might want to save it for further data exploration and/or analysis.  If working on an interim set of datasets (such as before a field season is over), saving the R object with `saveRDS` can be pretty convenient.  Saving a final dataset as a CSV may be useful for sharing with collaborators once all datasets have been downloaded and combined, which can be done with, e.g., `write.csv`.  
+After the combined dataset has been created, you might want to save it for further data exploration and/or analysis.  If working on an interim set of datasets (such as before a field season is over), saving the R object with `saveRDS()` can be pretty convenient.  Saving a final dataset as a CSV may be useful for sharing with collaborators once all datasets have been downloaded and combined, which can be done with, e.g., `write.csv()`.  
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript", "plot1")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2017-12-31-combining-many-datasets-in-r.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

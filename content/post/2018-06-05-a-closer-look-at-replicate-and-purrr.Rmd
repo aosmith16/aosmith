@@ -12,12 +12,30 @@ draft: FALSE
 description: "In this post I delve into the details of the R functions I've been using in my simulation examples, focusing on the replicate() function and the map family of functions from the purrr package.  I spend a little time showing the parallels between the replicate() function and a for() loop."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 I've done a couple of posts so far on simulations, [here](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) and [here](https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/), where I demonstrate how to build a function for simulating data from a defined linear model and then explore long-run behavior of models fit to the simulated datasets.  The focus of those posts was on the general simulation process, and I didn't go into much detail on the specific R code.  In this post I'll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function `replicate()` and the *map* family of functions from package **purrr**.
 
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-06-05-a-closer-look-at-replicate-and-purrr.Rmd")
+```
+
+# R packages
+
+I'll use package **purrr** for looping, **dplyr** for any data manipulation, and **ggplot2** for plotting.  I'll also use (but not load), package **broom** for extracting output from models.
+
+```{r packages, message = FALSE, warning = FALSE}
+library(purrr) # v. 0.2.5
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
+library(ggplot2) # v 2.2.1
+
+```
 # The replicate() function
 
 The `replicate()` function is a member of the *apply* family of functions in base R.  
@@ -42,6 +60,7 @@ Since I'm going generate random numbers I'll set the seed so anyone following al
 ```{r}
 set.seed(16)
 rnorm(5, mean = 0, sd = 1)
+
 ```
 
 Using `rnorm()` directly gives me a single set of simulated values.  How do I simulate 5 values from this same distribution multiple times?  This is where `replicate()` comes in.  It allows me to run the function I put in `expr` exactly `n` times.  
@@ -53,6 +72,7 @@ The output below is a list of three vectors.  Each vector is from a unique run o
 ```{r}
 set.seed(16)
 replicate(n = 3, rnorm(5, 0, 1), simplify = FALSE )
+
 ```
 
 Note if I don't use `simplify = FALSE` I will get a matrix of values instead of a list.  Each column in the matrix is the output from one run of the function.  In this case there will be three columns in the output, one for each run, and 5 rows.  This can be a useful output type for simulations.  I focus on list output throughout the rest of this post only because that's what I have been using recently for simulations.
@@ -60,6 +80,7 @@ Note if I don't use `simplify = FALSE` I will get a matrix of values instead of 
 ```{r}
 set.seed(16)
 replicate(n = 3, rnorm(5, 0, 1) )
+
 ```
 
 ## An equivalent for() loop example
@@ -77,6 +98,7 @@ for (i in 1:3) { # Indicate number of iterations with "i"
     list1[[i]] = rnorm(5, 0, 1) # Save output in list for each iteration
 }
 list1
+
 ```
 
 ## Using replicate() on a user-made function
@@ -98,6 +120,7 @@ The output is a model fit to data generated from the fixed and random (residual)
 
 ```{r}
 twogroup_fun()
+
 ```
 
 To explore the long-run behavior in my simulated scenario I will repeat the data generation and model fitting many times using `replicate()`.  The result is a list of fitted models.  I'll run the function 5 times and save the result as `sim_lm` to use throughout the next section on `map()`.
@@ -105,6 +128,7 @@ To explore the long-run behavior in my simulated scenario I will repeat the data
 ```{r}
 sim_lm = replicate(5, twogroup_fun(), simplify = FALSE )
 length(sim_lm)
+
 ```
 
 # Using purrr::map() for looping through lists
@@ -120,8 +144,8 @@ The `map()` function takes a list as input and puts the output into a list of th
 For example, I can pull out the coefficients of each model in my 5-run simulation by looping through `sim_lm` and applying the `coef()` function to each list element.
 
 ```{r}
-library(purrr) # v. 0.2.5
 map(sim_lm, coef)
+
 ```
 
 ## Other variants of map() for non-list outputs
@@ -135,12 +159,14 @@ So getting $R^2$ involves extracting a value after applying a function, which is
 
 ```{r}
 map_dbl(sim_lm, ~summary(.x)$r.squared)
+
 ```
 
 If you don't like the formula style you can use an anonymous function inside *map* functions, where the function argument is used to refer to the list element.  
 
 ```{r}
 map_dbl(sim_lm, function(x) summary(x)$r.squared)
+
 ```
 
 For data.frame output we can use `map_dfr()` for row binding or *stacking* results together into a single data.frame.
@@ -149,26 +175,24 @@ Estimated coefficients, their standard errors, and their statistical tests from 
 
 ```{r}
 map_dfr(sim_lm, broom::tidy)
+
 ```
 
 The `map_dfr()` function has an additional argument, `.id`, which can be used to store the list names (if the original list had names) or add the list index to the output (if it didn't have names).  I'm using a list that has no names, so each unique model output will be assigned its index number if I use the `.id` argument.  The name of the new column is given as a string to `.id`.
 
 ```{r}
 map_dfr(sim_lm, broom::tidy, .id = "model")
+
 ```
 
 Further arguments to the function used within `map()` can be passed as additional arguments.  For example, I can add confidence intervals for estimated coefficients when using the `tidy.lm()` function via `conf.int = TRUE`.  If I want to get confidence intervals for all models I add this as an additional argument in `map_dfr()`.
 
 ```{r}
 map_dfr(sim_lm, broom::tidy, conf.int = TRUE)
+
 ```
 
-The *map* family of functions can easily be used with pipes as one step in a chain of functions.  I can, for example, take the estimates I get using `broom::tidy`, pull out the estimated intercepts, and then plot a histogram of those estimates.  I'll need packages **dplyr** and **ggplot2** for this.
-
-```{r}
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
-library(ggplot2) # v 2.2.1
-```
+The *map* family of functions can easily be used with pipes as one step in a chain of functions.  I can, for example, take the estimates I get using `broom::tidy()`, pull out the estimated intercepts, and then plot a histogram of those estimates.  I'll use functions from packages **dplyr** and **ggplot2** for this.
 
 You can see all the steps in the pipe chain below.  I loop through `sim_lm` using `map_dfr()` to extract the coefficients from each element of the list and output a data.frame of results.  I use `dplyr::filter()` to keep only the rows with estimated intercepts and then plot a histogram of these estimates for the whole simulation with `ggplot2::qplot()`.
 
@@ -177,6 +201,26 @@ sim_lm %>%
      map_dfr(broom::tidy) %>%
      filter(term == "(Intercept)") %>%
      qplot(x = estimate, data = ., geom = "histogram")
+
 ```
 
 There are more variants of `map()` that you might find useful, both for simulations and in other iterative work.  See the documentation for `map()` (`?map`) to see all of them along with additional examples.
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-06-05-a-closer-look-at-replicate-and-purrr.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

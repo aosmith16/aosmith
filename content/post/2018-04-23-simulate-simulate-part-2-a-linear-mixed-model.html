@@ -18,6 +18,20 @@ description: "In my second simulation example I show how to simulate data from a
 
 <p>I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation. I’ve seen instances where residual autocorrelation isn’t detectable when I <em>know</em> it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance. Such results are often due to small sample sizes, which even in this era of big data still isn’t so unusual in ecology. I’ve found exploring the effect of sample size on statistical results to be quite eye-opening 👁.</p>
 <p>In <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">my first simulation post</a> I showed how to simulate data for a basic linear model. Today I’ll be talking about how to simulate data for a linear mixed model. So I’m still working with normally distributed residuals but will add an additional level of variation.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#simulate-simulate-dance-to-the-music">Simulate, simulate, dance to the music</a></li>
+<li><a href="#the-statistical-model">The statistical model</a></li>
+<li><a href="#a-single-simulation-for-the-two-level-model">A single simulation for the two-level model</a></li>
+<li><a href="#make-a-function-for-the-simulation">Make a function for the simulation</a></li>
+<li><a href="#repeat-the-simulation-many-times">Repeat the simulation many times</a></li>
+<li><a href="#extract-results-from-the-linear-mixed-model">Extract results from the linear mixed model</a></li>
+<li><a href="#explore-the-effect-of-sample-size-on-variance-estimation">Explore the effect of sample size on variance estimation</a></li>
+<li><a href="#an-actual-mixed-model-with-fixed-effects-this-time">An actual mixed model (with fixed effects this time)</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="simulate-simulate-dance-to-the-music" class="section level1">
 <h1>Simulate, simulate, dance to the music</h1>
 <p>I learned the basics of linear mixed models in a class where we learned how to analyze data from “classically designed” experiments. We spent a lot of time writing down the various statistical models in mathematical notation and then fitting said models in SAS. I felt like I understood the basics of mixed models when the class was over (and swore I was done with all the <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> mathematical notation once and for all 😆).</p>
@@ -164,8 +178,9 @@ twolevel_fun()</code></pre>
 <h1>Repeat the simulation many times</h1>
 <p>Now that I have a working function to simulate data and fit the model it’s time to do the simulation many times. The model from each individual simulation is saved to allow exploration of long run model performance.</p>
 <p>This is a task for <code>replicate()</code>, which repeatedly calls a function and saves the output. The output is a list, which is convenient for going through to extract elements from the models later. I’ll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.</p>
-<pre class="r"><code>sims = replicate(100, twolevel_fun() )
-sims[[100]]</code></pre>
+<pre class="r"><code>sims = replicate(100, twolevel_fun() )</code></pre>
+<pre><code># boundary (singular) fit: see ?isSingular</code></pre>
+<pre class="r"><code>sims[[100]]</code></pre>
 <pre><code># Linear mixed model fit by REML [&#39;lmerMod&#39;]
 # Formula: resp ~ 1 + (1 | stand)
 #    Data: dat
@@ -185,19 +200,29 @@ sims[[100]]</code></pre>
 <p>Below is an example on the practice model. You’ll notice there are no p-values for fixed effects. If those are desired and the degrees of freedom can be calculated, see packages <strong>lmerTest</strong> and <a href="https://github.com/bbolker/broom.mixed"><strong>broom.mixed</strong></a>.</p>
 <pre class="r"><code>library(broom)
 tidy(fit1)</code></pre>
-<pre><code>#                      term  estimate std.error statistic    group
-# 1             (Intercept) 10.570880  1.002051  10.54924    fixed
-# 2    sd_(Intercept).stand  2.168186        NA        NA    stand
-# 3 sd_Observation.Residual  1.130493        NA        NA Residual</code></pre>
+<pre><code># Warning in bind_rows_(x, .id): binding factor and character vector,
+# coercing into character vector</code></pre>
+<pre><code># Warning in bind_rows_(x, .id): binding character and factor vector,
+# coercing into character vector</code></pre>
+<pre><code># # A tibble: 3 x 5
+#   term                    estimate std.error statistic group   
+#   &lt;chr&gt;                      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;   
+# 1 (Intercept)                10.6       1.00      10.5 fixed   
+# 2 sd_(Intercept).stand        2.17     NA         NA   stand   
+# 3 sd_Observation.Residual     1.13     NA         NA   Residual</code></pre>
 <p>If we want to extract only the fixed effects:</p>
 <pre class="r"><code>tidy(fit1, effects = &quot;fixed&quot;)</code></pre>
-<pre><code>#          term estimate std.error statistic
-# 1 (Intercept) 10.57088  1.002051  10.54924</code></pre>
+<pre><code># # A tibble: 1 x 4
+#   term        estimate std.error statistic
+#   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+# 1 (Intercept)     10.6      1.00      10.5</code></pre>
 <p>And for the random effects, which can be pulled out as variances via <code>scales</code> instead of the default standard deviations:</p>
 <pre class="r"><code>tidy(fit1, effects = &quot;ran_pars&quot;, scales = &quot;vcov&quot;)</code></pre>
-<pre><code>#                       term    group estimate
-# 1    var_(Intercept).stand    stand 4.701030
-# 2 var_Observation.Residual Residual 1.278014</code></pre>
+<pre><code># # A tibble: 2 x 3
+#   term                     group    estimate
+#   &lt;chr&gt;                    &lt;chr&gt;       &lt;dbl&gt;
+# 1 var_(Intercept).stand    stand        4.70
+# 2 var_Observation.Residual Residual     1.28</code></pre>
 </div>
 <div id="explore-the-effect-of-sample-size-on-variance-estimation" class="section level1">
 <h1>Explore the effect of sample size on variance estimation</h1>
@@ -210,6 +235,22 @@ library(ggplot2) # v. 2.2.1</code></pre>
 <pre class="r"><code>stand_sims = c(5, 20, 100) %&gt;%
      set_names() %&gt;%
      map(~replicate(1000, twolevel_fun(nstand = .x) ) )</code></pre>
+<pre><code># boundary (singular) fit: see ?isSingular
+# boundary (singular) fit: see ?isSingular
+# boundary (singular) fit: see ?isSingular
+# boundary (singular) fit: see ?isSingular</code></pre>
+<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
+# control$checkConv, : Model failed to converge with max|grad| = 0.00680678
+# (tol = 0.002, component 1)</code></pre>
+<pre><code># boundary (singular) fit: see ?isSingular</code></pre>
+<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
+# control$checkConv, : Model failed to converge with max|grad| = 0.00681447
+# (tol = 0.002, component 1)</code></pre>
+<pre><code># boundary (singular) fit: see ?isSingular
+# boundary (singular) fit: see ?isSingular</code></pre>
+<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
+# control$checkConv, : Model failed to converge with max|grad| = 0.00297126
+# (tol = 0.002, component 1)</code></pre>
 <p>Next I’ll pull out the stand variance for each model via <code>tidy()</code>.</p>
 <p>I use <code>modify_depth()</code> to work on the nested (innermost) list, and then row bind the nested lists into a data.frame to get things in a convenient format for plotting. I finish by filtering things to keep only the <code>stand</code> variance, as I extracted both stand and residual variances from the model.</p>
 <pre class="r"><code>stand_vars = stand_sims %&gt;%
@@ -217,13 +258,15 @@ library(ggplot2) # v. 2.2.1</code></pre>
      map_dfr(bind_rows, .id = &quot;stand_num&quot;) %&gt;%
      filter(group == &quot;stand&quot;)
 head(stand_vars)</code></pre>
-<pre><code>#   stand_num                  term group  estimate
-# 1         5 var_(Intercept).stand stand  2.528572
-# 2         5 var_(Intercept).stand stand  7.701715
-# 3         5 var_(Intercept).stand stand  4.194774
-# 4         5 var_(Intercept).stand stand  3.282683
-# 5         5 var_(Intercept).stand stand 12.880303
-# 6         5 var_(Intercept).stand stand  4.623168</code></pre>
+<pre><code># # A tibble: 6 x 4
+#   stand_num term                  group estimate
+#   &lt;chr&gt;     &lt;chr&gt;                 &lt;chr&gt;    &lt;dbl&gt;
+# 1 5         var_(Intercept).stand stand     2.53
+# 2 5         var_(Intercept).stand stand     7.70
+# 3 5         var_(Intercept).stand stand     4.19
+# 4 5         var_(Intercept).stand stand     3.28
+# 5 5         var_(Intercept).stand stand    12.9 
+# 6 5         var_(Intercept).stand stand     4.62</code></pre>
 <p>Let’s take a look at the distributions of the variances for each sample size via density plots. We know the true variance is 4, so I’ll add a vertical line at 4.</p>
 <pre class="r"><code>ggplot(stand_vars, aes(x = estimate) ) +
      geom_density(fill = &quot;blue&quot;, alpha = .25) +
@@ -258,6 +301,15 @@ head(stand_vars)</code></pre>
 <pre class="r"><code>stand_vars %&gt;%
      group_by(stand_num) %&gt;%
      summarise_at(&quot;estimate&quot;, funs(min, mean, median, max) )</code></pre>
+<pre><code># Warning: funs() is soft deprecated as of dplyr 0.8.0
+# please use list() instead
+# 
+#   # Before:
+#   funs(name = f(.))
+# 
+#   # After: 
+#   list(name = ~ f(.))
+# This warning is displayed once per session.</code></pre>
 <pre><code># # A tibble: 3 x 5
 #   stand_num   min  mean median   max
 #   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
@@ -343,4 +395,119 @@ ploteff = rnorm(nstand*nplot, 0, sd)</code></pre>
 # Fixed Effects:
 # (Intercept)    elevation        slope  
 #   -21.31463      0.02060      0.09511</code></pre>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-04-23-simulate-simulate-part-2-a-linear-mixed-model.R">from here</a>.</p>
+<pre class="r"><code>set.seed(16)
+nstand = 5
+nplot = 4
+mu = 10
+sds = 2
+sd = 1
+
+( stand = rep(LETTERS[1:nstand], each = nplot) )
+( plot = letters[1:(nstand*nplot)] )
+( standeff = rnorm(nstand, 0, sds) )
+( standeff = rep(standeff, each = nplot) )
+( ploteff = rnorm(nstand*nplot, 0, sd) )
+
+( dat = data.frame(stand, standeff, plot, ploteff) )
+
+( dat$resp = with(dat, mu + standeff + ploteff ) )
+
+library(lme4)
+
+fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
+fit1
+
+twolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 2, sigma = 1) {
+     standeff = rep( rnorm(nstand, 0, sigma_s), each = nplot)
+     stand = rep(LETTERS[1:nstand], each = nplot)
+     ploteff = rnorm(nstand*nplot, 0, sigma)
+     resp = mu + standeff + ploteff
+     dat = data.frame(stand, resp)
+     lmer(resp ~ 1 + (1|stand), data = dat)
+}
+
+set.seed(16)
+twolevel_fun()
+
+sims = replicate(100, twolevel_fun() )
+sims[[100]]
+
+library(broom)
+tidy(fit1)
+
+tidy(fit1, effects = &quot;fixed&quot;)
+
+tidy(fit1, effects = &quot;ran_pars&quot;, scales = &quot;vcov&quot;)
+
+library(purrr) # v. 0.2.4
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
+library(ggplot2) # v. 2.2.1
+
+stand_sims = c(5, 20, 100) %&gt;%
+     set_names() %&gt;%
+     map(~replicate(1000, twolevel_fun(nstand = .x) ) )
+
+stand_vars = stand_sims %&gt;%
+     modify_depth(2, ~tidy(.x, effects = &quot;ran_pars&quot;, scales = &quot;vcov&quot;) ) %&gt;%
+     map_dfr(bind_rows, .id = &quot;stand_num&quot;) %&gt;%
+     filter(group == &quot;stand&quot;)
+head(stand_vars)
+
+ggplot(stand_vars, aes(x = estimate) ) +
+     geom_density(fill = &quot;blue&quot;, alpha = .25) +
+     facet_wrap(~stand_num) +
+     geom_vline(xintercept = 4)
+
+stand_vars = mutate(stand_vars, stand_num = forcats::fct_inorder(stand_num) )
+
+add_prefix = function(string) {
+     paste(&quot;Number stands:&quot;, string, sep = &quot; &quot;)
+}
+
+groupmed = stand_vars %&gt;%
+     group_by(stand_num) %&gt;%
+     summarise(mvar = median(estimate) )
+
+ggplot(stand_vars, aes(x = estimate) ) + 
+     geom_density(fill = &quot;blue&quot;, alpha = .25) +
+     facet_wrap(~stand_num, labeller = as_labeller(add_prefix) ) +
+     geom_vline(aes(xintercept = 4, linetype = &quot;True variance&quot;), size = .5 ) +
+     geom_vline(data = groupmed, aes(xintercept = mvar, linetype = &quot;Median variance&quot;),
+                size = .5) +
+     theme_bw() +
+     scale_linetype_manual(name = &quot;&quot;, values = c(2, 1) ) +
+     theme(legend.position = &quot;bottom&quot;,
+           legend.key.width = unit(.1, &quot;cm&quot;) ) +
+     labs(x = &quot;Estimated Variance&quot;, y = NULL)
+
+stand_vars %&gt;%
+     group_by(stand_num) %&gt;%
+     summarise_at(&quot;estimate&quot;, funs(min, mean, median, max) )
+
+stand_vars %&gt;%
+     group_by(stand_num) %&gt;%
+     summarise(mean(estimate &lt; 4) )
+
+nstand = 5
+nplot = 4
+b0 = -1
+b1 = .005
+b2 = .1
+sds = 2
+sd = 1
+
+set.seed(16)
+stand = rep(LETTERS[1:nstand], each = nplot)
+standeff = rep( rnorm(nstand, 0, sds), each = nplot)
+ploteff = rnorm(nstand*nplot, 0, sd)
+
+( elevation = rep( runif(nstand, 1000, 1500), each = nplot) )
+( slope = runif(nstand*nplot, 2, 75) )
+( resp2 = b0 + b1*elevation + b2*slope + standeff + ploteff )
+
+lmer(resp2 ~ elevation + slope + (1|stand) )</code></pre>
 </div>

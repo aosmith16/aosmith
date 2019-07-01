@@ -17,6 +17,25 @@ description: "In this post I show one approach for making added variable plots f
 
 <p>Last week two of my consulting meetings ended up on the same topic: making added variable plots.</p>
 <p>In both cases, the student had a linear model of some flavor that had several continuous explanatory variables. They wanted to plot the estimated relationship between each variable in the model and the response. This could easily lead to a lot of copying and pasting of code, since they want to do the same thing for every explanatory variable in the model. I worked up some example code showing an approach on how one might automate the task in R with functions and loops, and thought I’d generalize it for a blog post.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#the-basics-of-added-variable-plots">The basics of added variable plots</a></li>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#the-linear-model">The linear model</a></li>
+<li><a href="#the-explanatory-variables">The explanatory variables</a></li>
+<li><a href="#a-function-for-making-a-prediction-dataset">A function for making a prediction dataset</a></li>
+<li><a href="#making-a-prediction-dataset-for-each-variable">Making a prediction dataset for each variable</a></li>
+<li><a href="#calculate-model-predictions-for-each-variable">Calculate model predictions for each variable</a></li>
+<li><a href="#making-one-added-variable-plot">Making one added variable plot</a></li>
+<li><a href="#a-function-for-plotting">A function for plotting</a></li>
+<li><a href="#making-all-the-plots">Making all the plots</a>
+<ul>
+<li><a href="#using-the-plots">Using the plots</a></li>
+</ul></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="the-basics-of-added-variable-plots" class="section level1">
 <h1>The basics of added variable plots</h1>
 <p>Added variable plots (aka partial regression plots, adjusted variable plots, individual coefficient plots), are “results” plots. They are plots showing the estimated relationship between the response and an explanatory variable <em>after accounting for the other variables in the model</em>. If working with only two continuous explanatory variables, a 3-dimensional plot could be used in place of an added variable plot (if one likes those sorts of plots 😃). Once there are many variables in the model, though, we don’t have enough plotting dimensions to show how all the variables relate to the response simultaneously and so we often use variable plots to show the fitted relationships.</p>
@@ -68,7 +87,7 @@ summary(fit1)</code></pre>
 <pre><code># [1] &quot;disp&quot; &quot;hp&quot;   &quot;drat&quot; &quot;wt&quot;</code></pre>
 </div>
 <div id="a-function-for-making-a-prediction-dataset" class="section level1">
-<h1><a href="#a-function-for-making-a-prediction-dataset">A function for making a prediction dataset</a></h1>
+<h1>A function for making a prediction dataset</h1>
 <p>The first step in making an added variable plot manually is to create the dataset to use for calculating model predictions. This dataset will contain the observed data for the explanatory variable of interest (aka the <em>focus</em> variable) with all other variables fixed to their medians.</p>
 <p>Below is a function for doing this task. The function takes a dataset, a vector of all the variables in the model (as strings), and the name of the focus variable (as a string). The <strong>dplyr</strong> <code>*_at()</code> functions can take strings as input, so I use <code>summarise_at()</code> to calculate the medians of the non-focus variables. I bind the summary values to the focus variable data from the original dataset with <code>cbind()</code>, since <code>cbind()</code> allows recycling.</p>
 <pre class="r"><code>preddat_fun = function(data, allvars, var) {
@@ -143,7 +162,7 @@ str(pred_dats)</code></pre>
 #  $ pred     : num  19.8 19.8 20 19.6 19.3 ...</code></pre>
 </div>
 <div id="making-one-added-variable-plot" class="section level1">
-<h1><a href="#making-one-added-variable-plot">Making one added variable plot</a></h1>
+<h1>Making one added variable plot</h1>
 <p>With the predictions successfully made it’s time for plotting.</p>
 <p>Here is the format of the plots I will be making, plotting the fitted line and showing the data on the x axis with a rug plot. I make the output black and white with larger text via <code>theme_bw(base_size = 14)</code> and clean up the axis labels via <code>labs()</code>.</p>
 <pre class="r"><code>ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
@@ -157,7 +176,7 @@ str(pred_dats)</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 </div>
 <div id="a-function-for-plotting" class="section level1">
-<h1><a href="#a-function-for-plotting">A function for plotting</a></h1>
+<h1>A function for plotting</h1>
 <p>Once I’ve worked out what one plot should look like I can make function for making plots. This is a reasonable approach for when making many plots that all look basically the same.</p>
 <p>One problem I anticipated running into when automating the plotting is with the x axis labels. The variable names in the dataset aren’t very nice looking. If I want the x axis labels to be more polished in the plots I’ll need replacement labels. I decided to make a vector of nicer labels, one label for each focus variable. This vector needs to be the same length and in the same order as the vector of variable names and the list of prediction datasets so each plot gets the correct new axis label.</p>
 <pre class="r"><code>xlabs = c(&quot;Displacement (cu.in.)&quot;, &quot;Gross horsepower&quot;,
@@ -205,4 +224,71 @@ all_plots</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <p><strong>Addendum:</strong> Package <strong>rms</strong> makes added variable plots via <strong>ggplot2</strong> and <strong>plotly</strong> along with simultaneous confidence bands for any model type the package works with. That includes linear models and generalized linear models excluding the negative binomial family. This may be a useful place to start if you are working with these kinds of models.</p>
 </div>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2.R">from here</a>.</p>
+<pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.0
+library(ggplot2) # v. 3.1.0
+library(purrr) # v. 0.3.1
+library(broom) # v. 0.5.1
+
+fit1 = lm( log(mpg) ~ disp + hp + drat + wt, data = mtcars)
+summary(fit1)
+
+( mod_vars = all.vars( formula(fit1) )[-1] )
+
+preddat_fun = function(data, allvars, var) {
+     sums = summarise_at(data, 
+                         vars( one_of(allvars), -one_of(var) ), 
+                         median) 
+     cbind( select_at(data, var), sums)
+}
+
+head( preddat_fun(mtcars, mod_vars, &quot;disp&quot;) )
+
+pred_dats = mod_vars %&gt;%
+     set_names() %&gt;%
+     map( ~preddat_fun(mtcars, mod_vars, .x) )
+str(pred_dats)
+
+preds = pred_dats %&gt;%
+     map(~augment(fit1, newdata = .x) ) %&gt;%
+     map(~mutate(.x, 
+                 lower = exp(.fitted - 2*.se.fit),
+                 upper = exp(.fitted + 2*.se.fit),
+                 pred = exp(.fitted) ) )
+
+str(preds$disp)
+ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
+     geom_line(size = 1) +
+     geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
+     geom_rug(sides = &quot;b&quot;) +
+     theme_bw(base_size = 14) +
+     labs(x = &quot;Displacement (cu.in.)&quot;,
+          y = &quot;Miles/(US) gallon&quot;) +
+     ylim(10, 32)
+
+xlabs = c(&quot;Displacement (cu.in.)&quot;, &quot;Gross horsepower&quot;,
+          &quot;Rear axle ratio&quot;, &quot;Weight (1000 lbs)&quot;)
+
+pred_plot = function(data, variable, xlab) {
+     ggplot(data, aes_string(x = variable, y = &quot;pred&quot;) ) +
+          geom_line(size = 1) +
+          geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
+          geom_rug(sides = &quot;b&quot;) +
+          theme_bw(base_size = 14) +
+          labs(x = xlab,
+               y = &quot;Miles/(US) gallon&quot;) +
+          ylim(10, 32)
+}
+
+pred_plot(preds[[1]], mod_vars[1], xlabs[1])
+
+all_plots = pmap( list(preds, mod_vars, xlabs), pred_plot)
+all_plots
+
+cowplot::plot_grid(plotlist = all_plots,
+          labels = &quot;AUTO&quot;,
+          align = &quot;hv&quot;)</code></pre>
 </div>

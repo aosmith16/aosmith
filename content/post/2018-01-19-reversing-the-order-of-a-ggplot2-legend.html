@@ -14,9 +14,20 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
 
 
 <p>It’s always nice to get good questions in a workshop. It can help everybody, including the instructor, get a bit of extra learnin’ in.</p>
-<p>Every spring I give a <strong>ggplot2</strong> workshop for graduate students in my college. The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() 🎯 ).</p>
+<p>Every spring I give a <strong>ggplot2</strong> workshop for <a href="https://ariel.rbind.io/workshop/ggplot2/">graduate students in my college</a>. The first half is focused on the terminology and understanding the basics of how to put a plot together (I remember as a beginner feeling like I was throwing darts at things to see what stuck when deciding if something should go inside or outside aes() 🎯 ).</p>
 <p>The second half is spent more on making more “final” versions of plots, which is where the question came up.</p>
-<pre class="r"><code>library(ggplot2)</code></pre>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#plotting-dataset">Plotting dataset</a></li>
+<li><a href="#original-plot">Original plot</a></li>
+<li><a href="#change-the-data-to-change-the-plot">Change the data to change the plot?</a></li>
+<li><a href="#reverse-the-legend-in-guide_legend">Reverse the legend in guide_legend()</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="plotting-dataset" class="section level1">
+<h1>Plotting dataset</h1>
 <p>I have a “results” dataset I use for one of the “final” plot examples, displaying the results from some statistical model used to answer a question about differences in mean response between some groups vs a control group.</p>
 <pre class="r"><code>res = structure(list(Diffmeans = c(-0.27, 0.11, -0.15, -1.27, -1.18
 ), Lower.CI = c(-0.63, -0.25, -0.51, -1.63, -1.54), Upper.CI = c(0.09, 
@@ -25,8 +36,13 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
     stocktype = structure(c(2L, 2L, 1L, 2L, 1L), .Label = c(&quot;bare&quot;, 
     &quot;cont&quot;), class = &quot;factor&quot;)), .Names = c(&quot;Diffmeans&quot;, &quot;Lower.CI&quot;, 
 &quot;Upper.CI&quot;, &quot;plantdate&quot;, &quot;stocktype&quot;), row.names = c(NA, -5L), class = &quot;data.frame&quot;)</code></pre>
+</div>
+<div id="original-plot" class="section level1">
+<h1>Original plot</h1>
 <p>In the workshop, making a plot of these results is done in many stages to demonstrate controlling scales and themes and dodging, etc. At one point during the workshop the graph looks like this.</p>
-<pre class="r"><code>( g1 = ggplot(res, aes(x = plantdate, y = Diffmeans, group = stocktype) ) +
+<pre class="r"><code>library(ggplot2)
+
+( g1 = ggplot(res, aes(x = plantdate, y = Diffmeans, group = stocktype) ) +
     geom_point(position = position_dodge(width = .75) ) +
     geom_errorbar( aes(ymin = Lower.CI, ymax = Upper.CI,
                        linetype = stocktype,
@@ -42,8 +58,11 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
       scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
                             name = element_blank(),
                             labels = c(&quot;Bare root&quot;, &quot;Container&quot;) ) )</code></pre>
-<p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>One year I had a student ask a great question about the order of the legend. The order of the lines representing the two groups in the plot is exactly opposite of the order of the groups in the legend. He felt the plot would feel more polished if the group order between the elements matched; I agreed.</p>
+</div>
+<div id="change-the-data-to-change-the-plot" class="section level1">
+<h1>Change the data to change the plot?</h1>
 <p>Now, a lot of time the answer to “how do I change the order of a categorical variable in <strong>ggplot2</strong>” is <em>change the data to change the plot</em>. (I’ve use <code>forcats::fct_inorder</code> a <em>lot</em> for getting the levels of variables like month names in the correct order for plotting.)</p>
 <p>But that doesn’t work in this case. If I change the order of the levels of the factor…</p>
 <pre class="r"><code>res$stocktype = factor(res$stocktype, levels = c(&quot;cont&quot;, &quot;bare&quot;) )</code></pre>
@@ -55,7 +74,10 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
                             labels = c(&quot;Container&quot;, &quot;Bare root&quot;) )</code></pre>
 <pre><code># Scale for &#39;linetype&#39; is already present. Adding another scale for
 # &#39;linetype&#39;, which will replace the existing scale.</code></pre>
-<p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="reverse-the-legend-in-guide_legend" class="section level1">
+<h1>Reverse the legend in guide_legend()</h1>
 <p>Back to the drawing board (and some time online), it turns out the answer is to reverse the legend within <strong>ggplot2</strong>. There is a “reverse” argument in the guide_legend() function. This function can be used either inside a scale_*() function with the “guides” argument or within guides().</p>
 <p>In this particular case, the scale_linetype_manual() line can be changed to incorporate guide_legend().</p>
 <p>Like this:</p>
@@ -70,5 +92,51 @@ description: "A quick example of reversing the legend order in a ggplot2 plot, w
                            name = element_blank(),
                            labels = c(&quot;Container&quot;, &quot;Bare root&quot;),
                            guide = guide_legend(reverse = TRUE) )</code></pre>
-<p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="/post/2018-01-19-reversing-the-order-of-a-ggplot2-legend_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>It was a good day; everyone got to learn something new! 🎉</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-01-19-reversing-the-order-of-a-ggplot2-legend.R">from here</a>.</p>
+<pre class="r"><code>res = structure(list(Diffmeans = c(-0.27, 0.11, -0.15, -1.27, -1.18
+), Lower.CI = c(-0.63, -0.25, -0.51, -1.63, -1.54), Upper.CI = c(0.09, 
+0.47, 0.21, -0.91, -0.82), plantdate = structure(c(1L, 2L, 2L, 
+3L, 3L), .Label = c(&quot;January 2&quot;, &quot;January 28&quot;, &quot;February 25&quot;), class = &quot;factor&quot;), 
+    stocktype = structure(c(2L, 2L, 1L, 2L, 1L), .Label = c(&quot;bare&quot;, 
+    &quot;cont&quot;), class = &quot;factor&quot;)), .Names = c(&quot;Diffmeans&quot;, &quot;Lower.CI&quot;, 
+&quot;Upper.CI&quot;, &quot;plantdate&quot;, &quot;stocktype&quot;), row.names = c(NA, -5L), class = &quot;data.frame&quot;)
+
+library(ggplot2)
+
+( g1 = ggplot(res, aes(x = plantdate, y = Diffmeans, group = stocktype) ) +
+    geom_point(position = position_dodge(width = .75) ) +
+    geom_errorbar( aes(ymin = Lower.CI, ymax = Upper.CI,
+                       linetype = stocktype,
+                       width = c(.2, .4, .4, .4, .4) ),
+                   position = position_dodge(width = .75) ) +
+      theme_bw() + 
+      labs(y = &quot;Difference in Growth (cm)&quot;,
+           x = &quot;Planting Date&quot;) +
+      geom_rect(xmin = -Inf, xmax = Inf, ymin = -.25, ymax = .25, 
+            fill = &quot;grey54&quot;, alpha = .05) +
+      scale_y_continuous(breaks = seq(-1.5, .5, by = .25) ) + 
+      coord_flip() +
+      scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
+                            name = element_blank(),
+                            labels = c(&quot;Bare root&quot;, &quot;Container&quot;) ) )
+
+res$stocktype = factor(res$stocktype, levels = c(&quot;cont&quot;, &quot;bare&quot;) )
+
+g1 %+% 
+     res +
+     scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
+                            name = element_blank(),
+                            labels = c(&quot;Container&quot;, &quot;Bare root&quot;) )
+
+g1 %+% 
+     res +
+     scale_linetype_manual(values = c(&quot;solid&quot;, &quot;twodash&quot;),
+                           name = element_blank(),
+                           labels = c(&quot;Container&quot;, &quot;Bare root&quot;),
+                           guide = guide_legend(reverse = TRUE) )</code></pre>
+</div>

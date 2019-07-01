@@ -13,13 +13,21 @@ draft: FALSE
 description: "In this post I show one approach for making added variable plots from a model with many continuous explanatory variables.  Since this is done for every variable in the model, I show how to automate the process via functions from package purrr." 
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 Last week two of my consulting meetings ended up on the same topic:  making added variable plots.
 
 In both cases, the student had a linear model of some flavor that had several continuous explanatory variables.  They wanted to plot the estimated relationship between each variable in the model and the response.  This could easily lead to a lot of copying and pasting of code, since they want to do the same thing for every explanatory variable in the model.  I worked up some example code showing an approach on how one might automate the task in R with functions and loops, and thought I'd generalize it for a blog post.
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2.Rmd")
+```
 
 # The basics of added variable plots
 
@@ -38,6 +46,7 @@ suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.0
 library(ggplot2) # v. 3.1.0
 library(purrr) # v. 0.3.1
 library(broom) # v. 0.5.1
+
 ```
 
 # The linear model
@@ -51,6 +60,7 @@ The model I fit uses a log transformation for the response variable, so predicti
 ```{r}
 fit1 = lm( log(mpg) ~ disp + hp + drat + wt, data = mtcars)
 summary(fit1)
+
 ```
 
 # The explanatory variables
@@ -61,9 +71,10 @@ I could write out a vector of variable names to loop through manually, but I pre
 
 ```{r}
 ( mod_vars = all.vars( formula(fit1) )[-1] )
+
 ```
 
-# [A function for making a prediction dataset](#a-function-for-making-a-prediction-dataset)
+# A function for making a prediction dataset
 
 The first step in making an added variable plot manually is to create the dataset to use for calculating model predictions. This dataset will contain the observed data for the explanatory variable of interest (aka the *focus* variable) with all other variables fixed to their medians.  
 
@@ -76,12 +87,14 @@ preddat_fun = function(data, allvars, var) {
                          median) 
      cbind( select_at(data, var), sums)
 }
+
 ```
 
 Here's what the result of the function looks like for a single focus variable, "disp" (showing first six rows).
 
 ```{r}
 head( preddat_fun(mtcars, mod_vars, "disp") )
+
 ```
 
 # Making a prediction dataset for each variable
@@ -95,6 +108,7 @@ pred_dats = mod_vars %>%
      set_names() %>%
      map( ~preddat_fun(mtcars, mod_vars, .x) )
 str(pred_dats)
+
 ```
 
 # Calculate model predictions for each variable
@@ -112,6 +126,7 @@ preds = pred_dats %>%
                  lower = exp(.fitted - 2*.se.fit),
                  upper = exp(.fitted + 2*.se.fit),
                  pred = exp(.fitted) ) )
+
 ```
 
 Here is what the structure of the list elements look like now (showing only the first list element).
@@ -120,7 +135,7 @@ Here is what the structure of the list elements look like now (showing only the 
 str(preds$disp)
 ```
 
-# [Making one added variable plot](#making-one-added-variable-plot)
+# Making one added variable plot
 
 With the predictions successfully made it's time for plotting.  
 
@@ -135,9 +150,10 @@ ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
      labs(x = "Displacement (cu.in.)",
           y = "Miles/(US) gallon") +
      ylim(10, 32)
+
 ```
 
-# [A function for plotting](#a-function-for-plotting)
+# A function for plotting
 
 Once I've worked out what one plot should look like I can make function for making plots.  This is a reasonable approach for when making many plots that all look basically the same.  
 
@@ -146,6 +162,7 @@ One problem I anticipated running into when automating the plotting is with the 
 ```{r}
 xlabs = c("Displacement (cu.in.)", "Gross horsepower",
           "Rear axle ratio", "Weight (1000 lbs)")
+
 ```
 
 My plotting function has three arguments: the dataset to plot, the explanatory variable to plot on the x axis (as a string), and label for the x axis (also as a string).  Your variable names for `x` must by [syntactically valid](https://stat.ethz.ch/R-manual/R-devel/library/base/html/make.names.html) to use the `aes_string()` approach I'm demonstrating here.
@@ -161,12 +178,14 @@ pred_plot = function(data, variable, xlab) {
                y = "Miles/(US) gallon") +
           ylim(10, 32)
 }
+
 ```
 
 Here is the plotting function in action.  I plot the "disp" variable, which is the first element of the three lists (prediction datasets, variables, axis labels).  This looks just like the plot I manually made above.
 
 ```{r}
 pred_plot(preds[[1]], mod_vars[1], xlabs[1])
+
 ```
 
 # Making all the plots
@@ -176,6 +195,7 @@ The very last step is to make all the plots.  Because I want to loop through thr
 ```{r}
 all_plots = pmap( list(preds, mod_vars, xlabs), pred_plot)
 all_plots
+
 ```
 
 ## Using the plots
@@ -195,3 +215,22 @@ cowplot::plot_grid(plotlist = all_plots,
 ```
 
 **Addendum:** Package **rms** makes added variable plots via **ggplot2** and **plotly** along with simultaneous confidence bands for any model type the package works with. That includes linear models and generalized linear models excluding the negative binomial family.  This may be a useful place to start if you are working with these kinds of models.
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

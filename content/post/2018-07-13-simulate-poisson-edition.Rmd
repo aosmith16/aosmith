@@ -13,8 +13,10 @@ draft: FALSE
 description: "Extending my simulation examples into the world of generalized linear models, I simulate Poisson data to explore what a quadratic relationship looks like on the scale of the data when fitting a generalized linear model with a log link."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 One of the things I like about simulations is that, with practice, they can be a quick way to check your intuition about a model or relationship.  
@@ -29,9 +31,15 @@ I wasn't sure.  Logically I would say that if something that is a straight line 
 
 Simulation to the rescue!  I decided to simulate some data to see what a relationship like the one the student had estimated could look like on the original scale.     
 
-# [The statistical model](#the-statistical-model)
+## Table of Contents
 
-Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#simulate-code)
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-07-13-simulate-poisson-edition.Rmd")
+```
+
+# The statistical model
+
+Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#simulation-code)
 
 The statistical model for generalized linear model looks pretty different than the statistical model of the very special case when we assume normality.  Since so many of us (like me!) learned that special case first, this different approach takes some getting used to.  
 
@@ -60,7 +68,7 @@ Notice we can calculate the mean on the original scale instead of the log scale 
 
 $$\lambda_t = exp(\beta_0 + \beta_1*x_t + \beta_2*x^2_t)$$
 
-# [Simulation code](#simulation-code)
+# Simulation code
 
 The first thing I will do in this simulation is define my true parameter values.  I'm simulating a relationship between x and y that is similar to the student's results so I'll set the intercept and the linear coefficient ($\beta_0$ and $\beta_1$, respectively) both to 0.5 and the quadratic coefficient ($\beta_2$) to 5.   
 
@@ -68,6 +76,7 @@ The first thing I will do in this simulation is define my true parameter values.
 b0 = .5
 b1 = .5
 b2 = 5
+
 ```
 
 Next I need an explanatory variable, which I'll call `x`.  I decided to make this a continuous variable between 0 and 1 by taking 100 random draws from a uniform distribution with a minimum of 0 and a maximum of 1 via `runif()`.  Since I'm taking 100 draws, $t$ in the statistical model goes from 1-100.
@@ -78,6 +87,7 @@ I'll set my seed prior to generating random numbers so you'll get identical resu
 set.seed(16)
 x = runif(100, min = 0, max = 1)
 head(x) # First six values of x
+
 ```
 
 Once I have my parameters set and an explanatory variable created I can calculate $\lambda_t$.  This is where I find the statistical model to be really handy, as it directly shows me how to write the code.  Because I want to calculate the means on the original scale and not the log of the means I use the model equation after exponentiating both sides.
@@ -94,6 +104,7 @@ The step above simulates the *mean* of each value of the response variable.  The
 
 ```{r}
 head(lambda)
+
 ```
 
 Now that I have a vector of means I can use it to generate a count for each value of `lambda` based on the Poisson distribution.  I do this via `rpois()`.
@@ -113,6 +124,7 @@ Unlike `lambda`, the `y` variable is a discrete count. This is the response vari
 
 ```{r}
 head(y)
+
 ```
 
 # Results!
@@ -123,6 +135,7 @@ Below is what things look like on the log scale (the scale of the model).  I was
  
 ```{r}
 plot(x, log(y) )
+
 ```
 
 How do things look on the original scale?  The curve is more extreme, much more than I realized it would be.  
@@ -132,3 +145,22 @@ plot(x, y)
 ```
 
 This was good to see, as it matched pretty well with an added variable plot the student had made.  We had originally been concerned that there was some mistake in the plotting code, and being able to explore things via simulation helped allay these fears.  Simulation success! `r emo::ji("clinking_glasses")`
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-07-13-simulate-poisson-edition.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

@@ -12,8 +12,10 @@ draft: FALSE
 description: "I go through an example of the directory structure I used to organize my data, analysis scripts, and outputs for a recent collaborative analysis I did using R."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 There are a lot of practical skills involved in doing an analysis that are essential but that I rarely (never?) see included in the curriculum, statistics or otherwise.  These are skills like how to organize your data, how to approach QAQC, and how to set up a naming algorithm for files.  We all need to do these things, but too often we end up learning these skills by muddling through on our own.
@@ -23,6 +25,12 @@ There have been some nice papers relevant to the topic of what I'm calling "anal
 In this post I go over something that took me a long time to 1., realize was pretty darn important and 2., actually use, which is organizing a directory of my data, scripts, and output when doing an analysis.  I refer to this as setting up my *directory structure*.
 
 Some of this can be generalized to any set of analysis tools, but the tools I use are specifically related to using R for the analysis.  
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-10-29-an-example-directory-structure.Rmd")
+```
 
 # The basic directory structure
 
@@ -38,7 +46,7 @@ Root_directory
      - Results
 ```
      
-# [The root directory](#the-root-directory)
+# The root directory
 
 The first thing I did for this project was to create a folder to hold all the files for the analysis.  This folder is called the *root directory*.  It is the top level of the hierarchy of folders that will store the analysis files.  Since my project was a discrete set of analyses that I was going to do one time, this relatively simple set-up worked well for me.
 
@@ -46,7 +54,7 @@ I use [RStudio Projects](https://support.rstudio.com/hc/en-us/articles/200526207
 
 If I switch to a different computer while working the analysis project (like when I work on my home computer), I move the root directory and not only individual files.
 
-# [Relative file paths](#relative-file-paths)
+# Relative file paths
 
 Not so many years ago, I was laboriously writing out my file paths for setting the working directory in `setwd()` or reading/writing files.  And then I'd work at home one day and have to manually update all those file paths.  
 

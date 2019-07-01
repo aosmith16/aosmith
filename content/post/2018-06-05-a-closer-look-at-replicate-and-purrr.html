@@ -15,6 +15,30 @@ description: "In this post I delve into the details of the R functions I've been
 
 
 <p>I’ve done a couple of posts so far on simulations, <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">here</a> and <a href="https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/">here</a>, where I demonstrate how to build a function for simulating data from a defined linear model and then explore long-run behavior of models fit to the simulated datasets. The focus of those posts was on the general simulation process, and I didn’t go into much detail on the specific R code. In this post I’ll focus in on the code I use for repeatedly simulating data and extracting output, specifically talking about the function <code>replicate()</code> and the <em>map</em> family of functions from package <strong>purrr</strong>.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#the-replicate-function">The replicate() function</a>
+<ul>
+<li><a href="#simple-example-of-replicate">Simple example of replicate()</a></li>
+<li><a href="#an-equivalent-for-loop-example">An equivalent for() loop example</a></li>
+<li><a href="#using-replicate-on-a-user-made-function">Using replicate() on a user-made function</a></li>
+</ul></li>
+<li><a href="#using-purrrmap-for-looping-through-lists">Using purrr::map() for looping through lists</a>
+<ul>
+<li><a href="#other-variants-of-map-for-non-list-outputs">Other variants of map() for non-list outputs</a></li>
+</ul></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="r-packages" class="section level1">
+<h1>R packages</h1>
+<p>I’ll use package <strong>purrr</strong> for looping, <strong>dplyr</strong> for any data manipulation, and <strong>ggplot2</strong> for plotting. I’ll also use (but not load), package <strong>broom</strong> for extracting output from models.</p>
+<pre class="r"><code>library(purrr) # v. 0.2.5
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
+library(ggplot2) # v 2.2.1</code></pre>
+</div>
 <div id="the-replicate-function" class="section level1">
 <h1>The replicate() function</h1>
 <p>The <code>replicate()</code> function is a member of the <em>apply</em> family of functions in base R.<br />
@@ -114,8 +138,7 @@ length(sim_lm)</code></pre>
 <p>Looping through the list can be done using a <code>for()</code> loop, but I prefer to use functions that do the looping without all the typing. In particular, these days I use the <em>map</em> family of functions from the <strong>purrr</strong> package to loop through lists. Before <strong>purrr</strong> I primarily used <code>lapply()</code> (the only other <em>apply</em> family function that I know 😆).</p>
 <p>The <code>map()</code> function takes a list as input and puts the output into a list of the same length. The first argument to <code>map()</code> is the list to loop through and the second argument is the function to apply to each element of the list.</p>
 <p>For example, I can pull out the coefficients of each model in my 5-run simulation by looping through <code>sim_lm</code> and applying the <code>coef()</code> function to each list element.</p>
-<pre class="r"><code>library(purrr) # v. 0.2.5
-map(sim_lm, coef)</code></pre>
+<pre class="r"><code>map(sim_lm, coef)</code></pre>
 <pre><code># [[1]]
 # (Intercept) groupgroup2 
 #    5.189474   -1.715602 
@@ -149,64 +172,110 @@ where “model” is a fitted model.</p>
 <p>For data.frame output we can use <code>map_dfr()</code> for row binding or <em>stacking</em> results together into a single data.frame.</p>
 <p>Estimated coefficients, their standard errors, and their statistical tests from models fit with <code>lm()</code> can be extracted into a tidy data.frame using <code>broom::tidy()</code>. Looping through the results and doing this for each model via <code>map_dfr()</code> will put the output in one data.frame instead of storing the individual data.frames for each model as one element of a list.</p>
 <pre class="r"><code>map_dfr(sim_lm, broom::tidy)</code></pre>
-<pre><code>#           term   estimate std.error statistic      p.value
-# 1  (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08
-# 2  groupgroup2 -1.7156023 0.7435860 -2.307201 3.314134e-02
-# 3  (Intercept)  4.6701884 0.7450412  6.268362 6.535353e-06
-# 4  groupgroup2 -1.9654632 1.0536474 -1.865390 7.851233e-02
-# 5  (Intercept)  5.2319216 0.7333769  7.134015 1.203499e-06
-# 6  groupgroup2 -2.5899532 1.0371516 -2.497179 2.243919e-02
-# 7  (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08
-# 8  groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03
-# 9  (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06
-# 10 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01</code></pre>
+<pre><code># # A tibble: 10 x 5
+#    term        estimate std.error statistic      p.value
+#    &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;
+#  1 (Intercept)    5.19      0.526      9.87 0.0000000109
+#  2 groupgroup2   -1.72      0.744     -2.31 0.0331      
+#  3 (Intercept)    4.67      0.745      6.27 0.00000654  
+#  4 groupgroup2   -1.97      1.05      -1.87 0.0785      
+#  5 (Intercept)    5.23      0.733      7.13 0.00000120  
+#  6 groupgroup2   -2.59      1.04      -2.50 0.0224      
+#  7 (Intercept)    6.29      0.672      9.36 0.0000000246
+#  8 groupgroup2   -3.20      0.950     -3.36 0.00346     
+#  9 (Intercept)    4.33      0.621      6.97 0.00000164  
+# 10 groupgroup2   -0.972     0.878     -1.11 0.283</code></pre>
 <p>The <code>map_dfr()</code> function has an additional argument, <code>.id</code>, which can be used to store the list names (if the original list had names) or add the list index to the output (if it didn’t have names). I’m using a list that has no names, so each unique model output will be assigned its index number if I use the <code>.id</code> argument. The name of the new column is given as a string to <code>.id</code>.</p>
 <pre class="r"><code>map_dfr(sim_lm, broom::tidy, .id = &quot;model&quot;)</code></pre>
-<pre><code>#    model        term   estimate std.error statistic      p.value
-# 1      1 (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08
-# 2      1 groupgroup2 -1.7156023 0.7435860 -2.307201 3.314134e-02
-# 3      2 (Intercept)  4.6701884 0.7450412  6.268362 6.535353e-06
-# 4      2 groupgroup2 -1.9654632 1.0536474 -1.865390 7.851233e-02
-# 5      3 (Intercept)  5.2319216 0.7333769  7.134015 1.203499e-06
-# 6      3 groupgroup2 -2.5899532 1.0371516 -2.497179 2.243919e-02
-# 7      4 (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08
-# 8      4 groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03
-# 9      5 (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06
-# 10     5 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01</code></pre>
+<pre><code># # A tibble: 10 x 6
+#    model term        estimate std.error statistic      p.value
+#    &lt;chr&gt; &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;
+#  1 1     (Intercept)    5.19      0.526      9.87 0.0000000109
+#  2 1     groupgroup2   -1.72      0.744     -2.31 0.0331      
+#  3 2     (Intercept)    4.67      0.745      6.27 0.00000654  
+#  4 2     groupgroup2   -1.97      1.05      -1.87 0.0785      
+#  5 3     (Intercept)    5.23      0.733      7.13 0.00000120  
+#  6 3     groupgroup2   -2.59      1.04      -2.50 0.0224      
+#  7 4     (Intercept)    6.29      0.672      9.36 0.0000000246
+#  8 4     groupgroup2   -3.20      0.950     -3.36 0.00346     
+#  9 5     (Intercept)    4.33      0.621      6.97 0.00000164  
+# 10 5     groupgroup2   -0.972     0.878     -1.11 0.283</code></pre>
 <p>Further arguments to the function used within <code>map()</code> can be passed as additional arguments. For example, I can add confidence intervals for estimated coefficients when using the <code>tidy.lm()</code> function via <code>conf.int = TRUE</code>. If I want to get confidence intervals for all models I add this as an additional argument in <code>map_dfr()</code>.</p>
 <pre class="r"><code>map_dfr(sim_lm, broom::tidy, conf.int = TRUE)</code></pre>
-<pre><code>#           term   estimate std.error statistic      p.value  conf.low
-# 1  (Intercept)  5.1894736 0.5257947  9.869772 1.092300e-08  4.084820
-# 2  groupgroup2 -1.7156023 0.7435860 -2.307201 3.314134e-02 -3.277819
-# 3  (Intercept)  4.6701884 0.7450412  6.268362 6.535353e-06  3.104915
-# 4  groupgroup2 -1.9654632 1.0536474 -1.865390 7.851233e-02 -4.179094
-# 5  (Intercept)  5.2319216 0.7333769  7.134015 1.203499e-06  3.691154
-# 6  groupgroup2 -2.5899532 1.0371516 -2.497179 2.243919e-02 -4.768928
-# 7  (Intercept)  6.2851581 0.6717450  9.356464 2.460846e-08  4.873874
-# 8  groupgroup2 -3.1950902 0.9499909 -3.363285 3.461704e-03 -5.190947
-# 9  (Intercept)  4.3296875 0.6210667  6.971372 1.641131e-06  3.024875
-# 10 groupgroup2 -0.9724314 0.8783210 -1.107148 2.828066e-01 -2.817715
-#     conf.high
-# 1   6.2941272
-# 2  -0.1533862
-# 3   6.2354619
-# 4   0.2481678
-# 5   6.7726893
-# 6  -0.4109786
-# 7   7.6964420
-# 8  -1.1992333
-# 9   5.6345003
-# 10  0.8728526</code></pre>
-<p>The <em>map</em> family of functions can easily be used with pipes as one step in a chain of functions. I can, for example, take the estimates I get using <code>broom::tidy</code>, pull out the estimated intercepts, and then plot a histogram of those estimates. I’ll need packages <strong>dplyr</strong> and <strong>ggplot2</strong> for this.</p>
-<pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
-library(ggplot2) # v 2.2.1</code></pre>
+<pre><code># # A tibble: 10 x 7
+#    term        estimate std.error statistic      p.value conf.low conf.high
+#    &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+#  1 (Intercept)    5.19      0.526      9.87 0.0000000109     4.08     6.29 
+#  2 groupgroup2   -1.72      0.744     -2.31 0.0331          -3.28    -0.153
+#  3 (Intercept)    4.67      0.745      6.27 0.00000654       3.10     6.24 
+#  4 groupgroup2   -1.97      1.05      -1.87 0.0785          -4.18     0.248
+#  5 (Intercept)    5.23      0.733      7.13 0.00000120       3.69     6.77 
+#  6 groupgroup2   -2.59      1.04      -2.50 0.0224          -4.77    -0.411
+#  7 (Intercept)    6.29      0.672      9.36 0.0000000246     4.87     7.70 
+#  8 groupgroup2   -3.20      0.950     -3.36 0.00346         -5.19    -1.20 
+#  9 (Intercept)    4.33      0.621      6.97 0.00000164       3.02     5.63 
+# 10 groupgroup2   -0.972     0.878     -1.11 0.283           -2.82     0.873</code></pre>
+<p>The <em>map</em> family of functions can easily be used with pipes as one step in a chain of functions. I can, for example, take the estimates I get using <code>broom::tidy()</code>, pull out the estimated intercepts, and then plot a histogram of those estimates. I’ll use functions from packages <strong>dplyr</strong> and <strong>ggplot2</strong> for this.</p>
 <p>You can see all the steps in the pipe chain below. I loop through <code>sim_lm</code> using <code>map_dfr()</code> to extract the coefficients from each element of the list and output a data.frame of results. I use <code>dplyr::filter()</code> to keep only the rows with estimated intercepts and then plot a histogram of these estimates for the whole simulation with <code>ggplot2::qplot()</code>.</p>
 <pre class="r"><code>sim_lm %&gt;%
      map_dfr(broom::tidy) %&gt;%
      filter(term == &quot;(Intercept)&quot;) %&gt;%
      qplot(x = estimate, data = ., geom = &quot;histogram&quot;)</code></pre>
 <pre><code># `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
-<p><img src="/post/2018-06-05-a-closer-look-at-replicate-and-purrr_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="/post/2018-06-05-a-closer-look-at-replicate-and-purrr_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <p>There are more variants of <code>map()</code> that you might find useful, both for simulations and in other iterative work. See the documentation for <code>map()</code> (<code>?map</code>) to see all of them along with additional examples.</p>
 </div>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-06-05-a-closer-look-at-replicate-and-purrr.R">from here</a>.</p>
+<pre class="r"><code>library(purrr) # v. 0.2.5
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.5
+library(ggplot2) # v 2.2.1
+
+set.seed(16)
+rnorm(5, mean = 0, sd = 1)
+
+set.seed(16)
+replicate(n = 3, rnorm(5, 0, 1), simplify = FALSE )
+
+set.seed(16)
+replicate(n = 3, rnorm(5, 0, 1) )
+
+set.seed(16)
+list1 = list() # Make an empty list to save output in
+for (i in 1:3) { # Indicate number of iterations with &quot;i&quot;
+    list1[[i]] = rnorm(5, 0, 1) # Save output in list for each iteration
+}
+list1
+
+twogroup_fun = function(nrep = 10, b0 = 5, b1 = -2, sigma = 2) {
+     ngroup = 2
+     group = rep( c(&quot;group1&quot;, &quot;group2&quot;), each = nrep)
+     eps = rnorm(ngroup*nrep, 0, sigma)
+     growth = b0 + b1*(group == &quot;group2&quot;) + eps
+     growthfit = lm(growth ~ group)
+     growthfit
+}
+twogroup_fun()
+
+sim_lm = replicate(5, twogroup_fun(), simplify = FALSE )
+length(sim_lm)
+
+map(sim_lm, coef)
+
+map_dbl(sim_lm, ~summary(.x)$r.squared)
+
+map_dbl(sim_lm, function(x) summary(x)$r.squared)
+
+map_dfr(sim_lm, broom::tidy)
+
+map_dfr(sim_lm, broom::tidy, .id = &quot;model&quot;)
+
+map_dfr(sim_lm, broom::tidy, conf.int = TRUE)
+
+sim_lm %&gt;%
+     map_dfr(broom::tidy) %&gt;%
+     filter(term == &quot;(Intercept)&quot;) %&gt;%
+     qplot(x = estimate, data = ., geom = &quot;histogram&quot;)</code></pre>
 </div>

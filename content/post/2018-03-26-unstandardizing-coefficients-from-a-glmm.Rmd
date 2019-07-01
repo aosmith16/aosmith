@@ -13,11 +13,11 @@ draft: FALSE
 description: "Unstandardizing coefficients in order to interpret them on the original scale can be needed when explanatory variables were standardized to help with model convergence when fitting generalized linear mixed models.  Here I show one approach to unstandardizing for a generalized linear mixed model fit with lme4." 
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
-
-Winter term grades are in and I can once again scrape together some time to write blog posts! `r emo::ji("tada")` 
 
 The last post I did about making [added variable plots](https://aosmith.rbind.io/2018/01/31/added-variable-plots/) led me to think about other "get model results" topics, such as the one I'm talking about today: unstandardizing coefficients.  
 
@@ -27,15 +27,22 @@ The math for converting the standardized slope estimates to unstandardized ones 
 
 The first time I went though this process was quite clunky.  Since then I've managed to tidy things up quite a bit through work with students, and things are now much more organized.
 
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-03-26-unstandardizing-coefficients-from-a-glmm.Rmd")
+```
+
 # R packages
 
 Model fitting will be done via **lme4**, which is where I've most often needed to do this.  Data manipulation tools from **dplyr** will be useful for getting results tidied up.  I'll also use helper functions from **purrr** to loop through variables and **broom** for the tidy extraction of fixed-effects coefficients from the model.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 library(lme4) # v. 1.1-15
 suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
 library(purrr) # 0.2.4
 library(broom) # 0.4.3
+
 ```
 
 # The dataset
@@ -44,6 +51,7 @@ The dataset I'll use is named `cbpp`, and comes with **lme4**.  It is a dataset 
 
 ```{r}
 glimpse(cbpp)
+
 ```
 
 This dataset has no continuous explanatory variables in it, so I'll add some to demonstrate standardizing/unstandardizing.  I create three new variables with very different ranges.
@@ -56,6 +64,7 @@ cbpp = mutate(cbpp, y1 = rnorm(56, 500, 100),
               y3 = runif(56, 10000, 20000) )
 
 glimpse(cbpp)
+
 ```
 
 # Analysis
@@ -67,6 +76,7 @@ Here is my initial generalized linear mixed model, using the three continuous ex
 ```{r}
 fit1 = glmer( cbind(incidence, size - incidence) ~ y1 + y2 + y3 + (1|herd),
               data = cbpp, family = binomial)
+
 ```
 
 ## Standardizing the variables
@@ -75,10 +85,11 @@ I'll now standardize the three explanatory variables, which involves subtracting
 
 I do the work inside `mutate_at()`, which allows me to choose the three variables I want to standardize by name and add "s" as the suffix by using a name in `funs()`.  Adding the suffix allows me to keep the original variables, as I will need them later.  I use `as.numeric()` to convert the matrix that the `scale()` function returns into a vector.
 
-```{r}
+```{r, warning = FALSE}
 cbpp = mutate_at(cbpp, vars( y1:y3 ), funs(s = as.numeric( scale(.) ) ) )
 
 glimpse(cbpp)
+
 ```
 
 ## Standardized model
@@ -88,6 +99,7 @@ The model with standardized variables converges without any problems.
 ```{r}
 fit2 = glmer( cbind(incidence, size - incidence) ~ y1_s + y2_s + y3_s + (1|herd),
               data = cbpp, family = binomial)
+
 ```
 
 # Unstandardizing slope coefficients
@@ -106,6 +118,7 @@ coef_st = tidy(fit2, effects = "fixed",
      conf.method = "profile")
 
 coef_st
+
 ```
 
 ## Calculate standard deviations for each variable
@@ -119,6 +132,7 @@ The output from `map()` returns a list, which can be stacked into a long format 
 ```{r}
 map( select(cbpp, y1:y3), sd) %>% 
      stack()
+
 ```
 
 The variables in my model and in my output end with `_s` , so I'll need to add that suffix to the variable names in the "standard deviations" dataset prior to joining the two data.frames together.
@@ -129,6 +143,7 @@ sd_all = map( select(cbpp, y1:y3), sd) %>%
      mutate(ind = paste(ind, "s", sep = "_") )
 
 sd_all
+
 ```
 
 ## Joining the standard deviations to the coefficients table
@@ -138,14 +153,16 @@ Once the names of the variables match between the datasets I can join the "stand
 ```{r}
 coef_st %>%
      inner_join(., sd_all, by = c("term" = "ind") )
+
 ```
 
 With everything in one data.frame I can easily divide `estimate`, `conf.low` and `conf.high` by the standard deviation in `values` via `mutate_at()`.  I will round the results, as well, although I'm ignoring the vast differences in the variable range when I do this rounding. 
 
-```{r}
+```{r, warning = FALSE}
 coef_st %>%
      inner_join(., sd_all, by = c("term" = "ind") ) %>%
      mutate_at( vars(estimate, conf.low, conf.high), funs(round( ./values, 4) ) )
+
 ```
 
 I'll get rid of the extra variables via `select()`, so I end up with the unstandardized coefficients and confidence interval limits along with the variable name.  I could also get the variable names cleaned up, possibly removing the suffix and/or capitalizing and adding units, etc., although I don't do that with these fake variables today.
@@ -157,6 +174,7 @@ coef_unst = coef_st %>%
      select(-(std.error:p.value), -values)
 
 coef_unst
+
 ```
 
 ## Estimates from the unstandardized model
@@ -165,6 +183,7 @@ Note that the estimated coefficients are the same from the model where I manuall
 
 ```{r}
 round( fixef(fit1)[2:4], 4)
+
 ```
 
 Given that the estimates are the same, couldn't we simply go back and fit the unstandardized model and ignored the warning message?  Unfortunately, the convergence issues can cause problems when trying to calculate profile likelihood confidence intervals, so the simpler approach doesn't always work.  
@@ -175,6 +194,7 @@ In this case there are a bunch of warnings (not shown), and the profile likeliho
 tidy(fit1, effects = "fixed",
      conf.int = TRUE,
      conf.method = "profile")
+
 ```
 
 # Further (important!) work
@@ -184,3 +204,22 @@ These results are all on the scale of log-odds, and I would exponentiate the uns
 Along these same lines, one thing I didn't discuss in this post that is important to consider is the appropriate and interesting unit increase for each variable.  Clearly the effect of a "1 unit" increase in the variable is likely not of interest for at least `y2` (range between 0 and 1) and `y3` (range between 10000 and 20000).  In the first case, 1 unit encompasses the entire range of the variable and in the second case 1 unit appears to be much smaller than the scale of the measurement.
 
 The code to calculate the change in odds for a practically interesting increase in each explanatory variable would be similar to what I've done above.  I would create a data.frame with the unit increase of interest for each variable in it, join this to the "coefficients" dataset, and multiply all estimates and CI by those values. The multiplication step can occur before or after unstandardizing but must happen before doing exponentiation/inverse-linking.  I'd report the unit increase for each variable in any tables of results so the reader can see that the reported estimate is a change in estimated odds/mean for the given practically important increase in the variable.  
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-03-26-unstandardizing-coefficients-from-a-glmm.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

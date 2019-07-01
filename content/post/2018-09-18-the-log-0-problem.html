@@ -19,8 +19,31 @@ description: "Analyzing positive data with 0 values can be challenging, since a 
 <p>This isn’t necessarily an incorrect thing to do. However, I think it is important to step back and think about the study and those 0 values more before forging ahead with adding a constant to the data.</p>
 <p>Some of the resources I’ve used over the years to hone my thinking on this topic are <a href="https://stat.ethz.ch/pipermail/r-sig-ecology/2009-June/000676.html">this thread</a> on the R-sig-eco mailing list, <a href="https://stats.stackexchange.com/questions/1444/how-should-i-transform-non-negative-data-including-zeros">this Cross Validated question and answers</a>, and <a href="https://robjhyndman.com/hyndsight/transformations/">this blogpost on the Hyndsight blog</a>.</p>
 <p>I will explore the influence of <code>c</code> in <code>log(y + c)</code> via simulation later, so if that’s what you are interested in you can <a href="#generate-log-normal-data-with-0-values">jump to that section</a>.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#thinking-about-0-values">Thinking about 0 values</a>
+<ul>
+<li><a href="#discrete-data">Discrete data</a></li>
+<li><a href="#continuous-data">Continuous data</a></li>
+</ul></li>
+<li><a href="#common-choices-of-c">Common choices of c</a></li>
+<li><a href="#load-r-packages">Load R packages</a></li>
+<li><a href="#generate-log-normal-data-with-0-values">Generate log-normal data with 0 values</a></li>
+<li><a href="#the-four-models-to-fit">The four models to fit</a></li>
+<li><a href="#a-function-for-fitting-the-models">A function for fitting the models</a></li>
+<li><a href="#extract-the-results">Extract the results</a></li>
+<li><a href="#compare-the-options-for-c">Compare the options for c</a>
+<ul>
+<li><a href="#summary-stastics">Summary stastics</a></li>
+<li><a href="#graph-the-results">Graph the results</a></li>
+</ul></li>
+<li><a href="#which-option-is-best">Which option is best?</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
 <div id="thinking-about-0-values" class="section level1">
-<h1><a href="#thinking-about-0-values">Thinking about 0 values</a></h1>
+<h1>Thinking about 0 values</h1>
 <p>Without getting into too much detail, below are some of the things I consider when I have 0 as well as positive values in a response variable.</p>
 <div id="discrete-data" class="section level2">
 <h2>Discrete data</h2>
@@ -64,7 +87,7 @@ description: "Analyzing positive data with 0 values can be challenging, since a 
 </div>
 </div>
 <div id="common-choices-of-c" class="section level1">
-<h1><a href="#common-choices-of-c">Common choices of c</a></h1>
+<h1>Common choices of c</h1>
 <p>It may be that after all that hard thinking you end up on the option of adding a constant to shift your distribution away from 0 so you can proceed with a log transformation. In my own work I find this is most likely for cases where I consider the 0 values to be some minimal value (not true 0’s) and I have relatively few of them.</p>
 <p>So what should this constant, <code>c</code>, be?</p>
 <p>This choice isn’t minor, as the value you choose can change your results when your goal is estimation. The more 0 values you have the more likely the choice of <code>c</code> matters.</p>
@@ -85,7 +108,7 @@ library(ggplot2) # v. 3.0.0
 library(ggridges) # v. 0.5.0</code></pre>
 </div>
 <div id="generate-log-normal-data-with-0-values" class="section level1">
-<h1><a href="#generate-log-normal-data-with-0-values">Generate log-normal data with 0 values</a></h1>
+<h1>Generate log-normal data with 0 values</h1>
 <p>Since the log-normal distribution by definition has no 0 values, I found it wasn’t easy to simulate such data. When I was working on this several years ago I decided that one way to force 0 values was through rounding. This is not the most elegant solution, I’m sure, but I think it works to show how the choice of <code>c</code> can influence estimates.</p>
 <p>I managed to do this by generating primarily negative data on the log scale and then exponentiating to the data scale. I make my <code>x</code> variable negative, and positively related to <code>y</code>.</p>
 <p>The range of the <code>y</code> variable ends up with many small values with a few fairly large values.</p>
@@ -239,14 +262,14 @@ logy_0(n = 50)</code></pre>
               .id = &quot;model&quot;)
 head(results)</code></pre>
 <pre><code># # A tibble: 6 x 8
-#   model     term   estimate std.error statistic p.value conf.low conf.high
-#   &lt;chr&gt;     &lt;chr&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-# 1 True mod~ (Inte~  -0.912     0.543      -1.68 9.94e-2 -2.00e+0    0.179 
-# 2 True mod~ x        0.494     0.141       3.50 1.02e-3  2.10e-1    0.778 
-# 3 Add 1     (Inte~   0.543     0.154       3.52 9.63e-4  2.33e-1    0.853 
-# 4 Add 1     x        0.0801    0.0402      1.99 5.18e-2 -6.46e-4    0.161 
-# 5 Add 1/2 ~ (Inte~  -0.908     0.461      -1.97 5.48e-2 -1.84e+0    0.0193
-# 6 Add 1/2 ~ x        0.427     0.120       3.55 8.63e-4  1.85e-1    0.668</code></pre>
+#   model     term    estimate std.error statistic p.value conf.low conf.high
+#   &lt;chr&gt;     &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+# 1 True mod~ (Inter~  -0.912     0.543      -1.68 9.94e-2 -2.00e+0    0.179 
+# 2 True mod~ x         0.494     0.141       3.50 1.02e-3  2.10e-1    0.778 
+# 3 Add 1     (Inter~   0.543     0.154       3.52 9.63e-4  2.33e-1    0.853 
+# 4 Add 1     x         0.0801    0.0402      1.99 5.18e-2 -6.46e-4    0.161 
+# 5 Add 1/2 ~ (Inter~  -0.908     0.461      -1.97 5.48e-2 -1.84e+0    0.0193
+# 6 Add 1/2 ~ x         0.427     0.120       3.55 8.63e-4  1.85e-1    0.668</code></pre>
 <p>I’m going to focus on only the slopes, so I’ll pull those out explicitly.</p>
 <pre class="r"><code>results_sl = filter(results, term == &quot;x&quot;)</code></pre>
 </div>
@@ -289,10 +312,91 @@ head(results)</code></pre>
 <p>And the “Add 1/2 minimum &gt; 0” option tends to underestimate the slope. I’m curious that the distribution is also relatively narrow, and wonder if that has something to do with the way I simulated the 0 values via rounding.</p>
 </div>
 </div>
-<div id="what-option-is-best" class="section level1">
-<h1>What option is best?</h1>
-<p>First, one of the main things I discovered is that my method for simulating positive, continuous data plus 0 values is a little kludgy. 😄 For the scenario I did simulate data for, though, adding 1 is clearly a very bad option if you want to get a reasonable estimate of the slope (which is generally my goal when I’m doing an analysis 😉).</p>
+<div id="which-option-is-best" class="section level1">
+<h1>Which option is best?</h1>
+<p>First, one of the main things I discovered is that my method for simulating positive, continuous data plus 0 values is a little kludgy. 😂 For the scenario I did simulate data for, though, adding 1 is clearly a very bad option if you want to get a reasonable estimate of the slope (which is generally my goal when I’m doing an analysis 😉).</p>
 <p>Why did adding 1 perform so badly? Remember that when we do a log transformation we increase the space between values less than 1 on the original scale and decrease the space between values above 1. The data I created were primarily below 1, so by adding 1 to the data I totally changed the spacing of the data after log transformation. Using 1 as <code>c</code> is going to make the most sense if our minimum non-0 value is 1 or higher (at least for estimation).</p>
 <p>The other two options both performed OK in this specific scenario. You may have noticed that statisticians generally dislike anti-conservative methods, so my guess is many (most?) statisticians would choose the conservative option (“Add 1/2 minimum &gt; 0”) to be on the safe side. However, even if this pattern of over- and under-estimation holds more generally in other scenarios, the choice between these options should likely be based on the gravity of missing a relationship due to underestimation compared to the gravity of overstating a relationship rather than on purely statistical concerns.</p>
 <p>Another avenue I think might be important to explore is how the number of 0 values in the distribution has an impact on the results. The choice between <code>c</code> options could depend on that. (Plus, of course, the “Quartile method” only works at all if fewer than 25% of the data are 0’s).</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-09-18-the-log-0-problem.R">from here</a>.</p>
+<pre class="r"><code>library(purrr) # v. 0.2.5
+library(dplyr) # v. 0.7.6
+library(broom) # v. 0.5.0
+library(ggplot2) # v. 3.0.0
+library(ggridges) # v. 0.5.0
+
+set.seed(16)
+beta0 = 0 # intercept
+beta1 = .75 # slope
+
+# Sample size
+n = 50
+
+# Explanatory variable
+x = runif(n, min = -7, max = 0)
+
+true_y = exp(beta0 + beta1*x + rnorm(n, mean = 0, sd = 2))
+summary(true_y)
+
+y = round(true_y, digits = 2)
+summary(y)
+
+replicate(100, sum( round( exp(beta0 + beta1*runif(n, min = -7, max = 0) + 
+                                  rnorm(n, mean = 0, sd = 2)), 2) == 0) )
+
+( true = lm(log(true_y) ~ x) )
+
+( fit1 = lm(log(y + 1) ~ x) )
+
+( fitc = lm(log(y + min(y[y&gt;0])/2) ~ x) )
+
+( fitq = lm(log(y + quantile(y, .25)^2/quantile(y, .75) ) ~ x) )
+logy_0 = function(beta0 = 0, beta1 = .75, n) {
+     x = runif(n, -7, 0) # create expl var between -10 and 0
+     true_y = exp(beta0 + beta1*x + rnorm(n, 0, 2))
+     y = round(true_y, 2)
+     
+     while( sum(y == 0 ) == 0 | sum(y == 0) &gt; n/4) {
+          true_y = exp(beta0 + beta1*x + rnorm(n, 0, 2))
+          y = round(true_y, 2)
+     }
+     
+     true = lm(log(true_y) ~ x)
+     fit1 = lm(log(y + 1) ~ x)
+     fitc = lm(log(y + min(y[y&gt;0])/2) ~ x)
+     fitq = lm(log(y + quantile(y, .25)^2/quantile(y, .75) ) ~ x)
+     
+     setNames(list(true, fit1, fitc, fitq), 
+              c(&quot;True model&quot;, &quot;Add 1&quot;, &quot;Add 1/2 minimum &gt; 0&quot;, &quot;Quartile method&quot;) )
+}
+
+set.seed(16)
+logy_0(n = 50)
+
+models = replicate(1000, logy_0(n = 50), simplify = FALSE)
+
+results = map_dfr(flatten(models), 
+              ~tidy(.x, conf.int = TRUE), 
+              .id = &quot;model&quot;)
+head(results)
+
+results_sl = filter(results, term == &quot;x&quot;)
+
+results_sl %&gt;%
+     group_by(model) %&gt;%
+     summarise(med_estimate = median(estimate),
+               CI_coverage = mean(conf.low &lt; .75 &amp; .75 &lt; conf.high) )
+
+ggplot(results_sl, aes(x = estimate, y = model, fill = model) ) +
+     geom_density_ridges2(show.legend = FALSE, rel_min_height = 0.005) +
+     geom_vline(xintercept = .75, size = 1) +
+     scale_fill_viridis_d() +
+     theme_bw() +
+     scale_x_continuous(name = &quot;Estimated slope&quot;, 
+                        expand = c(0.01, 0),
+                        breaks = seq(0, 1.5, by = .25) ) +
+     scale_y_discrete(name = NULL, expand = expand_scale(mult = c(.01, .3) ) )</code></pre>
 </div>

@@ -13,8 +13,10 @@ draft: FALSE
 description: "Analyzing positive data with 0 values can be challenging, since a direct log transformation isn't possible.  I discuss some of the things to consider when deciding on an analysis strategy for such data and then explore the effect of the value of the constant, c, when using log(y + c) as the response variable."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 I periodically find myself having long conversations with consultees about 0's.  Why?  Well, the basic suite of statistical tools many of us learn first involves the normal distribution (for the errors).  The log transformation tends to feature prominently for working with right-skewed data.  Since `log(0)` returns `-Infinity`, a common first reaction is to use `log(y + c)` as the response in place of `log(y)`, where `c` is some constant added to the y variable to get rid of the 0 values.
@@ -25,7 +27,13 @@ Some of the resources I've used over the years to hone my thinking on this topic
 
 I will explore the influence of `c` in `log(y + c)` via simulation later, so if that's what you are interested in you can [jump to that section](#generate-log-normal-data-with-0-values).
 
-# [Thinking about 0 values](#thinking-about-0-values)
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-09-18-the-log-0-problem.Rmd")
+```
+
+# Thinking about 0 values
 
 Without getting into too much detail, below are some of the things I consider when I have 0 as well as positive values in a response variable.
 
@@ -73,7 +81,7 @@ The [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution) i
 
 Another option I've used for "point mass plus positive" data is to think about these as two separate problems that answer different questions.  One analysis can answer a question about the probability of presence and a second can be used to model the positive data only.  This is a type of *hurdle* model, which I've seen more generally referred to as a mixture model.
 
-# [Common choices of c](#common-choices-of-c)
+# Common choices of c
 
 It may be that after all that hard thinking you end up on the option of adding a constant to shift your distribution away from 0 so you can proceed with a log transformation.  In my own work I find this is most likely for cases where I consider the 0 values to be some minimal value (not true 0's) and I have relatively few of them.
 
@@ -99,9 +107,10 @@ library(dplyr) # v. 0.7.6
 library(broom) # v. 0.5.0
 library(ggplot2) # v. 3.0.0
 library(ggridges) # v. 0.5.0
+
 ```
 
-# [Generate log-normal data with 0 values](#generate-log-normal-data-with-0-values)
+# Generate log-normal data with 0 values
 
 Since the log-normal distribution by definition has no 0 values, I found it wasn't easy to simulate such data.  When I was working on this several years ago I decided that one way to force 0 values was through rounding.  This is not the most elegant solution, I'm sure, but I think it works to show how the choice of `c` can influence estimates.
 
@@ -121,6 +130,7 @@ n = 50
 
 # Explanatory variable
 x = runif(n, min = -7, max = 0)
+
 ```
 
 The response variable is calculated from the parameters, `x`, and the normally distributed random errors, exponentiating to get things on the appropriate scale.  These data can be used in a log-normal model via a log transformation.
@@ -130,6 +140,7 @@ You can see the vast majority of the data are below 1, but none are exactly 0.
 ```{r}
 true_y = exp(beta0 + beta1*x + rnorm(n, mean = 0, sd = 2))
 summary(true_y)
+
 ```
 
 I force 0 values into the dataset by rounding the real data, `true_y`, to two decimal places.
@@ -137,6 +148,7 @@ I force 0 values into the dataset by rounding the real data, `true_y`, to two de
 ```{r}
 y = round(true_y, digits = 2)
 summary(y)
+
 ```
 
 I fooled around a lot with the parameter values, `x` variables, and the residual errors to get 0's in the rounded `y` most of the time. I wanted some 0 values but not too many, since the quartile method for `c` can only be used when there are less than 25% 0 values.
@@ -146,6 +158,7 @@ I tested my approach by repeating the process above a number of times.  Here's t
 ```{r}
 replicate(100, sum( round( exp(beta0 + beta1*runif(n, min = -7, max = 0) + 
                                   rnorm(n, mean = 0, sd = 2)), 2) == 0) )
+
 ```
 
 # The four models to fit
@@ -156,18 +169,21 @@ Here's the "true" model, fit to the data prior to rounding.
 
 ```{r}
 ( true = lm(log(true_y) ~ x) )
+
 ```
 
 Here's a log(y + 1) model, fit to the rounded data.
 
 ```{r}
 ( fit1 = lm(log(y + 1) ~ x) )
+
 ```
 
 Here's the colloquial method of adding half the minimum non-0 value.
 
 ```{r}
 ( fitc = lm(log(y + min(y[y>0])/2) ~ x) )
+
 ```
 
 And the quartile method per Stahel 2008.
@@ -205,6 +221,7 @@ logy_0 = function(beta0 = 0, beta1 = .75, n) {
      setNames(list(true, fit1, fitc, fitq), 
               c("True model", "Add 1", "Add 1/2 minimum > 0", "Quartile method") )
 }
+
 ```
 
 Do I get the same values back as my manual work if I reset the seed?  Yes!  `r emo::ji("raised_hands")`
@@ -212,12 +229,14 @@ Do I get the same values back as my manual work if I reset the seed?  Yes!  `r e
 ```{r}
 set.seed(16)
 logy_0(n = 50)
+
 ```
 
 Now I can simulate data and fit these models many times.  I decided to do 1000 iterations today, resulting in a list of lists which I store in an object called `models`.
 
 ```{r}
 models = replicate(1000, logy_0(n = 50), simplify = FALSE)
+
 ```
 
 # Extract the results
@@ -231,6 +250,7 @@ results = map_dfr(flatten(models),
               ~tidy(.x, conf.int = TRUE), 
               .id = "model")
 head(results)
+
 ```
 
 
@@ -238,6 +258,7 @@ I'm going to focus on only the slopes, so I'll pull those out explicitly.
 
 ```{r}
 results_sl = filter(results, term == "x")
+
 ```
 
 # Compare the options for c
@@ -253,6 +274,7 @@ results_sl %>%
      group_by(model) %>%
      summarise(med_estimate = median(estimate),
                CI_coverage = mean(conf.low < .75 & .75 < conf.high) )
+
 ```
 
 You can see right away that, as we'd expect, the actual model fit to the data prior to rounding does a good job. The confidence interval coverage is close to 0.95 and the median estimate is right at 0.75 (the true value).  
@@ -276,6 +298,7 @@ ggplot(results_sl, aes(x = estimate, y = model, fill = model) ) +
                         expand = c(0.01, 0),
                         breaks = seq(0, 1.5, by = .25) ) +
      scale_y_discrete(name = NULL, expand = expand_scale(mult = c(.01, .3) ) )
+
 ```
 
 Again, the estimates from the "Add 1" models are clearly not useful here.  The slope estimate are all biased very low.
@@ -284,7 +307,7 @@ The "Quartile method" has the widest distribution.  It is long-tailed to the rig
 
 And the "Add 1/2 minimum > 0" option tends to underestimate the slope.  I'm curious that the distribution is also relatively narrow, and wonder if that has something to do with the way I simulated the 0 values via rounding.
 
-# What option is best?
+# Which option is best?
 
 First, one of the main things I discovered is that my method for simulating positive, continuous data plus 0 values is a little kludgy.  `r emo::ji("laugh")` For the scenario I did simulate data for, though, adding 1 is clearly a very bad option if you want to get a reasonable estimate of the slope (which is generally my goal when I'm doing an analysis `r emo::ji("wink")`).
 
@@ -293,3 +316,22 @@ Why did adding 1 perform so badly?  Remember that when we do a log transformatio
 The other two options both performed OK in this specific scenario.  You may have noticed that statisticians generally dislike anti-conservative methods, so my guess is many (most?) statisticians would choose the conservative option ("Add 1/2 minimum > 0") to be on the safe side.  However, even if this pattern of over- and under-estimation holds more generally in other scenarios, the choice between these options should likely be based on the gravity of missing a relationship due to underestimation compared to the gravity of overstating a relationship rather than on purely statistical concerns.
 
 Another avenue I think might be important to explore is how the number of 0 values in the distribution has an impact on the results.  The choice between `c` options could depend on that.  (Plus, of course, the "Quartile method" only works at all if fewer than 25% of the data are 0's).
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](/script/2018-09-18-the-log-0-problem.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

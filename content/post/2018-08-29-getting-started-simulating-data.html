@@ -20,6 +20,44 @@ description: "Here is the written version of a talk I gave at the Eugene R Users
 <p>I started out thinking I’d talk about doing simulations. But could I do that in 45 minutes? Maybe not. After much pondering I ended up settling on the topic of how we start a simulation: by making data in R.</p>
 <p>Possibly out of habit from making written versions of labs and workshops as resources for students, I created a written version of the talk. You can see the <a href="https://github.com/aosmith16/simulation-helper-functions/blob/master/functions_for_simulations_detailed.pdf">full PDF version</a> at <a href="https://github.com/aosmith16/simulation-helper-functions">the GitHub repository</a> I made for the talk materials.</p>
 <p>I’ve copied the R markdown code below, as well, for a “blog” version, although this ends up being quite long for a blog post. 😄</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#generating-random-numbers">Generating random numbers</a>
+<ul>
+<li><a href="#rnorm-to-generate-random-numbers-from-the-normal-distribution">rnorm() to generate random numbers from the normal distribution</a></li>
+<li><a href="#example-of-using-the-simulated-numbers-from-rnorm">Example of using the simulated numbers from rnorm()</a></li>
+<li><a href="#runif-pulls-from-the-uniform-distribution">runif() pulls from the uniform distribution</a></li>
+<li><a href="#example-of-using-the-simulated-numbers-from-runif">Example of using the simulated numbers from runif()</a></li>
+<li><a href="#discrete-counts-with-rpois">Discrete counts with rpois()</a></li>
+<li><a href="#example-of-using-the-simulated-numbers-from-rpois">Example of using the simulated numbers from rpois()</a></li>
+</ul></li>
+<li><a href="#generate-character-vectors-with-rep">Generate character vectors with rep()</a>
+<ul>
+<li><a href="#using-letters-and-letters">Using letters and LETTERS</a></li>
+<li><a href="#repeat-each-element-of-a-vector-with-each">Repeat each element of a vector with each</a></li>
+<li><a href="#repeat-a-whole-vector-with-the-times-argument">Repeat a whole vector with the times argument</a></li>
+<li><a href="#set-the-output-vector-length-with-the-length.out-argument">Set the output vector length with the length.out argument</a></li>
+<li><a href="#repeat-each-element-a-different-number-of-times">Repeat each element a different number of times</a></li>
+<li><a href="#combining-each-with-times">Combining each with times</a></li>
+<li><a href="#combining-each-with-length.out">Combining each with length.out</a></li>
+</ul></li>
+<li><a href="#creating-datasets-with-quantiative-and-categorical-variables">Creating datasets with quantiative and categorical variables</a>
+<ul>
+<li><a href="#simulate-data-with-no-differences-among-two-groups">Simulate data with no differences among two groups</a></li>
+<li><a href="#simulate-data-with-a-difference-among-groups">Simulate data with a difference among groups</a></li>
+<li><a href="#multiple-quantitative-variables-with-groups">Multiple quantitative variables with groups</a></li>
+</ul></li>
+<li><a href="#repeatedly-simulate-data-with-replicate">Repeatedly simulate data with replicate()</a>
+<ul>
+<li><a href="#simple-example-of-replicate">Simple example of replicate()</a></li>
+<li><a href="#an-equivalent-for-loop-example">An equivalent for() loop example</a></li>
+<li><a href="#using-replicate-to-repeatedly-make-a-dataset">Using replicate() to repeatedly make a dataset</a></li>
+</ul></li>
+<li><a href="#whats-the-next-step">What’s the next step?</a></li>
+</ul>
+</div>
 <div id="overview" class="section level1">
 <h1>Overview</h1>
 <p>There are many reasons we might want to simulate data in R, and I find being able to simulate data to be incredibly useful in my day-to-day work. But how does someone get started simulating data?</p>
@@ -48,14 +86,14 @@ description: "Here is the written version of a talk I gave at the Eugene R Users
 <p>The <code>n</code> argument is the number of observations we want to generate. The <code>mean</code> and <code>sd</code> arguments show what the default values of the parameters are (note that <code>sd</code> is the <em>standard deviation</em>, not the variance). Not all <code>r</code> functions have defaults to the parameter arguments like this.</p>
 <p>To get 5 random numbers from a <span class="math inline">\(Normal(0, 1)\)</span> (aka the <em>standard</em> normal) distribution we can write code like:</p>
 <pre class="r"><code>rnorm(5)</code></pre>
-<pre><code>[1] -1.6067071 -1.5068818  0.2098584 -0.9313993 -1.0283762</code></pre>
+<pre><code>[1]  0.6440418  0.6278510 -0.1729285 -1.9277982  1.3427472</code></pre>
 <p>There are a couple things about this code and the output to discuss.</p>
 <p>First, the code did get me 5 numbers, which is what I wanted. However, the code itself isn’t particularly clear. What I might refer to as lazy coding on my part can look pretty mysterious to someone reading my code (or to my future self reading my code). Since I used the default values for <code>mean</code> and <code>sd</code>, it’s not clear exactly what distribution I drew the numbers from.</p>
 <div id="writing-out-arguments-in-for-clearer-code" class="section level3">
 <h3>Writing out arguments in for clearer code</h3>
 <p>Here’s clearer code to do the same thing, where I write out the mean and standard deviation arguments explicitly even though I’m using the default values. It is certainly not necessary to always be this careful, but I don’t think I’ve run into a situation were it was bad to have clear code.</p>
 <pre class="r"><code>rnorm(n = 5, mean = 0, sd = 1)</code></pre>
-<pre><code>[1] -0.1728609 -0.2055838 -0.1123403  0.5365955  1.1206571</code></pre>
+<pre><code>[1]  0.4037251  0.4170926 -0.6804443 -0.5961538 -0.3283543</code></pre>
 </div>
 <div id="setting-the-random-seed-for-reproducible-random-numbers" class="section level3">
 <h3>Setting the random seed for reproducible random numbers</h3>
@@ -372,10 +410,16 @@ group</code></pre>
 <pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
            x = runif(n = 15, min = 10, max = 15),
            y = runif(n = 15, min = 100, max = 150))</code></pre>
-<p><code>Error in data.frame(group = rep(LETTERS[3:4], each = 10), x = runif(n = 15, : arguments imply differing number of rows: 20, 15</code></p>
-<p>But if we get things wrong and the number we use happens to go into the number we need evenly, R will <em>recycle</em> the vector to the end of the <code>data.frame()</code>.</p>
-<p>This is a hard mistake to catch. If you look carefully through the output below you can see that the continuous variables start to repeat on line 10 because I used <code>n = 10</code> instead of <code>n = 20</code>.</p>
-<pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
+<pre><code>Error in data.frame(group = rep(LETTERS[3:4], each = 10), x =
+runif(n = 15, : arguments imply differing number of rows: 20, 15```
+
+But if we get things wrong and the number we use happens to go into the number we need evenly, R will *recycle* the vector to the end of the `data.frame()`.  
+
+This is a hard mistake to catch.  If you look carefully through the output below you can see that the continuous variables start to repeat on line 10 because I used `n = 10` instead of `n = 20`.
+
+
+```r
+data.frame(group = rep(LETTERS[3:4], each = 10),
            x = runif(n = 10, min = 10, max = 15),
            y = runif(n = 10, min = 100, max = 150))</code></pre>
 <pre><code>   group        x        y

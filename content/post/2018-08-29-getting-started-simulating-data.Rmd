@@ -14,7 +14,7 @@ draft: FALSE
 description: "Here is the written version of a talk I gave at the Eugene R Users Group."
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(comment = "")
 library(knitr)
 local({
@@ -24,6 +24,8 @@ local({
     hook_error(x, options)
   })
 })
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
 ```
 
 I've been trying to participate a little more in the R community outside of my narrow professional world, so when the co-organizer of the [Eugene R Users Group](https://www.meetup.com/meetup-group-cwPiAlnB/) invited me to come talk at one of their meet-ups I agreed (even though it involved public speaking! `r emo::ji("scream")`).
@@ -34,6 +36,11 @@ Possibly out of habit from making written versions of labs and workshops as reso
 
 I've copied the R markdown code below, as well, for a "blog" version, although this ends up being quite long for a blog post. `r emo::ji("smile")`
 
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+render_toc("2018-08-29-getting-started-simulating-data.Rmd")
+```
 
 # Overview
 
