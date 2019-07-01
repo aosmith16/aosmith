@@ -14,7 +14,7 @@ draft: FALSE
 description: "In this post I discuss how to construct the formula that can be passed to model fitting functions like lm(). I then demonstrate how to use this within a user-created function in order to streamline the process of fitting many similar models."
 ---
 
-```{r setup, echo = FALSE, message = FALSE}
+```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
@@ -33,7 +33,7 @@ library(ggplot2) # v.3.2.0
 
 ## Table of Contents
 
-```{r toc, echo = FALSE} 
+```{r toc, echo = FALSE, purl = FALSE} 
 render_toc("2019-06-24-how-to-make-a-function-for-model-fitting.Rmd")
 ```
 
@@ -223,13 +223,20 @@ This post focused on using `paste()` and `as.formula()` for building model formu
 
 # Just the code, please
 
-```{r getlabels, echo = FALSE}
+```{r getlabels, echo = FALSE, purl = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
 ```
 
-Here's the code without all the discussion.
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+output = here::here("static", "script", paste(tools::file_path_sans_ext(input), "R", sep = ".") )
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
 
-```{r allcode, ref.label = labs, eval = FALSE}
+Here's the code without all the discussion.  Copy and paste the code below or you can download the R script with code but no text [from here](/script/2019-06-24-how-to-make-a-function-for-model-fitting.R).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
 ```
 
