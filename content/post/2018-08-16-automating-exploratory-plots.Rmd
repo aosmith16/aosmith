@@ -37,8 +37,8 @@ render_toc("2018-08-16-automating-exploratory-plots.Rmd")
 I'll be plotting with **ggplot2** and looping with **purrr**.  I'll also be using package **cowplot** later to combine individual plots into one, but will use the package functions via `cowplot::` instead of loading the package.
 
 ```{r}
-library(ggplot2) # v. 3.0.0
-library(purrr) # v. 0.2.5
+library(ggplot2) # v. 3.2.0
+library(purrr) # v. 0.3.2
 
 ```
 
@@ -93,16 +93,18 @@ Since I'm going to make a bunch of plots that will all have the same basic form,
 
 Since I'm making a function to plot variables from a single dataset I'm going to hard-code the dataset into the function.  If you have multiple datasets or you are making a function for use across projects you'll probably want to add the dataset as a function argument. 
 
-My functions inputs are based on the variable names, so I need to pass strings into the **ggplot2** functions.  Strings cannot be used directly in `aes()`, but can be used directly in `aes_string()`.
+My functions inputs are based on the variable names, so I need to pass strings into the **ggplot2** functions.  Strings cannot be used directly in `aes()`, but can be used with the [`.data` pronoun](https://rlang.r-lib.org/reference/tidyeval-data.html).  Also see the now deprecated `aes_string()` for working with strings in earlier versions of **ggplot2**.
 
 I'm making pretty basic graphs since these are exploratory plots, not publication-ready plots.  I will make a scatterplot and add locally weighted regression (loess) lines via `geom_smooth()`.  I use such lines with great caution, as it can be easy to get too attached any pattern the loess line shows.
 
 ```{r}
 scatter_fun = function(x, y) {
-     ggplot(dat, aes_string(x = x, y = y) ) +
+     ggplot(dat, aes(x = .data[[x]], y = .data[[y]]) ) +
           geom_point() +
           geom_smooth(method = "loess", se = FALSE, color = "grey74") +
-          theme_bw()
+          theme_bw() +
+          labs(x = x,
+               y = y)
 }
 
 ```
@@ -111,24 +113,6 @@ Here's an example of the function output, passing in `x` and `y` as strings.
 
 ```{r}
 scatter_fun("lat", "elev")
-
-```
-
-*Aside*:  The `aes_string()` function has been soft-deprecated as of **ggplot2** 3.0.0 and `tidyeval` methods are now available.  For basic functions like mine this new framework is pretty straightforward to use.  However, right or wrong, I've been hesitant to send code that contains `tidyeval` code to the beginner R users I generally work with on these tasks.  I think the code looks complicated and "scary" compared to using `aes_string()`; I may change my mind with time.
-
-To be thorough, here is an example of the same function using `tidyeval` instead of `aes_string()`.  I use `sym()` instead of `quo()` because the inputs are strings.  
-
-The output graphic is the same.
-
-```{r}
-scatter_fun2 = function(x, y) {
-     ggplot(dat, aes(x = !!sym(x), y = !!sym(y) ) ) +
-          geom_point() +
-          geom_smooth(method = "loess", se = FALSE, color = "grey74") +
-          theme_bw()
-}
-
-scatter_fun2("lat", "elev")
 
 ```
 
@@ -173,11 +157,7 @@ The output is a list of lists.  Each sublist contains all the plots for a single
 
 For example, if I want to see all the plots for the `grad` response variable I can print that sublist by name.  (I'm going to display only two of four `grad` plots here to save space.)
 
-```{r, eval = FALSE}
-all_plots$grad
-```
-
-```{r, echo = FALSE}
+```{r}
 all_plots$grad[1:2]
 ```
 
@@ -191,6 +171,7 @@ I find the names convenient, but you can also extract plots via position.  Here'
 
 ```{r}
 all_plots[[3]][[3]]
+
 ```
 
 # Saving the plots
@@ -258,7 +239,7 @@ You can see I flattened the nested list of plots into a single list to use in `w
 
 ```{r, eval = FALSE}
 walk2(plotnames, flatten(all_plots), ~ggsave(filename = .x, plot = .y, 
-                                         height = 7, width = 7))
+                                             height = 7, width = 7))
 
 ```
 

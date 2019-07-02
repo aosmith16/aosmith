@@ -1,5 +1,5 @@
-library(ggplot2) # v. 3.0.0
-library(purrr) # v. 0.2.5
+library(ggplot2) # v. 3.2.0
+library(purrr) # v. 0.3.2
 
 
 set.seed(16)
@@ -26,24 +26,16 @@ expl
 
 
 scatter_fun = function(x, y) {
-     ggplot(dat, aes_string(x = x, y = y) ) +
+     ggplot(dat, aes(x = .data[[x]], y = .data[[y]]) ) +
           geom_point() +
           geom_smooth(method = "loess", se = FALSE, color = "grey74") +
-          theme_bw()
+          theme_bw() +
+          labs(x = x,
+               y = y)
 }
 
 
 scatter_fun("lat", "elev")
-
-
-scatter_fun2 = function(x, y) {
-     ggplot(dat, aes(x = !!sym(x), y = !!sym(y) ) ) +
-          geom_point() +
-          geom_smooth(method = "loess", se = FALSE, color = "grey74") +
-          theme_bw()
-}
-
-scatter_fun2("lat", "elev")
 
 
 elev_plots = map(expl, ~scatter_fun(.x, "elev") )
@@ -55,13 +47,12 @@ all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )
 
 
-# all_plots$grad
-
 all_plots$grad[1:2]
 
 all_plots$grad$long
 
 all_plots[[3]][[3]]
+
 
 # pdf("all_scatterplots.pdf")
 # all_plots
@@ -81,7 +72,7 @@ plotnames
 
 
 # walk2(plotnames, flatten(all_plots), ~ggsave(filename = .x, plot = .y,
-#                                          height = 7, width = 7))
+#                                              height = 7, width = 7))
 # 
 
 cowplot::plot_grid(plotlist = all_plots[[1]])

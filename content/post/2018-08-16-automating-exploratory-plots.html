@@ -39,8 +39,8 @@ description: "In this post I show an example of how to automate the process of m
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
 <p>I’ll be plotting with <strong>ggplot2</strong> and looping with <strong>purrr</strong>. I’ll also be using package <strong>cowplot</strong> later to combine individual plots into one, but will use the package functions via <code>cowplot::</code> instead of loading the package.</p>
-<pre class="r"><code>library(ggplot2) # v. 3.0.0
-library(purrr) # v. 0.2.5</code></pre>
+<pre class="r"><code>library(ggplot2) # v. 3.2.0
+library(purrr) # v. 0.3.2</code></pre>
 </div>
 <div id="the-set-up" class="section level1">
 <h1>The set-up</h1>
@@ -81,29 +81,19 @@ expl</code></pre>
 <h1>Create a plotting function</h1>
 <p>Since I’m going to make a bunch of plots that will all have the same basic form, I will make a plotting function. I am going to make a function where only the <code>x</code> and <code>y</code> variables can vary (so are arguments to the function).</p>
 <p>Since I’m making a function to plot variables from a single dataset I’m going to hard-code the dataset into the function. If you have multiple datasets or you are making a function for use across projects you’ll probably want to add the dataset as a function argument.</p>
-<p>My functions inputs are based on the variable names, so I need to pass strings into the <strong>ggplot2</strong> functions. Strings cannot be used directly in <code>aes()</code>, but can be used directly in <code>aes_string()</code>.</p>
+<p>My functions inputs are based on the variable names, so I need to pass strings into the <strong>ggplot2</strong> functions. Strings cannot be used directly in <code>aes()</code>, but can be used with the <a href="https://rlang.r-lib.org/reference/tidyeval-data.html"><code>.data</code> pronoun</a>. Also see the now deprecated <code>aes_string()</code> for working with strings in earlier versions of <strong>ggplot2</strong>.</p>
 <p>I’m making pretty basic graphs since these are exploratory plots, not publication-ready plots. I will make a scatterplot and add locally weighted regression (loess) lines via <code>geom_smooth()</code>. I use such lines with great caution, as it can be easy to get too attached any pattern the loess line shows.</p>
 <pre class="r"><code>scatter_fun = function(x, y) {
-     ggplot(dat, aes_string(x = x, y = y) ) +
+     ggplot(dat, aes(x = .data[[x]], y = .data[[y]]) ) +
           geom_point() +
           geom_smooth(method = &quot;loess&quot;, se = FALSE, color = &quot;grey74&quot;) +
-          theme_bw()
+          theme_bw() +
+          labs(x = x,
+               y = y)
 }</code></pre>
 <p>Here’s an example of the function output, passing in <code>x</code> and <code>y</code> as strings.</p>
 <pre class="r"><code>scatter_fun(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
 <p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<p><em>Aside</em>: The <code>aes_string()</code> function has been soft-deprecated as of <strong>ggplot2</strong> 3.0.0 and <code>tidyeval</code> methods are now available. For basic functions like mine this new framework is pretty straightforward to use. However, right or wrong, I’ve been hesitant to send code that contains <code>tidyeval</code> code to the beginner R users I generally work with on these tasks. I think the code looks complicated and “scary” compared to using <code>aes_string()</code>; I may change my mind with time.</p>
-<p>To be thorough, here is an example of the same function using <code>tidyeval</code> instead of <code>aes_string()</code>. I use <code>sym()</code> instead of <code>quo()</code> because the inputs are strings.</p>
-<p>The output graphic is the same.</p>
-<pre class="r"><code>scatter_fun2 = function(x, y) {
-     ggplot(dat, aes(x = !!sym(x), y = !!sym(y) ) ) +
-          geom_point() +
-          geom_smooth(method = &quot;loess&quot;, se = FALSE, color = &quot;grey74&quot;) +
-          theme_bw()
-}
-
-scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 </div>
 <div id="looping-through-one-vector-of-variables" class="section level1">
 <h1>Looping through one vector of variables</h1>
@@ -114,16 +104,16 @@ scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
 <p>The output is a list of 4 plots (since there are 4 explanatory variables). You’ll notice that each element of the list has the variable name associated with it. This is why I used <code>set_names()</code> earlier, since this is convenient for printing the plots and, you’ll see later, is convenient when saving the plots in files with understandable names.</p>
 <pre class="r"><code>elev_plots</code></pre>
 <pre><code># $slp</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <pre><code># 
 # $lat</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
 <pre><code># 
 # $long</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
 <pre><code># 
 # $nt</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-10-4.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-9-4.png" width="672" /></p>
 </div>
 <div id="looping-through-both-vectors" class="section level1">
 <h1>Looping through both vectors</h1>
@@ -136,18 +126,18 @@ scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)</code></pre>
                 ~map(expl, scatter_fun, y = .x) )</code></pre>
 <p>The output is a list of lists. Each sublist contains all the plots for a single response variable. Because I set the names for both vectors of variable names, the inner and outer lists both have names. These names can be used to pull out individual plots.</p>
 <p>For example, if I want to see all the plots for the <code>grad</code> response variable I can print that sublist by name. (I’m going to display only two of four <code>grad</code> plots here to save space.)</p>
-<pre class="r"><code>all_plots$grad</code></pre>
+<pre class="r"><code>all_plots$grad[1:2]</code></pre>
 <pre><code># $slp</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 <pre><code># 
 # $lat</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-13-2.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
 <p>If I want to print a single plot, I can first extract one of the sublists using an outer list name and then extract the individual plot via an inner list name.</p>
 <pre class="r"><code>all_plots$grad$long</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
 <p>I find the names convenient, but you can also extract plots via position. Here’s the same graph, the third element of the third list.</p>
 <pre class="r"><code>all_plots[[3]][[3]]</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 </div>
 <div id="saving-the-plots" class="section level1">
 <h1>Saving the plots</h1>
@@ -222,7 +212,7 @@ plotnames</code></pre>
 <p>Once the file names are created I can loop through all the file names and plots simultaneously with <code>walk2()</code> and save things via <code>ggsave()</code>. The height and width of each output file can be set as needed in <code>ggsave()</code>.</p>
 <p>You can see I flattened the nested list of plots into a single list to use in <code>walk2()</code>.</p>
 <pre class="r"><code>walk2(plotnames, flatten(all_plots), ~ggsave(filename = .x, plot = .y, 
-                                         height = 7, width = 7))</code></pre>
+                                             height = 7, width = 7))</code></pre>
 </div>
 <div id="combining-plots" class="section level2">
 <h2>Combining plots</h2>
@@ -230,25 +220,25 @@ plotnames</code></pre>
 <p>I like the <strong>cowplot</strong> function <code>plot_grid()</code> for combining multiple plots into one. A list of plots can be passed via the <code>plotlist</code> argument.</p>
 <p>Here’s what that looks like for the first response variable, <code>elev</code>.</p>
 <pre class="r"><code>cowplot::plot_grid(plotlist = all_plots[[1]])</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
 <p>We can use a loop to combine the plots for each response variable sublist. The result could then be saved using any of the approaches shown above. If you have many subplots per combined plot you likely will want to save the plots at a larger size so the individual plots can be clearly seen.</p>
 <pre class="r"><code>response_plots = map(all_plots, ~cowplot::plot_grid(plotlist = .x))
 response_plots</code></pre>
 <pre><code># $elev</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 <pre><code># 
 # $resp</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-21-2.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-19-2.png" width="672" /></p>
 <pre><code># 
 # $grad</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-21-3.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-19-3.png" width="672" /></p>
 </div>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-08-16-automating-exploratory-plots.R">from here</a>.</p>
-<pre class="r"><code>library(ggplot2) # v. 3.0.0
-library(purrr) # v. 0.2.5
+<pre class="r"><code>library(ggplot2) # v. 3.2.0
+library(purrr) # v. 0.3.2
 
 set.seed(16)
 dat = data.frame(elev = round( runif(20, 100, 500), 1),
@@ -270,22 +260,15 @@ expl = set_names(expl)
 expl
 
 scatter_fun = function(x, y) {
-     ggplot(dat, aes_string(x = x, y = y) ) +
+     ggplot(dat, aes(x = .data[[x]], y = .data[[y]]) ) +
           geom_point() +
           geom_smooth(method = &quot;loess&quot;, se = FALSE, color = &quot;grey74&quot;) +
-          theme_bw()
+          theme_bw() +
+          labs(x = x,
+               y = y)
 }
 
 scatter_fun(&quot;lat&quot;, &quot;elev&quot;)
-
-scatter_fun2 = function(x, y) {
-     ggplot(dat, aes(x = !!sym(x), y = !!sym(y) ) ) +
-          geom_point() +
-          geom_smooth(method = &quot;loess&quot;, se = FALSE, color = &quot;grey74&quot;) +
-          theme_bw()
-}
-
-scatter_fun2(&quot;lat&quot;, &quot;elev&quot;)
 
 elev_plots = map(expl, ~scatter_fun(.x, &quot;elev&quot;) )
 elev_plots
@@ -293,10 +276,10 @@ elev_plots
 all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )
 
-all_plots$grad
 all_plots$grad[1:2]
 all_plots$grad$long
 all_plots[[3]][[3]]
+
 pdf(&quot;all_scatterplots.pdf&quot;)
 all_plots
 dev.off()
@@ -312,7 +295,7 @@ plotnames = imap(all_plots, ~paste0(.y, &quot;_&quot;, names(.x), &quot;.png&quo
 plotnames
 
 walk2(plotnames, flatten(all_plots), ~ggsave(filename = .x, plot = .y, 
-                                         height = 7, width = 7))
+                                             height = 7, width = 7))
 
 cowplot::plot_grid(plotlist = all_plots[[1]])
 
