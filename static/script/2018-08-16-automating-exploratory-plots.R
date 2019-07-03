@@ -35,6 +35,14 @@ scatter_fun = function(x, y) {
 }
 
 
+# scatter_fun = function(x, y) {
+#      ggplot(dat, aes_string(x = x, y = y ) ) +
+#           geom_point() +
+#           geom_smooth(method = "loess", se = FALSE, color = "grey74") +
+#           theme_bw()
+# }
+# 
+
 scatter_fun("lat", "elev")
 
 

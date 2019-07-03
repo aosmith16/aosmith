@@ -93,7 +93,7 @@ Since I'm going to make a bunch of plots that will all have the same basic form,
 
 Since I'm making a function to plot variables from a single dataset I'm going to hard-code the dataset into the function.  If you have multiple datasets or you are making a function for use across projects you'll probably want to add the dataset as a function argument. 
 
-My functions inputs are based on the variable names, so I need to pass strings into the **ggplot2** functions.  Strings cannot be used directly in `aes()`, but can be used with the [`.data` pronoun](https://rlang.r-lib.org/reference/tidyeval-data.html).  Also see the now deprecated `aes_string()` for working with strings in earlier versions of **ggplot2**.
+My functions inputs are based on the variable names, so I need to pass strings into the **ggplot2** functions.  Strings cannot be used directly in `aes()`, but can be used with the [`.data` pronoun](https://rlang.r-lib.org/reference/tidyeval-data.html).  
 
 I'm making pretty basic graphs since these are exploratory plots, not publication-ready plots.  I will make a scatterplot and add locally weighted regression (loess) lines via `geom_smooth()`.  I use such lines with great caution, as it can be easy to get too attached any pattern the loess line shows.
 
@@ -105,6 +105,18 @@ scatter_fun = function(x, y) {
           theme_bw() +
           labs(x = x,
                y = y)
+}
+
+```
+
+If using older versions of **ggplot2** (and/or **rlang**), use the now deprecated `aes_string()` for working with strings.
+
+```{r, eval = FALSE}
+scatter_fun = function(x, y) {
+     ggplot(dat, aes_string(x = x, y = y ) ) +
+          geom_point() +
+          geom_smooth(method = "loess", se = FALSE, color = "grey74") +
+          theme_bw() 
 }
 
 ```
