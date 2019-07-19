@@ -227,12 +227,12 @@ models[!names(models) %in% "slp"]
 
 Once you are happy with model fit of all models it's time to extract output of interest.  For a t-test we would commonly want the estimated difference between the two groups, which is in the `summary()` output.  I'll get this info from the model as a data.frame with `broom::tidy()`.  This returns the estimated coefficients, statistical tests, and (optionally) confidence intervals for coefficients
 
-I switch to `map_df()` for looping to get the output as a data.frame, using the `.id` argument to add the response variable name to the output dataset.
+I switch to `map_dfr()` for looping to get the output as a data.frame, using the `.id` argument to add the response variable name to the output dataset.
 
 Since some of the response variables are log transformed, it would make sense to back-transform coefficients in this step.  I don't show this here, but would approach this using `if()` statements based on log transformed variables containing `"log"` in their names.
 
 ```{r}
-res_anova = map_df(models, tidy, conf.int = TRUE, .id = "variable")
+res_anova = map_dfr(models, tidy, conf.int = TRUE, .id = "variable")
 res_anova
 ```
 
