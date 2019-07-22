@@ -50,13 +50,16 @@ models
 
 resid_plots = function(model, modelname) {
      output = augment(model)
+     
      res.v.fit = ggplot(output, aes(x = .fitted, y = .resid) ) +
           geom_point() +
           theme_bw(base_size = 16)
+     
      res.box = ggplot(output, aes(x = "", y = .resid) ) +
           geom_boxplot() +
           theme_bw(base_size = 16) +
           labs(x = NULL)
+     
      res.v.fit + res.box +
           plot_annotation(title = paste("Residuals plots for", modelname) )
 }
@@ -82,5 +85,5 @@ models
 models[!names(models) %in% "slp"]
 
 
-res_anova = map_df(models, tidy, conf.int = TRUE, .id = "variable")
+res_anova = map_dfr(models, tidy, conf.int = TRUE, .id = "variable")
 res_anova

@@ -13,8 +13,8 @@ tags:
 keywords:
   - purrr
   - rstats
-draft: TRUE
-description: "The task of fitting many similar models can be automated by looping through variables.  I show an example of fitting the same model for multiple response variables and then making residual plots for all models prior to extracting model results."
+draft: FALSE
+description: "The task of fitting many similar models can be automated by looping through variables.  I show an example of fitting the same model for multiple different response variables and then making residual plots for all models prior to extracting model results."
 ---
 
 ```{r setup, include = FALSE, message = FALSE, purl = FALSE}
@@ -32,9 +32,9 @@ dat$grad = with(dat, exp(.25*(group == "b") + rnorm(30, mean = 0, sd = 1 ) ) ) #
 dat = dplyr::mutate_if(dat, is.numeric, round, 2)
 ```
 
-When we have many similar models to fit, automating at least some portions of the task can be a real time saver.  In [my last post](https://aosmith.rbind.io/2019/06/24/function-for-model-fitting/) I demonstrated how to make a function for model fitting.  Once you have made that function it's possible to loop through variable names and fit a model for each one.  
+When we have many similar models to fit, automating at least some portions of the task can be a real time saver.  In [my last post](https://aosmith.rbind.io/2019/06/24/function-for-model-fitting/) I demonstrated how to make a function for model fitting.  Once you have made such a function it's possible to loop through variable names and fit a model for each one.  
 
-I am specifically focusing on having many response variables with the same explanatory variables, using `purrr::map()` and friends for the looping.
+In this post I am specifically focusing on having many response variables with the same explanatory variables, using `purrr::map()` and friends for the looping.
 
 ## Table of Contents
 
@@ -47,7 +47,7 @@ render_toc(input)
 
 I'll be using **purrr** for looping and will make residual plots with **ggplot2** and **patchwork**.  I'll use **broom** to extract tidy results from models.
 
-```{r, message = FALSE}
+```{r, message = FALSE, warning = FALSE}
 library(purrr) # v. 0.3.2
 library(ggplot2) # v. 3.2.0
 library(patchwork) # v. 0.0.1, github only
@@ -80,9 +80,9 @@ head(dat)
 
 # A function for model fitting
 
-The analysis in my example is very simple and amounts to a two-sample t-test, which I will fit as a linear model with `lm()`.
+The analysis in the example I'm using today amounts to a two-sample t-test.  I will fit this as a linear model with `lm()`.
 
-Since the response variable needs to vary among models but the dataset and explanatory variable do not, my function will have a single argument for setting response variable.  Building the model formula relies on `paste()` and `as.formula()`.
+Since the response variable needs to vary among models but the dataset and explanatory variable do not, my function will have a single argument for setting the response variable.  Building the model formula in my function `ttest_fun()` relies on `paste()` and `as.formula()`.
 
 ```{r}
 ttest_fun = function(response) {
@@ -100,7 +100,7 @@ ttest_fun(response = "resp")
 
 # Looping through the response variables
 
-Next I'll make a vector of the response variable names as strings to loop through iteratively.  I'll pull my response variable names out of the dataset with `names()`.  This step may take more work for you if you have many response variables that aren't all neatly listed all in a row like mine are.  `r emo::ji("stuck_out_tongue_winking_eye")`
+I'll make a vector of the response variable names as strings so I can loop through them and fit a model for each one.  I pull my response variable names out of the dataset with `names()`.  This step may take more work for you if you have many response variables that aren't neatly listed all in a row like mine are.  `r emo::ji("stuck_out_tongue_winking_eye")`
 
 ```{r}
 vars = names(dat)[2:4]
@@ -123,7 +123,7 @@ models = vars %>%
      map(ttest_fun)
 ```
 
-You can see that this returns a list containing three models, one for each response variable.  Notice that the output list is a named list, where the names of each list element is the response variable used in that model.
+The output is a list containing three models, one for each response variable.  Notice that the output list is a *named* list, where the names of each list element is the response variable used in that model.  This is the reason I took the time to name the response variable vector.
 
 ```{r}
 models
@@ -141,22 +141,25 @@ vars %>%
 
 # Create residual plots for each model
 
-One thing I like about working with a simple model fitting function, where the output only contains the model, is that I find it straightforward to loop through the models and extract other output I want in subsequent steps.  An alternative is to create all the output within the modeling function and then extract it.
+I'm working with a simple model fitting function, where the output only contains the fitted model.  To extract other output I can loop through the list of models in a separate step.  An alternative is to create all the output within the modeling function and then pull whatever you want out of the list of results.
 
-In this case, my next step is to loop through and make residual plots.  With my simple model form I want to look at a residuals vs fitted values plot and a plot to look at residual normality (like a boxplot, a histogram, or a quantile-quantile normal plot).  In more complicated models I might also make plots of residuals vs explanatory variables.
+In this case, my next step is to loop through the models and make residual plots.  I want to look at a residuals vs fitted values plot as well as a plot to look at residual normality (like a boxplot, a histogram, or a quantile-quantile normal plot).  In more complicated models I might also make plots of residuals vs explanatory variables.
 
-I will make a function to build the two residuals plots.  My function takes a model and the model name as arguments.  I extract residuals and fitted values via `broom::augment()` and make the two plots with **ggplot2** functions.  I combine the plots via **patchwork**, and include a title on the combined plot with the name of the response variable from each model to help keep track of things.
+I'll make a function to build the two residuals plots.  My function takes a model and the model name as arguments.  I extract residuals and fitted values via `broom::augment()` and make the two plots with **ggplot2** functions.  I combine the plots via **patchwork**.  I add a title to the combined plot with the name of the response variable from each model to help me keep track of things.
 
 ```{r}
 resid_plots = function(model, modelname) {
      output = augment(model)
+     
      res.v.fit = ggplot(output, aes(x = .fitted, y = .resid) ) +
           geom_point() +
           theme_bw(base_size = 16)
+     
      res.box = ggplot(output, aes(x = "", y = .resid) ) +
           geom_boxplot() +
           theme_bw(base_size = 16) +
           labs(x = NULL)
+     
      res.v.fit + res.box +
           plot_annotation(title = paste("Residuals plots for", modelname) )
 }
@@ -169,7 +172,7 @@ resid_plots(model = models[[1]], modelname = names(models)[1])
 
 ```
 
-I can use `purrr::imap()` to loop through all models and the model names simultaneously to make the plots with the title.
+I can use `purrr::imap()` to loop through all models and the model names simultaneously to make the plots with the title for each variable.
 
 ```{r}
 residplots = imap(models, resid_plots)
@@ -179,7 +182,7 @@ residplots = imap(models, resid_plots)
 
 In a situation where I have many response variables, I like to save my plots out into a PDF so I can easily page through them outside of R.  You can see some approaches for saving plots [in a previous post](https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/#saving-the-plots).
 
-With only a few plots I can print them in R.  The last plot, shown below, looks potentially problematic.  I see the variance increasing with the mean and right skew in the residuals.
+Since I have only a few plots I can print them in R.  The last plot, shown below, looks potentially problematic.  I see the variance increasing with the mean and right skew in the residuals.
 
 ```{r, fig.height = 4, fig.width = 8}
 residplots[[3]]
@@ -188,9 +191,9 @@ residplots[[3]]
 
 # Re-fitting a model
 
-If you find a problematic model fit you'll likely need to do some work on individual variables to investigate how to solve the problem.  
+If you find a problematic model fit you'll need to spend some time working with that variable to find a more appropriate model.  
 
-Once you have an appropriate model, you could manually add the new model to the list.  In my example, let's say the `grad` model needed a log transformation.
+Once you have a model you're happy with, you can manually add the new model to the list (if needed).  In my example, let's say the `grad` model needed a log transformation.
 
 ```{r}
 gradmod = ttest_fun("log(grad)")
@@ -203,20 +206,20 @@ If I'm happy with the fit of the new model I add it to the list with the other m
 models$log_grad = gradmod
 ```
 
-I remove the original model by setting it to `NULL`, since I don't want any results from that model.
+I remove the original model by setting it to `NULL`.  I don't want any results from that model and if I leave it in I know I'll ultimately get confused about which model is the final model. `r emo::ji("confused")`
 
 ```{r}
 models$grad = NULL
 ```
 
-Now the output list still has three models, with the new `log_grad` model and the old `grad` model removed.
+Now the output list has three models, with the new `log_grad` model and the old `grad` model removed.
 
 ```{r}
 models
 
 ```
 
-I could also remove models from the list via subsetting by name.  Here's an example, showing what the list looks like if I remove the "slp" model.
+I could have removed models from the list via subsetting by name.  Here's an example, showing what the list looks like if I remove the `slp` model.
 
 ```{r}
 models[!names(models) %in% "slp"]
@@ -225,24 +228,24 @@ models[!names(models) %in% "slp"]
 
 # Getting model results
 
-Once you are happy with model fit of all models it's time to extract output of interest.  For a t-test we would commonly want the estimated difference between the two groups, which is in the `summary()` output.  I'll get this info from the model as a data.frame with `broom::tidy()`.  This returns the estimated coefficients, statistical tests, and (optionally) confidence intervals for coefficients
+Once you are happy with model fit of all models it's time to extract any output of interest.  For a t-test we would commonly want the estimated difference between the two groups, which is in the `summary()` output.  I'll pull this information from the model as a data.frame with `broom::tidy()`.  This returns the estimated coefficients, statistical tests, and (optionally) confidence intervals for coefficients
 
-I switch to `map_dfr()` for looping to get the output as a data.frame, using the `.id` argument to add the response variable name to the output dataset.
+I switch to `map_dfr()` for looping to get the output combined into a single data.frame.  I use the `.id` argument to add the response variable name to the output dataset.
 
-Since some of the response variables are log transformed, it would make sense to back-transform coefficients in this step.  I don't show this here, but would approach this using `if()` statements based on log transformed variables containing `"log"` in their names.
+Since some of the response variables are log transformed, it would make sense to back-transform coefficients in this step.  I don't show this here, but would likely approach this using an `if()` statement based on log transformed variables containing `"log"` in their names.
 
 ```{r}
 res_anova = map_dfr(models, tidy, conf.int = TRUE, .id = "variable")
 res_anova
 ```
 
-The primary interest in this output would be in the `groupb` row for each variable.   Since the output is a data frame (thanks to `broom::tidy()`) you can use standard data manipulation tools to pull out only rows and columns of interest.
+The primary interest in this output would be in the `groupb` row for each variable.   Since the output is a data frame (thanks `broom::tidy()`!) you can use standard data manipulation tools to pull out only rows and columns of interest.
 
 Other output, like, e.g., estimated marginal means for more complicated models, can be extracted and saved in a similar way.
 
 # Alternative approach to fitting many models
 
-When I am working with many response variables with widely varying ranges, it feels most natural to me to keep the different variables in different columns and loop through them as I have shown above.  However, a reasonable alternative is to *reshape* your dataset so all the values of all variables are in one column.  A second, categorical column then contains the variable names so we know which variable each row is associated with.  Such reshaping is an example of making a *wide* dataset into a *long* dataset.
+When I am working with many response variables with widely varying ranges, it feels most natural to me to keep the different variables in different columns and loop through them as I have shown above.  However, a reasonable alternative is to *reshape* your dataset so all the values of all variables are in a single column.  A second, categorical column will contain the variable names so we know which variable each row is associated with.  Such reshaping is an example of making a *wide* dataset into a *long* dataset.
 
 Once your data are in a long format, you can use a list-columns approach for the analysis.  You can see an example of this in [Chapter 25: Many models](https://r4ds.had.co.nz/many-models.html#introduction-17) of Grolemund and Wickham's [R for Data Science book](https://r4ds.had.co.nz/).  
 
