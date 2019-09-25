@@ -1,0 +1,324 @@
+---
+title: 'More exploratory plots with ggplot2 and purrr: Adding conditional elements'
+author: Ariel Muldoon
+date: '2019-09-27'
+slug: more-exploratory-plots
+categories:
+  - r
+tags:
+  - ggplot2
+  - purrr
+description: Following up on a previous post, I show how I add conditional elements to plots for some variables using if() statements within the ggplot2 function.
+---
+
+```{r setup, include = FALSE, message = FALSE, purl = FALSE}
+knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
+
+# Make datasets
+set.seed(16)
+dat = data.frame(cov_plant = round( rlnorm(n = 60, meanlog = 0.75, sdlog = 1.15), digits = 1),
+                 cov_oth = round( runif(n = 60, min = 0.3, max = 100), digits = 1),
+                 gap = round( rlnorm(n = 60, meanlog = 2, sdlog = 1.5), digits = 1),
+                 year = rep( paste("Year", 1:3), each = 20),
+                 trt = rep(letters[1:2], each = 10, times = 3) )
+
+dat$cov_plant = with(dat, ifelse(cov_plant <= 0.3, 0, cov_plant) )
+
+resp = data.frame(variable = c("cov_plant", "cov_oth", "gap"),
+                     description = c("Plant cover", "Other cover", "Gap size"),
+                     units = c("%", "%", "m"),
+                     transformation = c("log", "identity", "log"),
+                     constant = c(0.3, 0, 0) )
+                 
+```
+
+I was working on a project this summer with many response variables.  I usually start in on this kind of problem by plotting the data, automating things throught the use functions and purrr::map() loops as I demonstrated in a [previous post](https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/).
+
+The project was a follow-up to a previous analysis, and different variables were analyzed on different scales.  I wanted the plots for the new data to be on the same scale as used in the previous analylsis.  While I still planned on automating the process, I found I needed to add conditional elements to the plots using `if()`-`else()` statements.  
+
+This post demonstrates my approach for using different plotting elements depending on the variable when making many plots
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+input  = knitr::current_input()
+render_toc(input)
+```
+
+# R packages
+
+I will use **ggplot2** for plotting and **purrr** for looping through variables.
+
+```{r}
+library(ggplot2) # v. 3.2.1
+library(purrr) # v. 0.3.2
+```
+
+# The data
+
+The original problem I was working on involved 18 variables measured over 10 years across multiple treatments.  My simplified example dataset, `dat`, contains three response variables, `cov_plant`, `cov_oth`, and `gap`.  One categorical explanatory variable `year` has 3 levels and the other, `trt`, has two.
+
+```{r}
+dat = structure(list(cov_plant = c(3.7, 1.8, 7.5, 0.4, 7.9, 1.2, 0.7, 
+2.3, 6.9, 4.1, 17.7, 2.4, 0.9, 14.3, 4.9, 0, 4.1, 3.6, 1.1, 7.7, 
+0, 1.5, 1.7, 11.5, 0.8, 12.3, 7.1, 6.9, 5.6, 2.7, 1, 2.5, 2, 
+0.7, 0.7, 2.9, 4, 2.5, 2.9, 1.5, 0.5, 22.8, 2.8, 1.4, 1, 2.9, 
+2.4, 4.1, 4.1, 1.9, 2.8, 5, 5.7, 5.6, 0, 4.6, 8.1, 0.5, 88.9, 
+1), cov_oth = c(11.5, 63.2, 34, 65.5, 28.8, 8.6, 7.1, 65.5, 12.1, 
+3, 23.6, 3.8, 24.9, 55.9, 24.2, 78.2, 81.1, 10.7, 30.7, 23.5, 
+10.1, 4.6, 45.7, 37.6, 81.3, 39.1, 50.8, 75.8, 78.2, 23.9, 53, 
+51.1, 2.5, 40.2, 15.9, 91.3, 44, 72.9, 82.7, 42.4, 94.1, 23, 
+86.2, 50.1, 88.9, 80.5, 34.2, 68.7, 45, 13.9, 44.2, 85, 79.6, 
+1, 45.3, 69.5, 89.6, 22.2, 1.3, 88), gap = c(2.8, 11.8, 0.3, 
+17.2, 18.3, 1.4, 19.6, 19.4, 2.6, 66.3, 97.1, 17, 381.5, 15.7, 
+8.3, 2.4, 3.8, 3.8, 246.6, 43.2, 16.7, 6.6, 3.1, 2.4, 3.2, 4.3, 
+0.3, 2.1, 41.7, 68.9, 5.1, 5.7, 0.4, 35.5, 1.1, 10.8, 5, 11.8, 
+75.5, 5.4, 12.6, 5.2, 11.4, 6.8, 5.3, 1.1, 3.2, 2.9, 5.2, 0.2, 
+1.5, 0.6, 7.4, 18.6, 11.7, 1.6, 13.7, 7.1, 19.9, 16.8), year = structure(c(1L, 
+1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 
+3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("Year 1", 
+"Year 2", "Year 3"), class = "factor"), trt = structure(c(1L, 
+1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 
+2L, 2L, 2L, 2L, 2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("a", 
+"b"), class = "factor")), row.names = c(NA, -60L), class = "data.frame")
+```
+
+The first 6 rows are printed below.
+
+```{r}
+head(dat)
+```
+
+Many of the variables in the analysis I was following were log transformed.  Variables that contained 0 values were shifted by a fixed constant prior to the log transformation.  I went back through scripts for the original analysis and collected information on the transformation and added constant, storing it in a second data.frame I'll call `resp`.
+
+This dataset contains a column for the variable name, a longer description of what the variable is, the units a variable was measured in, the transformation used for analysis, and the constant used to shift the variable.
+
+This dataset was key in adding conditional elements to my plotting function.
+
+```{r}
+resp = structure(list(variable = structure(c(2L, 1L, 3L), .Label = c("cov_oth", 
+"cov_plant", "gap"), class = "factor"), description = structure(3:1, .Label = c("Gap size", 
+"Other cover", "Plant cover"), class = "factor"), units = structure(c(1L, 
+1L, 2L), .Label = c("%", "m"), class = "factor"), transformation = structure(c(2L, 
+1L, 2L), .Label = c("identity", "log"), class = "factor"), constant = c(0.3, 
+0, 0)), class = "data.frame", row.names = c(NA, -3L))
+resp
+```
+
+# Initial plotting function
+
+I set up my initial plotting function to make a scatterplot of the raw data with means added as larger symbols that were connected by lines.  
+
+This is a pretty complicated plot.  I'm skipping the step where I work out what I want the plots to look like.  Rest assured I did a lot of testing on a single variable to work out the plot structure prior to getting to the point making the plotting function below. `r emo::ji("grin")`
+
+You can see my `plot_fun()` function includes steps to subset the `resp` dataset to the row for the plot response variable.  I use the information to make a plot title and add the constant prior to plotting.
+
+
+```{r}
+plot_fun = function(data = dat, respdata = resp, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     ggplot(data = data, aes(x = year, 
+                             y = .data[[response]] + respvar$constant,
+                             shape = trt, 
+                             color = trt,
+                             group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                   alpha = 0.25,
+                   size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = "point",
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = "line",
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = "rect") +
+          theme_bw(base_size = 16) +
+          theme(strip.text = element_text(margin = margin(0, 0, 0, 0) ),
+                legend.position = "bottom",
+                legend.direction = "horizontal",
+                legend.box.spacing = unit(0, "cm"),
+                legend.text = element_text(margin = margin(l = -.25, unit = "cm") ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = "",
+                           label = c("A Treatment", "B Treatment"),
+                           start = 0, end = 0.5) +
+          labs(x = "Year since treatment",
+               title = paste0(respvar$descrip, " (", respvar$units, ")"),
+               y = NULL)
+}
+```
+
+Here is what one plot looks like.
+
+```{r}
+plot_fun(response = "cov_plant")
+```
+
+# Adding conditional axis scale
+
+I wanted to put variables that were log transformed for analysis on the log scale.  Since not all variables were transformed, I wanted to use `scale_y_log10()` for log transformed variables and the standard scale for everything else.
+
+I will first assign my base plot a name within the function so I can add on to it conditionally.
+
+I then use the `transformation` column in `resp` to check if a log transformation was done or not via `grepl()`.  If so, I had `scale_y_log10()`.  Otherwise I return the plot on the original scale.
+
+```{r}
+plot_fun2 = function(data = dat, respdata = resp, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     g1 = ggplot(data = data, aes(x = year, 
+                                  y = .data[[response]] + respvar$constant,
+                                  shape = trt, 
+                                  color = trt,
+                                  group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                     alpha = 0.25,
+                     size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = "point",
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = "line",
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = "rect") +
+          theme_bw(base_size = 16) +
+          theme(strip.text = element_text(margin = margin(0, 0, 0, 0) ),
+                legend.position = "bottom",
+                legend.direction = "horizontal",
+                legend.box.spacing = unit(0, "cm"),
+                legend.text = element_text(margin = margin(l = -.25, unit = "cm") ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = "",
+                           label = c("A Treatment", "B Treatment"),
+                           start = 0, end = 0.5) +
+          labs(x = "Year since treatment",
+               title = paste0(respvar$descrip, " (", respvar$units, ")"),
+               y = NULL)
+     
+     if( grepl("log", respvar$transformation) ) {
+          g1 +
+               scale_y_log10()
+     } else {
+          g1
+     }
+}
+```
+
+Now when I use the function on a log transformed variable like `cov_plot`, the y axis is on the log scale.
+
+```{r}
+plot_fun2(response = "cov_plant")
+```
+
+# Adding a conditional caption
+
+After I changed the y axis scale for some variables, I decided I should make sure that the scale of the axis is clear to the reader.  In addition, I wanted to be sure to highlight the fact that some variables were shifted prior to transformation.  So I decided to create a conditional caption to add to the plot, which is added in `labs()`.
+
+```{r}
+plot_fun3 = function(data = dat, respdata = resp, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     caption = {
+          if(respvar$constant != 0 ) {
+               paste0("Y axis on log scale ", 
+                      "(added constant ", 
+                      respvar$constant, ")")
+        } else if(!grepl("log", respvar$transformation) ) {
+                "Y axis on original scale"
+        } else {
+                "Y axis on log scale"
+        }
+     }
+     
+     g1 = ggplot(data = data, aes(x = year, 
+                                  y = .data[[response]] + respvar$constant,
+                                  shape = trt, 
+                                  color = trt,
+                                  group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                     alpha = 0.25,
+                     size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = "point",
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = "line",
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = "rect") +
+          theme_bw(base_size = 16) +
+          theme(strip.text = element_text(margin = margin(0, 0, 0, 0) ),
+                legend.position = "bottom",
+                legend.direction = "horizontal",
+                legend.box.spacing = unit(0, "cm"),
+                legend.text = element_text(margin = margin(l = -.25, unit = "cm") ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = "",
+                           label = c("A Treatment", "B Treatment"),
+                           start = 0, end = 0.5) +
+          labs(x = "Year since treatment",
+               title = paste0(respvar$descrip, " (", respvar$units, ")"),
+               y = NULL,
+               caption = caption)
+     
+     if( grepl("log", respvar$transformation) ) {
+          g1 +
+               scale_y_log10()
+     } else {
+          g1
+     }
+}
+```
+
+The function is now a lot longer, but I can now get different output I want for my different variables.
+
+```{r}
+plot_fun3(response = "cov_plant")
+```
+
+# Looping and making all the plots
+
+Once I have worked out the details of the function I can plot all the variables with `purrr::map()` loop.  I've set this up to loop through the variable names.
+
+```{r}
+vars = names(dat)[1:3]
+vars
+```
+
+```{r}
+all_plots = map(vars, ~plot_fun3(response = .x) )
+```
+
+Here are the plots, with captions showing that two plots are on the log scale, one is on the original scale, and one has an added constant.
+
+I'm showing the plots all together here, but I actually saved them with one plot per page so collaborators could page through them one at a time.
+
+```{r}
+cowplot::plot_grid(plotlist = all_plots, ncol = 1)
+```
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+scriptpath = paste(tools::file_path_sans_ext(input), "R", sep = ".")
+output = here::here("static", "script", scriptpath)
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](`r paste0("/script/", scriptpath)`).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```
