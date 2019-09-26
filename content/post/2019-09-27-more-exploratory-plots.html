@@ -1,0 +1,464 @@
+---
+title: 'More exploratory plots with ggplot2 and purrr: Adding conditional elements'
+author: Ariel Muldoon
+date: '2019-09-27'
+slug: more-exploratory-plots
+categories:
+  - r
+tags:
+  - ggplot2
+  - purrr
+description: Following up on a previous post, I show how I add conditional elements to automated ggplot2 plots using if() statements within my plotting function.
+draft: TRUE
+---
+
+
+
+<p>This summer I was asked to work on a new project with some collaborators. This project involved eighteen continuous variables with three crossed factors, so I planned on automating my initial graphical data exploration through the use of functions and <code>purrr::map()</code> as <a href="https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/">I’ve written about previously</a>.</p>
+<p>However, this particular project was a follow-up to a previous analysis. In the original analysis, different variables were analyzed on different scales. I wanted to put the new plots on whatever scale they were analyzed on originally. If I was going to automate the plotting, which I definitely wanted to do with so many variables 😄, I was going to need to add conditional elements.</p>
+<p>This post demonstrates how I added <code>if()</code> statements within my plotting function to use different plotting elements depending on the plotted variable.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#the-data">The data</a></li>
+<li><a href="#initial-plotting-function">Initial plotting function</a></li>
+<li><a href="#adding-a-conditional-axis-scale">Adding a conditional axis scale</a></li>
+<li><a href="#adding-a-conditional-caption">Adding a conditional caption</a></li>
+<li><a href="#looping-through-the-variables">Looping through the variables</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="r-packages" class="section level1">
+<h1>R packages</h1>
+<p>I will use <strong>ggplot2</strong> for plotting and <strong>purrr</strong> for looping through variables.</p>
+<pre class="r"><code>library(ggplot2) # v. 3.2.1
+library(purrr) # v. 0.3.2</code></pre>
+</div>
+<div id="the-data" class="section level1">
+<h1>The data</h1>
+<p>My simplified example dataset, <code>dat</code>, contains three response variables, <code>cov_plant</code>, <code>cov_oth</code>, and <code>gap</code>. I created two categorical explanatory variables, <code>year</code> with 3 levels and <code>trt</code> with two levels.</p>
+<pre class="r"><code>dat = structure(list(cov_plant = c(3.7, 1.8, 7.5, 0.4, 7.9, 1.2, 0.7, 
+2.3, 6.9, 4.1, 17.7, 2.4, 0.9, 14.3, 4.9, 0, 4.1, 3.6, 1.1, 7.7, 
+0, 1.5, 1.7, 11.5, 0.8, 12.3, 7.1, 6.9, 5.6, 2.7, 1, 2.5, 2, 
+0.7, 0.7, 2.9, 4, 2.5, 2.9, 1.5, 0.5, 22.8, 2.8, 1.4, 1, 2.9, 
+2.4, 4.1, 4.1, 1.9, 2.8, 5, 5.7, 5.6, 0, 4.6, 8.1, 0.5, 88.9, 
+1), cov_oth = c(11.5, 63.2, 34, 65.5, 28.8, 8.6, 7.1, 65.5, 12.1, 
+3, 23.6, 3.8, 24.9, 55.9, 24.2, 78.2, 81.1, 10.7, 30.7, 23.5, 
+10.1, 4.6, 45.7, 37.6, 81.3, 39.1, 50.8, 75.8, 78.2, 23.9, 53, 
+51.1, 2.5, 40.2, 15.9, 91.3, 44, 72.9, 82.7, 42.4, 94.1, 23, 
+86.2, 50.1, 88.9, 80.5, 34.2, 68.7, 45, 13.9, 44.2, 85, 79.6, 
+1, 45.3, 69.5, 89.6, 22.2, 1.3, 88), gap = c(2.8, 11.8, 0.3, 
+17.2, 18.3, 1.4, 19.6, 19.4, 2.6, 66.3, 97.1, 17, 381.5, 15.7, 
+8.3, 2.4, 3.8, 3.8, 246.6, 43.2, 16.7, 6.6, 3.1, 2.4, 3.2, 4.3, 
+0.3, 2.1, 41.7, 68.9, 5.1, 5.7, 0.4, 35.5, 1.1, 10.8, 5, 11.8, 
+75.5, 5.4, 12.6, 5.2, 11.4, 6.8, 5.3, 1.1, 3.2, 2.9, 5.2, 0.2, 
+1.5, 0.6, 7.4, 18.6, 11.7, 1.6, 13.7, 7.1, 19.9, 16.8), year = structure(c(1L, 
+1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 
+3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c(&quot;Year 1&quot;, 
+&quot;Year 2&quot;, &quot;Year 3&quot;), class = &quot;factor&quot;), trt = structure(c(1L, 
+1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 
+2L, 2L, 2L, 2L, 2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c(&quot;a&quot;, 
+&quot;b&quot;), class = &quot;factor&quot;)), row.names = c(NA, -60L), class = &quot;data.frame&quot;)</code></pre>
+<p>Here are the first six rows.</p>
+<pre class="r"><code>head(dat)</code></pre>
+<pre><code>#   cov_plant cov_oth  gap   year trt
+# 1       3.7    11.5  2.8 Year 1   a
+# 2       1.8    63.2 11.8 Year 1   a
+# 3       7.5    34.0  0.3 Year 1   a
+# 4       0.4    65.5 17.2 Year 1   a
+# 5       7.9    28.8 18.3 Year 1   a
+# 6       1.2     8.6  1.4 Year 1   a</code></pre>
+<p>I spent a fair amount of time sleuthing out which variables were used and which transformations were done in the original analysis. It turned out many of the variables in that analysis were log transformed. Variables that contained 0 values were shifted by a fixed constant prior to the log transformation. A different constant was used for different types of variables.</p>
+<p>I made a new dataset of metadata on the variables in the analysis I’ll call <code>resp_dat</code>. This dataset contains a row for each variable along with a description of what the variable measured, the units a variable was measured in, the transformation used for analysis, and the constant used to shift the variable.</p>
+<p>This metadata dataset was key in adding conditional elements to my plotting function.</p>
+<pre class="r"><code>resp_dat = structure(list(variable = structure(c(2L, 1L, 3L), .Label = c(&quot;cov_oth&quot;, 
+&quot;cov_plant&quot;, &quot;gap&quot;), class = &quot;factor&quot;), description = structure(3:1, .Label = c(&quot;Gap size&quot;, 
+&quot;Other cover&quot;, &quot;Plant cover&quot;), class = &quot;factor&quot;), units = structure(c(1L, 
+1L, 2L), .Label = c(&quot;%&quot;, &quot;m&quot;), class = &quot;factor&quot;), transformation = structure(c(2L, 
+1L, 2L), .Label = c(&quot;identity&quot;, &quot;log&quot;), class = &quot;factor&quot;), constant = c(0.3, 
+0, 0)), class = &quot;data.frame&quot;, row.names = c(NA, -3L))
+
+resp_dat</code></pre>
+<pre><code>#    variable description units transformation constant
+# 1 cov_plant Plant cover     %            log      0.3
+# 2   cov_oth Other cover     %       identity      0.0
+# 3       gap    Gap size     m            log      0.0</code></pre>
+</div>
+<div id="initial-plotting-function" class="section level1">
+<h1>Initial plotting function</h1>
+<p>I set up my initial plotting function to make a scatterplot of the raw data per <code>year</code> for each <code>trt</code>, with group means added as larger symbols that were connected by lines.</p>
+<p>You can see that my plot code ended up fairly complicated. I’m skipping the (many!) steps it took to get to this point. While not shown here, you can rest assured I did a lot of testing on a single response variable to work out the plot structure prior to making the plotting function below. 😉</p>
+<p>In addition to the plotting code, my <code>plot_fun()</code> function includes a line where I subset the <code>resp_dat</code> dataset to only the row for the response variable used in the plot. I use this information to add the constant prior to <code>y</code> and make a plot title with a nicer description and the units.</p>
+<pre class="r"><code>plot_fun = function(data = dat, respdata = resp_dat, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     ggplot(data = data, aes(x = year, 
+                             y = .data[[response]] + respvar$constant,
+                             shape = trt, 
+                             color = trt,
+                             group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                   alpha = 0.25,
+                   size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;point&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;line&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = &quot;rect&quot;) +
+          theme_bw(base_size = 14) +
+          theme(legend.position = &quot;bottom&quot;,
+                legend.direction = &quot;horizontal&quot;,
+                legend.box.spacing = unit(0, &quot;cm&quot;),
+                legend.text = element_text(margin = margin(l = -.2, unit = &quot;cm&quot;) ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = &quot;&quot;,
+                           label = c(&quot;A Treatment&quot;, &quot;B Treatment&quot;),
+                           start = 0, end = 0.5) +
+          labs(x = &quot;Year since treatment&quot;,
+               title = paste0(respvar$descrip, &quot; (&quot;, respvar$units, &quot;)&quot;),
+               y = NULL)
+}</code></pre>
+<p>Here is what the plot looks like for <code>cov_plant</code>.</p>
+<pre class="r"><code>plot_fun(response = &quot;cov_plant&quot;)</code></pre>
+<p><img src="/post/2019-09-27-more-exploratory-plots_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="adding-a-conditional-axis-scale" class="section level1">
+<h1>Adding a conditional axis scale</h1>
+<p>I wanted to put variables that were log transformed in the original analysis on the log scale. Since not all variables were transformed, I wanted to use <code>scale_y_log10()</code> for log transformed variables and the standard scale for everything else.</p>
+<p>To achieve this, I will assign my base plot a name within the function so I can add on to it conditionally. I name it <code>g1</code>.</p>
+<p>I use the <code>transformation</code> column in <code>resp</code> to check if a log transformation was done or not via <code>grepl()</code>. If it was done, I had <code>scale_y_log10()</code>. Otherwise I return the plot on the original scale.</p>
+<p>This is what that code looks like that I’ll add to the function.</p>
+<pre class="r"><code>if( grepl(&quot;log&quot;, respvar$transformation) ) {
+          g1 + scale_y_log10()
+     } else {
+          g1
+     }</code></pre>
+<p>I used the metadata I created to use in the <code>if()</code> statement, but you could do something similar if you had variables with the transformation as part of their names.</p>
+<p>Here is what the plotting function looks like now.</p>
+<pre class="r"><code>plot_fun2 = function(data = dat, respdata = resp_dat, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     g1 = ggplot(data = data, aes(x = year, 
+                                  y = .data[[response]] + respvar$constant,
+                                  shape = trt, 
+                                  color = trt,
+                                  group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                     alpha = 0.25,
+                     size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;point&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;line&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = &quot;rect&quot;) +
+          theme_bw(base_size = 14) +
+          theme(legend.position = &quot;bottom&quot;,
+                legend.direction = &quot;horizontal&quot;,
+                legend.box.spacing = unit(0, &quot;cm&quot;),
+                legend.text = element_text(margin = margin(l = -.2, unit = &quot;cm&quot;) ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = &quot;&quot;,
+                           label = c(&quot;A Treatment&quot;, &quot;B Treatment&quot;),
+                           start = 0, end = 0.5) +
+          labs(x = &quot;Year since treatment&quot;,
+               title = paste0(respvar$descrip, &quot; (&quot;, respvar$units, &quot;)&quot;),
+               y = NULL)
+     
+     if( grepl(&quot;log&quot;, respvar$transformation) ) {
+          g1 + scale_y_log10()
+     } else {
+          g1
+     }
+}</code></pre>
+<p>Now when I use the function on a log transformed variable like <code>cov_plant</code>, the y axis is on the log scale.</p>
+<pre class="r"><code>plot_fun2(response = &quot;cov_plant&quot;)</code></pre>
+<p><img src="/post/2019-09-27-more-exploratory-plots_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>But the y axis for <code>cov_oth</code>, which was analyzed on the original scale, is not.</p>
+<pre class="r"><code>plot_fun2(response = &quot;cov_oth&quot;)</code></pre>
+<p><img src="/post/2019-09-27-more-exploratory-plots_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>
+<div id="adding-a-conditional-caption" class="section level1">
+<h1>Adding a conditional caption</h1>
+<p>After I changed the y axis scale for some variables, I decided I should make sure that the scale of the axis is clear to the reader. In addition, I wanted to highlight the fact that some variables were shifted prior to transformation. I decided to create a conditional caption with this information, which can then be added in <code>labs()</code>.</p>
+<p>Since I ended up with three condition, log transformation, log transformation with a constant, or no transformation, I ended up using <code>if()</code>-<code>else if()</code>-<code>else</code> to do this.</p>
+<pre class="r"><code>caption_text = {
+          if(respvar$constant != 0 ) {
+               paste0(&quot;Y axis on log scale &quot;, 
+                      &quot;(added constant &quot;, 
+                      respvar$constant, &quot;)&quot;)
+        } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
+                &quot;Y axis on original scale&quot;
+        } else {
+                &quot;Y axis on log scale&quot;
+        }
+}</code></pre>
+<p>Now the function is looking pretty complicated!</p>
+<pre class="r"><code>plot_fun3 = function(data = dat, respdata = resp_dat, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     caption_text = {
+          if(respvar$constant != 0 ) {
+               paste0(&quot;Y axis on log scale &quot;, 
+                      &quot;(added constant &quot;, 
+                      respvar$constant, &quot;)&quot;)
+        } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
+                &quot;Y axis on original scale&quot;
+        } else {
+                &quot;Y axis on log scale&quot;
+        }
+     }
+     
+     g1 = ggplot(data = data, aes(x = year, 
+                                  y = .data[[response]] + respvar$constant,
+                                  shape = trt, 
+                                  color = trt,
+                                  group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                     alpha = 0.25,
+                     size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;point&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;line&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = &quot;rect&quot;) +
+          theme_bw(base_size = 14) +
+          theme(legend.position = &quot;bottom&quot;,
+                legend.direction = &quot;horizontal&quot;,
+                legend.box.spacing = unit(0, &quot;cm&quot;),
+                legend.text = element_text(margin = margin(l = -.2, unit = &quot;cm&quot;) ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = &quot;&quot;,
+                           label = c(&quot;A Treatment&quot;, &quot;B Treatment&quot;),
+                           start = 0, end = 0.5) +
+          labs(x = &quot;Year since treatment&quot;,
+               title = paste0(respvar$descrip, &quot; (&quot;, respvar$units, &quot;)&quot;),
+               y = NULL,
+               caption = caption_text)
+     
+     if( grepl(&quot;log&quot;, respvar$transformation) ) {
+          g1 +
+               scale_y_log10()
+     } else {
+          g1
+     }
+}</code></pre>
+<p>The plots now have captions with information added at the bottom.</p>
+<pre class="r"><code>plot_fun3(response = &quot;cov_plant&quot;)</code></pre>
+<p><img src="/post/2019-09-27-more-exploratory-plots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+<div id="looping-through-the-variables" class="section level1">
+<h1>Looping through the variables</h1>
+<p>Once I have worked out the details of the function I can loop through all the variables and make plots with <code>purrr::map()</code>. I’ve set this up to loop through the vector of variable names, stored in <code>vars</code>.</p>
+<pre class="r"><code>vars = names(dat)[1:3]
+vars</code></pre>
+<pre><code># [1] &quot;cov_plant&quot; &quot;cov_oth&quot;   &quot;gap&quot;</code></pre>
+<pre class="r"><code>all_plots = map(vars, ~plot_fun3(response = .x) )</code></pre>
+<p>Here are the plots, with captions showing that two plots are on the log scale, one is on the original scale, and one has an added constant.</p>
+<p>I’m showing the plots all together here, but I actually saved them in a PDF with one plot per page so collaborators could easily page through them.</p>
+<pre class="r"><code>cowplot::plot_grid(plotlist = all_plots)</code></pre>
+<p><img src="/post/2019-09-27-more-exploratory-plots_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-09-27-more-exploratory-plots.R">from here</a>.</p>
+<pre class="r"><code>library(ggplot2) # v. 3.2.1
+library(purrr) # v. 0.3.2
+dat = structure(list(cov_plant = c(3.7, 1.8, 7.5, 0.4, 7.9, 1.2, 0.7, 
+2.3, 6.9, 4.1, 17.7, 2.4, 0.9, 14.3, 4.9, 0, 4.1, 3.6, 1.1, 7.7, 
+0, 1.5, 1.7, 11.5, 0.8, 12.3, 7.1, 6.9, 5.6, 2.7, 1, 2.5, 2, 
+0.7, 0.7, 2.9, 4, 2.5, 2.9, 1.5, 0.5, 22.8, 2.8, 1.4, 1, 2.9, 
+2.4, 4.1, 4.1, 1.9, 2.8, 5, 5.7, 5.6, 0, 4.6, 8.1, 0.5, 88.9, 
+1), cov_oth = c(11.5, 63.2, 34, 65.5, 28.8, 8.6, 7.1, 65.5, 12.1, 
+3, 23.6, 3.8, 24.9, 55.9, 24.2, 78.2, 81.1, 10.7, 30.7, 23.5, 
+10.1, 4.6, 45.7, 37.6, 81.3, 39.1, 50.8, 75.8, 78.2, 23.9, 53, 
+51.1, 2.5, 40.2, 15.9, 91.3, 44, 72.9, 82.7, 42.4, 94.1, 23, 
+86.2, 50.1, 88.9, 80.5, 34.2, 68.7, 45, 13.9, 44.2, 85, 79.6, 
+1, 45.3, 69.5, 89.6, 22.2, 1.3, 88), gap = c(2.8, 11.8, 0.3, 
+17.2, 18.3, 1.4, 19.6, 19.4, 2.6, 66.3, 97.1, 17, 381.5, 15.7, 
+8.3, 2.4, 3.8, 3.8, 246.6, 43.2, 16.7, 6.6, 3.1, 2.4, 3.2, 4.3, 
+0.3, 2.1, 41.7, 68.9, 5.1, 5.7, 0.4, 35.5, 1.1, 10.8, 5, 11.8, 
+75.5, 5.4, 12.6, 5.2, 11.4, 6.8, 5.3, 1.1, 3.2, 2.9, 5.2, 0.2, 
+1.5, 0.6, 7.4, 18.6, 11.7, 1.6, 13.7, 7.1, 19.9, 16.8), year = structure(c(1L, 
+1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 
+3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c(&quot;Year 1&quot;, 
+&quot;Year 2&quot;, &quot;Year 3&quot;), class = &quot;factor&quot;), trt = structure(c(1L, 
+1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 
+2L, 2L, 2L, 2L, 2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c(&quot;a&quot;, 
+&quot;b&quot;), class = &quot;factor&quot;)), row.names = c(NA, -60L), class = &quot;data.frame&quot;)
+head(dat)
+
+resp_dat = structure(list(variable = structure(c(2L, 1L, 3L), .Label = c(&quot;cov_oth&quot;, 
+&quot;cov_plant&quot;, &quot;gap&quot;), class = &quot;factor&quot;), description = structure(3:1, .Label = c(&quot;Gap size&quot;, 
+&quot;Other cover&quot;, &quot;Plant cover&quot;), class = &quot;factor&quot;), units = structure(c(1L, 
+1L, 2L), .Label = c(&quot;%&quot;, &quot;m&quot;), class = &quot;factor&quot;), transformation = structure(c(2L, 
+1L, 2L), .Label = c(&quot;identity&quot;, &quot;log&quot;), class = &quot;factor&quot;), constant = c(0.3, 
+0, 0)), class = &quot;data.frame&quot;, row.names = c(NA, -3L))
+
+resp_dat
+
+plot_fun = function(data = dat, respdata = resp_dat, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     ggplot(data = data, aes(x = year, 
+                             y = .data[[response]] + respvar$constant,
+                             shape = trt, 
+                             color = trt,
+                             group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                   alpha = 0.25,
+                   size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;point&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;line&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = &quot;rect&quot;) +
+          theme_bw(base_size = 14) +
+          theme(legend.position = &quot;bottom&quot;,
+                legend.direction = &quot;horizontal&quot;,
+                legend.box.spacing = unit(0, &quot;cm&quot;),
+                legend.text = element_text(margin = margin(l = -.2, unit = &quot;cm&quot;) ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = &quot;&quot;,
+                           label = c(&quot;A Treatment&quot;, &quot;B Treatment&quot;),
+                           start = 0, end = 0.5) +
+          labs(x = &quot;Year since treatment&quot;,
+               title = paste0(respvar$descrip, &quot; (&quot;, respvar$units, &quot;)&quot;),
+               y = NULL)
+}
+plot_fun(response = &quot;cov_plant&quot;)
+
+if( grepl(&quot;log&quot;, respvar$transformation) ) {
+          g1 + scale_y_log10()
+     } else {
+          g1
+     }
+
+plot_fun2 = function(data = dat, respdata = resp_dat, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     g1 = ggplot(data = data, aes(x = year, 
+                                  y = .data[[response]] + respvar$constant,
+                                  shape = trt, 
+                                  color = trt,
+                                  group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                     alpha = 0.25,
+                     size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;point&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;line&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = &quot;rect&quot;) +
+          theme_bw(base_size = 14) +
+          theme(legend.position = &quot;bottom&quot;,
+                legend.direction = &quot;horizontal&quot;,
+                legend.box.spacing = unit(0, &quot;cm&quot;),
+                legend.text = element_text(margin = margin(l = -.2, unit = &quot;cm&quot;) ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = &quot;&quot;,
+                           label = c(&quot;A Treatment&quot;, &quot;B Treatment&quot;),
+                           start = 0, end = 0.5) +
+          labs(x = &quot;Year since treatment&quot;,
+               title = paste0(respvar$descrip, &quot; (&quot;, respvar$units, &quot;)&quot;),
+               y = NULL)
+     
+     if( grepl(&quot;log&quot;, respvar$transformation) ) {
+          g1 + scale_y_log10()
+     } else {
+          g1
+     }
+}
+plot_fun2(response = &quot;cov_plant&quot;)
+plot_fun2(response = &quot;cov_oth&quot;)
+
+caption_text = {
+          if(respvar$constant != 0 ) {
+               paste0(&quot;Y axis on log scale &quot;, 
+                      &quot;(added constant &quot;, 
+                      respvar$constant, &quot;)&quot;)
+        } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
+                &quot;Y axis on original scale&quot;
+        } else {
+                &quot;Y axis on log scale&quot;
+        }
+}
+
+plot_fun3 = function(data = dat, respdata = resp_dat, response) {
+     
+     respvar = subset(respdata, variable == response)
+
+     caption_text = {
+          if(respvar$constant != 0 ) {
+               paste0(&quot;Y axis on log scale &quot;, 
+                      &quot;(added constant &quot;, 
+                      respvar$constant, &quot;)&quot;)
+        } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
+                &quot;Y axis on original scale&quot;
+        } else {
+                &quot;Y axis on log scale&quot;
+        }
+     }
+     
+     g1 = ggplot(data = data, aes(x = year, 
+                                  y = .data[[response]] + respvar$constant,
+                                  shape = trt, 
+                                  color = trt,
+                                  group = trt) ) +
+          geom_point(position = position_dodge(width = 0.5),
+                     alpha = 0.25,
+                     size = 2, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;point&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 4, show.legend = FALSE) +
+          stat_summary(fun.y = mean, geom = &quot;line&quot;,
+                       position = position_dodge(width = 0.5),
+                       size = 1, key_glyph = &quot;rect&quot;) +
+          theme_bw(base_size = 14) +
+          theme(legend.position = &quot;bottom&quot;,
+                legend.direction = &quot;horizontal&quot;,
+                legend.box.spacing = unit(0, &quot;cm&quot;),
+                legend.text = element_text(margin = margin(l = -.2, unit = &quot;cm&quot;) ),
+                panel.grid.minor.y = element_blank() ) +
+          scale_color_grey(name = &quot;&quot;,
+                           label = c(&quot;A Treatment&quot;, &quot;B Treatment&quot;),
+                           start = 0, end = 0.5) +
+          labs(x = &quot;Year since treatment&quot;,
+               title = paste0(respvar$descrip, &quot; (&quot;, respvar$units, &quot;)&quot;),
+               y = NULL,
+               caption = caption_text)
+     
+     if( grepl(&quot;log&quot;, respvar$transformation) ) {
+          g1 +
+               scale_y_log10()
+     } else {
+          g1
+     }
+}
+plot_fun3(response = &quot;cov_plant&quot;)
+
+vars = names(dat)[1:3]
+vars
+
+all_plots = map(vars, ~plot_fun3(response = .x) )
+
+cowplot::plot_grid(plotlist = all_plots)</code></pre>
+</div>
