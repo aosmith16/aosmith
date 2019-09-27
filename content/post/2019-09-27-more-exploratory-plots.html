@@ -8,15 +8,15 @@ categories:
 tags:
   - ggplot2
   - purrr
-description: Following up on a previous post, I show how I add conditional elements to automated ggplot2 plots using if() statements within my plotting function.
-draft: TRUE
+description: Following up on a previous post, I show how I add conditional elements to automated ggplot2 plots through the use of if() statements within my plotting function.
+draft: FALSE
 ---
 
 
 
-<p>This summer I was asked to work on a new project with some collaborators. This project involved eighteen continuous variables with three crossed factors, so I planned on automating my initial graphical data exploration through the use of functions and <code>purrr::map()</code> as <a href="https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/">I’ve written about previously</a>.</p>
-<p>However, this particular project was a follow-up to a previous analysis. In the original analysis, different variables were analyzed on different scales. I wanted to put the new plots on whatever scale they were analyzed on originally. If I was going to automate the plotting, which I definitely wanted to do with so many variables 😄, I was going to need to add conditional elements.</p>
-<p>This post demonstrates how I added <code>if()</code> statements within my plotting function to use different plotting elements depending on the plotted variable.</p>
+<p>This summer I was asked to collaborate on an analysis project with many response variables. As usual, I planned on automating my initial graphical data exploration through the use of functions and <code>purrr::map()</code> as <a href="https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/">I’ve written about previously</a>.</p>
+<p>However, this particular project was a follow-up to a previous analysis. In the original analysis, different variables were analyzed on different scales. I wanted to put the new plots on whatever scale they were analyzed in that analysis. If I was going to automate the plotting, which I definitely wanted to do with so many variables 😄, I needed to add conditional elements.</p>
+<p>This post demonstrates how I used <code>if()</code> statements within my plotting function to use different plotting elements depending on which variable I was plotting.</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
@@ -64,7 +64,7 @@ library(purrr) # v. 0.3.2</code></pre>
 2L, 2L, 2L, 2L, 2L, 2L, 2L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c(&quot;a&quot;, 
 &quot;b&quot;), class = &quot;factor&quot;)), row.names = c(NA, -60L), class = &quot;data.frame&quot;)</code></pre>
-<p>Here are the first six rows.</p>
+<p>Here are the first six rows of this dataset.</p>
 <pre class="r"><code>head(dat)</code></pre>
 <pre><code>#   cov_plant cov_oth  gap   year trt
 # 1       3.7    11.5  2.8 Year 1   a
@@ -73,8 +73,8 @@ library(purrr) # v. 0.3.2</code></pre>
 # 4       0.4    65.5 17.2 Year 1   a
 # 5       7.9    28.8 18.3 Year 1   a
 # 6       1.2     8.6  1.4 Year 1   a</code></pre>
-<p>I spent a fair amount of time sleuthing out which variables were used and which transformations were done in the original analysis. It turned out many of the variables in that analysis were log transformed. Variables that contained 0 values were shifted by a fixed constant prior to the log transformation. A different constant was used for different types of variables.</p>
-<p>I made a new dataset of metadata on the variables in the analysis I’ll call <code>resp_dat</code>. This dataset contains a row for each variable along with a description of what the variable measured, the units a variable was measured in, the transformation used for analysis, and the constant used to shift the variable.</p>
+<p>I spent a fair amount of time sleuthing out which variables were used and which transformations were done in the original analysis. It turned out many (but not all) of the variables in that analysis were log transformed. Variables that contained 0 values were shifted by a fixed constant prior to the log transformation. A different constant was used for different variables.</p>
+<p>I made a dataset of variable metadata to help me keep all this information organized. This dataset contains a row for each variable along with a description of what that variable was, the units the variable was measured in, the transformation used for analysis, and the constant used to shift the variable. I’ll call this dataset <code>resp_dat</code>.</p>
 <p>This metadata dataset was key in adding conditional elements to my plotting function.</p>
 <pre class="r"><code>resp_dat = structure(list(variable = structure(c(2L, 1L, 3L), .Label = c(&quot;cov_oth&quot;, 
 &quot;cov_plant&quot;, &quot;gap&quot;), class = &quot;factor&quot;), description = structure(3:1, .Label = c(&quot;Gap size&quot;, 
@@ -91,9 +91,9 @@ resp_dat</code></pre>
 </div>
 <div id="initial-plotting-function" class="section level1">
 <h1>Initial plotting function</h1>
-<p>I set up my initial plotting function to make a scatterplot of the raw data per <code>year</code> for each <code>trt</code>, with group means added as larger symbols that were connected by lines.</p>
-<p>You can see that my plot code ended up fairly complicated. I’m skipping the (many!) steps it took to get to this point. While not shown here, you can rest assured I did a lot of testing on a single response variable to work out the plot structure prior to making the plotting function below. 😉</p>
-<p>In addition to the plotting code, my <code>plot_fun()</code> function includes a line where I subset the <code>resp_dat</code> dataset to only the row for the response variable used in the plot. I use this information to add the constant prior to <code>y</code> and make a plot title with a nicer description and the units.</p>
+<p>I set up my initial plotting function to make a scatterplot of the raw data per <code>year</code> for each <code>trt</code>. Different <code>trt</code> were indicated by shapes and colors, and I added group means as larger symbols connected by lines.</p>
+<p>You can see that my plotting code ended up fairly complicated. I’m skipping the (many!) steps it took to get to this point. While I don’t show the process here, you can rest assured that I did a <strong>lot</strong> of testing to work out the plot structure prior to making the plotting function below. 😉</p>
+<p>In addition to the plotting code, my <code>plot_fun()</code> function includes a line where I subset the <code>resp_dat</code> dataset to only the row of metadata for the response variable used in the plot. I use this information to add the constant to <code>y</code> and make a plot title with a description of the variable plus the units.</p>
 <pre class="r"><code>plot_fun = function(data = dat, respdata = resp_dat, response) {
      
      respvar = subset(respdata, variable == response)
@@ -133,14 +133,14 @@ resp_dat</code></pre>
 <h1>Adding a conditional axis scale</h1>
 <p>I wanted to put variables that were log transformed in the original analysis on the log scale. Since not all variables were transformed, I wanted to use <code>scale_y_log10()</code> for log transformed variables and the standard scale for everything else.</p>
 <p>To achieve this, I will assign my base plot a name within the function so I can add on to it conditionally. I name it <code>g1</code>.</p>
-<p>I use the <code>transformation</code> column in <code>resp</code> to check if a log transformation was done or not via <code>grepl()</code>. If it was done, I had <code>scale_y_log10()</code>. Otherwise I return the plot on the original scale.</p>
-<p>This is what that code looks like that I’ll add to the function.</p>
+<p>I use the <code>transformation</code> column in the variable metadata to check if a log transformation was done or not via <code>grepl()</code>. If it was done, I add <code>scale_y_log10()</code> to the existing plot. Otherwise I return the plot on the original scale.</p>
+<p>This is what that code looks like that I’ll add to the end of my function.</p>
 <pre class="r"><code>if( grepl(&quot;log&quot;, respvar$transformation) ) {
           g1 + scale_y_log10()
      } else {
           g1
      }</code></pre>
-<p>I used the metadata I created to use in the <code>if()</code> statement, but you could do something similar if you had variables with the transformation as part of their names.</p>
+<p>I used the metadata I created to use in the <code>if()</code> statement, but you could do something similar if you had variables with the transformation as part of the variable name.</p>
 <p>Here is what the plotting function looks like now.</p>
 <pre class="r"><code>plot_fun2 = function(data = dat, respdata = resp_dat, response) {
      
@@ -188,20 +188,20 @@ resp_dat</code></pre>
 </div>
 <div id="adding-a-conditional-caption" class="section level1">
 <h1>Adding a conditional caption</h1>
-<p>After I changed the y axis scale for some variables, I decided I should make sure that the scale of the axis is clear to the reader. In addition, I wanted to highlight the fact that some variables were shifted prior to transformation. I decided to create a conditional caption with this information, which can then be added in <code>labs()</code>.</p>
-<p>Since I ended up with three condition, log transformation, log transformation with a constant, or no transformation, I ended up using <code>if()</code>-<code>else if()</code>-<code>else</code> to do this.</p>
+<p>After I changed the y axis scale for some variables, I decided I should make sure that the scale of the axis is clear to the reader. In addition, I wanted to highlight the fact that some variables were shifted prior to transformation. I decided to create a conditional caption with this information, which can then be then added to the plot in <code>labs()</code>.</p>
+<p>Since I ended up with three conditions, log transformation, log transformation with added constant, or no transformation, I ended up using <code>if()</code>-<code>else if()</code>-<code>else</code> to do this.</p>
 <pre class="r"><code>caption_text = {
-          if(respvar$constant != 0 ) {
+     if(respvar$constant != 0 ) {
                paste0(&quot;Y axis on log scale &quot;, 
                       &quot;(added constant &quot;, 
                       respvar$constant, &quot;)&quot;)
-        } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
-                &quot;Y axis on original scale&quot;
-        } else {
-                &quot;Y axis on log scale&quot;
-        }
+          } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
+               &quot;Y axis on original scale&quot;
+          } else {
+               &quot;Y axis on log scale&quot;
+          }
 }</code></pre>
-<p>Now the function is looking pretty complicated!</p>
+<p>The function is getting pretty long and complicated now.</p>
 <pre class="r"><code>plot_fun3 = function(data = dat, respdata = resp_dat, response) {
      
      respvar = subset(respdata, variable == response)
@@ -253,13 +253,13 @@ resp_dat</code></pre>
           g1
      }
 }</code></pre>
-<p>The plots now have captions with information added at the bottom.</p>
+<p>But it does what I want. The plots now have captions with information added at the bottom in addition to the conditional y axis scale.</p>
 <pre class="r"><code>plot_fun3(response = &quot;cov_plant&quot;)</code></pre>
 <p><img src="/post/2019-09-27-more-exploratory-plots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 </div>
 <div id="looping-through-the-variables" class="section level1">
 <h1>Looping through the variables</h1>
-<p>Once I have worked out the details of the function I can loop through all the variables and make plots with <code>purrr::map()</code>. I’ve set this up to loop through the vector of variable names, stored in <code>vars</code>.</p>
+<p>Once I have worked out the details of the function I can loop through all the variables and make plots with <code>purrr::map()</code>. I’ve set this up to loop through the vector of variable names, stored in <code>vars</code> as strings.</p>
 <pre class="r"><code>vars = names(dat)[1:3]
 vars</code></pre>
 <pre><code># [1] &quot;cov_plant&quot; &quot;cov_oth&quot;   &quot;gap&quot;</code></pre>
@@ -391,15 +391,15 @@ plot_fun2(response = &quot;cov_plant&quot;)
 plot_fun2(response = &quot;cov_oth&quot;)
 
 caption_text = {
-          if(respvar$constant != 0 ) {
+     if(respvar$constant != 0 ) {
                paste0(&quot;Y axis on log scale &quot;, 
                       &quot;(added constant &quot;, 
                       respvar$constant, &quot;)&quot;)
-        } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
-                &quot;Y axis on original scale&quot;
-        } else {
-                &quot;Y axis on log scale&quot;
-        }
+          } else if(!grepl(&quot;log&quot;, respvar$transformation) ) {
+               &quot;Y axis on original scale&quot;
+          } else {
+               &quot;Y axis on log scale&quot;
+          }
 }
 
 plot_fun3 = function(data = dat, respdata = resp_dat, response) {
