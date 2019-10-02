@@ -127,15 +127,15 @@ plot_fun2(response = "cov_oth")
 
 
 # caption_text = {
-#           if(respvar$constant != 0 ) {
+#      if(respvar$constant != 0 ) {
 #                paste0("Y axis on log scale ",
 #                       "(added constant ",
 #                       respvar$constant, ")")
-#         } else if(!grepl("log", respvar$transformation) ) {
-#                 "Y axis on original scale"
-#         } else {
-#                 "Y axis on log scale"
-#         }
+#           } else if(!grepl("log", respvar$transformation) ) {
+#                "Y axis on original scale"
+#           } else {
+#                "Y axis on log scale"
+#           }
 # }
 # 
 

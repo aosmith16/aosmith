@@ -8,8 +8,8 @@ categories:
 tags:
   - ggplot2
   - purrr
-description: Following up on a previous post, I show how I add conditional elements to automated ggplot2 plots using if() statements within my plotting function.
-draft: TRUE
+description: Following up on a previous post, I show how I add conditional elements to automated ggplot2 plots through the use of if() statements within my plotting function.
+draft: FALSE
 ---
 
 ```{r setup, include = FALSE, message = FALSE, purl = FALSE}
@@ -37,11 +37,11 @@ resp_dat = data.frame(variable = c("cov_plant", "cov_oth", "gap"),
                  
 ```
 
-This summer I was asked to work on a new project with some collaborators.  This project involved eighteen continuous variables with three crossed factors, so I planned on automating my initial graphical data exploration through the use of functions and `purrr::map()` as [I've written about previously](https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/).
+This summer I was asked to collaborate on an analysis project with many response variables.  As usual, I planned on automating my initial graphical data exploration through the use of functions and `purrr::map()` as [I've written about previously](https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/).
 
-However, this particular project was a follow-up to a previous analysis.  In the original analysis, different variables were analyzed on different scales.  I wanted to put the new plots on whatever scale they were analyzed on originally.  If I was going to automate the plotting, which I definitely wanted to do with so many variables `r emo::ji("smile")`, I was going to need to add conditional elements.
+However, this particular project was a follow-up to a previous analysis.  In the original analysis, different variables were analyzed on different scales.  I wanted to put the new plots on whatever scale they were analyzed in that analysis.  If I was going to automate the plotting, which I definitely wanted to do with so many variables `r emo::ji("smile")`, I needed to add conditional elements.
 
-This post demonstrates how I added `if()` statements within my plotting function to use different plotting elements depending on the plotted variable.
+This post demonstrates how I used `if()` statements within my plotting function to use different plotting elements depending on which variable I was plotting.
 
 ## Table of Contents
 
@@ -92,16 +92,16 @@ dat = structure(list(cov_plant = c(3.7, 1.8, 7.5, 0.4, 7.9, 1.2, 0.7,
 "b"), class = "factor")), row.names = c(NA, -60L), class = "data.frame")
 ```
 
-Here are the first six rows.
+Here are the first six rows of this dataset.
 
 ```{r}
 head(dat)
 
 ```
 
-I spent a fair amount of time sleuthing out which variables were used and which transformations were done in the original analysis.  It turned out many of the variables in that analysis were log transformed.  Variables that contained 0 values were shifted by a fixed constant prior to the log transformation.  A different constant was used for different types of variables.  
+I spent a fair amount of time sleuthing out which variables were used and which transformations were done in the original analysis.  It turned out many (but not all) of the variables in that analysis were log transformed.  Variables that contained 0 values were shifted by a fixed constant prior to the log transformation.  A different constant was used for different variables.  
 
-I made a new dataset of metadata on the variables in the analysis I'll call `resp_dat`.  This dataset contains a row for each variable along with a description of what the variable measured, the units a variable was measured in, the transformation used for analysis, and the constant used to shift the variable.
+I made a dataset of variable metadata to help me keep all this information organized.  This dataset contains a row for each variable along with a description of what that variable was, the units the variable was measured in, the transformation used for analysis, and the constant used to shift the variable.  I'll call this dataset `resp_dat`.  
 
 This metadata dataset was key in adding conditional elements to my plotting function.
 
@@ -119,11 +119,11 @@ resp_dat
 
 # Initial plotting function
 
-I set up my initial plotting function to make a scatterplot of the raw data per `year` for each `trt`, with group means added as larger symbols that were connected by lines.  
+I set up my initial plotting function to make a scatterplot of the raw data per `year` for each `trt`.  Different `trt` were indicated by shapes and colors, and I added group means as larger symbols connected by lines.  
 
-You can see that my plot code ended up fairly complicated.  I'm skipping the (many!) steps it took to get to this point.  While not shown here, you can rest assured I did a lot of testing on a single response variable to work out the plot structure prior to making the plotting function below. `r emo::ji("wink")`
+You can see that my plotting code ended up fairly complicated.  I'm skipping the (many!) steps it took to get to this point.  While I don't show the process here, you can rest assured that I did a **lot** of testing to work out the plot structure prior to making the plotting function below. `r emo::ji("wink")`
 
-In addition to the plotting code, my `plot_fun()` function includes a line where I subset the `resp_dat` dataset to only the row for the response variable used in the plot.  I use this information to add the constant prior to `y` and make a plot title with a nicer description and the units.
+In addition to the plotting code, my `plot_fun()` function includes a line where I subset the `resp_dat` dataset to only the row of metadata for the response variable used in the plot.  I use this information to add the constant to `y` and make a plot title with a description of the variable plus the units.
 
 
 ```{r}
@@ -173,9 +173,9 @@ I wanted to put variables that were log transformed in the original analysis on 
 
 To achieve this, I will assign my base plot a name within the function so I can add on to it conditionally.  I name it `g1`.
 
-I use the `transformation` column in `resp` to check if a log transformation was done or not via `grepl()`.  If it was done, I had `scale_y_log10()`.  Otherwise I return the plot on the original scale.
+I use the `transformation` column in the variable metadata to check if a log transformation was done or not via `grepl()`.  If it was done, I add `scale_y_log10()` to the existing plot.  Otherwise I return the plot on the original scale.
 
-This is what that code looks like that I'll add to the function.
+This is what that code looks like that I'll add to the end of my function.
 
 ```{r, eval = FALSE}
 if( grepl("log", respvar$transformation) ) {
@@ -186,7 +186,7 @@ if( grepl("log", respvar$transformation) ) {
 
 ```
 
-I used the metadata I created to use in the `if()` statement, but you could do something similar if you had variables with the transformation as part of their names.
+I used the metadata I created to use in the `if()` statement, but you could do something similar if you had variables with the transformation as part of the variable name.
 
 Here is what the plotting function looks like now.
 
@@ -245,26 +245,26 @@ plot_fun2(response = "cov_oth")
 
 # Adding a conditional caption
 
-After I changed the y axis scale for some variables, I decided I should make sure that the scale of the axis is clear to the reader.  In addition, I wanted to highlight the fact that some variables were shifted prior to transformation.  I decided to create a conditional caption with this information, which can then be added in `labs()`.
+After I changed the y axis scale for some variables, I decided I should make sure that the scale of the axis is clear to the reader.  In addition, I wanted to highlight the fact that some variables were shifted prior to transformation.  I decided to create a conditional caption with this information, which can then be then added to the plot in `labs()`.
 
-Since I ended up with three condition, log transformation, log transformation with a constant, or no transformation, I ended up using `if()`-`else if()`-`else` to do this.
+Since I ended up with three conditions, log transformation, log transformation with added constant, or no transformation, I ended up using `if()`-`else if()`-`else` to do this.
 
 ```{r, eval = FALSE}
 caption_text = {
-          if(respvar$constant != 0 ) {
+     if(respvar$constant != 0 ) {
                paste0("Y axis on log scale ", 
                       "(added constant ", 
                       respvar$constant, ")")
-        } else if(!grepl("log", respvar$transformation) ) {
-                "Y axis on original scale"
-        } else {
-                "Y axis on log scale"
-        }
+          } else if(!grepl("log", respvar$transformation) ) {
+               "Y axis on original scale"
+          } else {
+               "Y axis on log scale"
+          }
 }
 
 ```
 
-Now the function is looking pretty complicated!
+The function is getting pretty long and complicated now.
 
 ```{r}
 plot_fun3 = function(data = dat, respdata = resp_dat, response) {
@@ -320,7 +320,7 @@ plot_fun3 = function(data = dat, respdata = resp_dat, response) {
 }
 ```
 
-The plots now have captions with information added at the bottom.
+But it does what I want.  The plots now have captions with information added at the bottom in addition to the conditional y axis scale.
 
 ```{r}
 plot_fun3(response = "cov_plant")
@@ -329,7 +329,7 @@ plot_fun3(response = "cov_plant")
 
 # Looping through the variables
 
-Once I have worked out the details of the function I can loop through all the variables and make plots with `purrr::map()`.  I've set this up to loop through the vector of variable names, stored in `vars`.
+Once I have worked out the details of the function I can loop through all the variables and make plots with `purrr::map()`.  I've set this up to loop through the vector of variable names, stored in `vars` as strings.
 
 ```{r}
 vars = names(dat)[1:3]
