@@ -1,8 +1,8 @@
 ---
-title: Converting from binomial to binary 0/1 with purrr::pmap()
+title: Expanding binomial counts to binary 0/1 with purrr::pmap()
 author: Ariel Muldoon
 date: '2019-10-04'
-slug: converting-binomial-to-binary
+slug: expanding-binomial-to-binary
 categories:
   - r
   - statistics
@@ -10,7 +10,7 @@ tags:
   - data
   - purrr
   - glmm
-description:  I show how binomial count data can be expanded to long-form binary 0/1 data.  I've used this in simulations to explore how to diagnose lack of fit when there is known extra-binomial variation when analyzing binary data.
+description:  In this post I show how binomial count data can be expanded to long-form binary 0/1 data.  I've used this approach for simulations to explore methods for diagnosing lack of fit due to non-independence of trials in a binomial vs binary analysis.
 ---
 
 ```{r setup, include = FALSE, message = FALSE, purl = FALSE}
@@ -33,7 +33,7 @@ dat = data.frame(plot = paste0("plot", 1:8),
 
 Data on successes and failures can be summarized and analyzed as counted proportions via the binomial distribution or as long format 0/1 binary data.  I most often see summarized data when there are multiple trials done within a study unit; for example, when tallying up the number of dead trees out of the total number of trees in a plot.  
 
-If these within-plot trials are all independent, analyzing data in a binary format instead of summarized binomial counts doesn't change the results.  If trials are not independent, though, neither approach works correctly.  The confusing piece in this is that binary data [by definition can't be overdispersed](https://stat.ethz.ch/pipermail/r-sig-mixed-models/2011q1/015534.html) and so the lack of fit from non-independence can't be diagnosed with standard overdispersion checks when working with binary data.
+If these within-plot trials are all independent, analyzing data in a binary format instead of summarized binomial counts doesn't change the statistical results.  If trials are not independent, though, neither approach works correctly and we would see overdispersion in a binomial model.  The confusing piece in this is that binary data [by definition can't be overdispersed](https://stat.ethz.ch/pipermail/r-sig-mixed-models/2011q1/015534.html) and so the lack of fit from non-independence can't be diagnosed with standard overdispersion checks when working with binary data.
 
 In a future post I'll talk more about simulating data to explore binomial overdispersion and how lack of fit can be diagnosed in binomial vs binary datasets.  Today, however, my goal is show how to take binomial count data and expand it into binary data.  
 
@@ -48,7 +48,7 @@ render_toc(input)
 
 # Load R packages
 
-I'm using **purrr** for rowwise loops with `pmap_dfr()`.  I also load **dplyr** and **tidyr** for a `nest()`/`unnest()` approach.
+I'm using **purrr** for loop through rows with `pmap_dfr()`.  I also load **dplyr** and **tidyr** for a `nest()`/`unnest()` approach.
 
 ```{r, message = FALSE, warning = FALSE}
 library(purrr) # 0.3.2
@@ -74,9 +74,9 @@ dat
 
 # Expanding binomial to binary with pmap_dfr()
 
-To make the binomial data into binary data, I need to make a vector with a 1 for every success listed in `resp` and a 0 for every failure (the total number of trials minus the number of successes).  I need this for every row in the dataset.  Since I want to do a *rowwise* operation I'll use one of the `pmap` functions.  I want my output to be a dataset so I use `pmap_dfr()`.
+To make the binomial data into binary data, I need to make a vector with a 1 for every success listed in `resp` and a 0 for every failure (the total number of trials minus the number of successes) in each row of the dataset.  Since I want to do a *rowwise* operation I'll use one of the `pmap` functions.  I want my output to be a dataset so I use `pmap_dfr()`.
 
-I use an anonymous function within `pmap_dfr()` for creating the output I want from each row. I purposely make the names of the function arguments match the column names.  You can either match on position or on names in `pmap` functions, and I generally like to match on names.  You can use formula coding with the tilde in `pmap` variants, but I find this more difficult to understand when I have more than three or so columns.  
+I use an anonymous function within `pmap_dfr()` for creating the output I want from each row. I purposely make the names of the function arguments match the column names.  You can either match on position or on names in `pmap` functions, and I tend to go for name matching.  You can use formula coding with the tilde in `pmap` variants, but I find the code more difficult to understand when I have more than three or so columns.  
 
 Within the function I make a column for the response variable, repeating 1 `resp` times and 0 `total - resp` times for each row of the original data.  I'm taking advantage of [recycling](http://www.hep.by/gnu/r-patched/r-lang/R-lang_41.html) in `data.frame()` to keep the `plot` and `group` columns in the output, as well.
 
@@ -91,7 +91,7 @@ binary_dat = pmap_dfr(dat,
 )
 ```
 
-Here are the first 6 rows of the dataset.  You can see for the first plot, `plot1`, there are five rows of 1 and 1 row with 0.  
+Here are the first 6 rows of the dataset.  You can see for the first plot, `plot1`, there are five rows of 1 and one row of 0.  
 
 ```{r}
 head(binary_dat)
@@ -103,7 +103,7 @@ This is the expanded data from the first row of the original dataset.
 dat[1, ]
 ```
 
-# Aside: pmap() with more columns
+# Aside: pmap functions with more columns
 
 My anonymous function in `pmap_dfr()` works fine as is as long as every column is included as a function argument.  If I had extra columns that I didn't want to remove and wasn't using in the function, however, I would get an error.  To bypass this you can add dots, `...`, to the anonymous function to refer to all other columns not being used.  
 
@@ -114,7 +114,7 @@ function(group, plot, resp, total, ...)
 
 # Comparing analysis results
 
-While I definitely learned that binomial data can be analyzed in binary format in a GLM class and returns identical, for some reason I often have to re-convince myself this is true. `r emo::ji("stuck_out_tongue_winking_eye")` This is clear when I do an analysis with each dataset and compare results.
+While I definitely learned that binomial data can be analyzed in binary format in a GLM class and returns identical results, for some reason I often have to re-convince myself this is true. `r emo::ji("stuck_out_tongue_winking_eye")` This is clear when I do an analysis with each dataset and compare results.
 
 ## Binomial model
 
@@ -144,7 +144,7 @@ summary(fit_binary)$coefficients
 
 # Expanding binomial to binary via nesting
 
-I could do the same thing with nesting plus `map()` inside `mutate()`, although this seems less straightforward to me for this particular case.  It does keep the other variables in the dataset, though, without having to manually include them in the output data.frame like I did above.
+I could do the expansion with nesting plus `purrr::map()` inside `mutate()`, although this seems less straightforward to me for this particular case.  It does keep the other variables in the dataset, though, without having to manually include them in the output data.frame like I did above.
 
 ```{r}
 binary_dat2 = dat %>%

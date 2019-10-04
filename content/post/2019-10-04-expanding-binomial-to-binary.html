@@ -1,9 +1,8 @@
 ---
-draft: yes
-title: Converting from binomial to binary 0/1 with purrr::pmap()
+title: Expanding binomial counts to binary 0/1 with purrr::pmap()
 author: Ariel Muldoon
 date: '2019-10-04'
-slug: converting-binomial-to-binary
+slug: expanding-binomial-to-binary
 categories:
   - r
   - statistics
@@ -11,13 +10,13 @@ tags:
   - data
   - purrr
   - glmm
-description:  I show how binomial count data can be expanded to long-form binary 0/1 data.  I've used this in simulations to explore how to diagnose lack of fit when there is known extra-binomial variation when analyzing binary data.
+description:  In this post I show how binomial count data can be expanded to long-form binary 0/1 data.  I've used this approach for simulations to explore methods for diagnosing lack of fit due to non-independence of trials in a binomial vs binary analysis.
 ---
 
 
 
 <p>Data on successes and failures can be summarized and analyzed as counted proportions via the binomial distribution or as long format 0/1 binary data. I most often see summarized data when there are multiple trials done within a study unit; for example, when tallying up the number of dead trees out of the total number of trees in a plot.</p>
-<p>If these within-plot trials are all independent, analyzing data in a binary format instead of summarized binomial counts doesn’t change the results. If trials are not independent, though, neither approach works correctly. The confusing piece in this is that binary data <a href="https://stat.ethz.ch/pipermail/r-sig-mixed-models/2011q1/015534.html">by definition can’t be overdispersed</a> and so the lack of fit from non-independence can’t be diagnosed with standard overdispersion checks when working with binary data.</p>
+<p>If these within-plot trials are all independent, analyzing data in a binary format instead of summarized binomial counts doesn’t change the statistical results. If trials are not independent, though, neither approach works correctly and we would see overdispersion in a binomial model. The confusing piece in this is that binary data <a href="https://stat.ethz.ch/pipermail/r-sig-mixed-models/2011q1/015534.html">by definition can’t be overdispersed</a> and so the lack of fit from non-independence can’t be diagnosed with standard overdispersion checks when working with binary data.</p>
 <p>In a future post I’ll talk more about simulating data to explore binomial overdispersion and how lack of fit can be diagnosed in binomial vs binary datasets. Today, however, my goal is show how to take binomial count data and expand it into binary data.</p>
 <p>In the past I’ve done the data expansion with <code>rowwise()</code> and <code>do()</code> from package <strong>dplyr</strong>, but these days I’m using <code>purrr::pmap()</code>. I’ll demonstrate the <code>pmap()</code> approach as well as a nesting approach with <code>nest()</code>/<code>unnest()</code> from <strong>tidyr</strong>.</p>
 <div id="table-of-contents" class="section level2">
@@ -26,7 +25,7 @@ description:  I show how binomial count data can be expanded to long-form binary
 <li><a href="#load-r-packages">Load R packages</a></li>
 <li><a href="#the-dataset">The dataset</a></li>
 <li><a href="#expanding-binomial-to-binary-with-pmap_dfr">Expanding binomial to binary with pmap_dfr()</a></li>
-<li><a href="#aside-pmap-with-more-columns">Aside: pmap() with more columns</a></li>
+<li><a href="#aside-pmap-functions-with-more-columns">Aside: pmap functions with more columns</a></li>
 <li><a href="#comparing-analysis-results">Comparing analysis results</a>
 <ul>
 <li><a href="#binomial-model">Binomial model</a></li>
@@ -38,7 +37,7 @@ description:  I show how binomial count data can be expanded to long-form binary
 </div>
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
-<p>I’m using <strong>purrr</strong> for rowwise loops with <code>pmap_dfr()</code>. I also load <strong>dplyr</strong> and <strong>tidyr</strong> for a <code>nest()</code>/<code>unnest()</code> approach.</p>
+<p>I’m using <strong>purrr</strong> for loop through rows with <code>pmap_dfr()</code>. I also load <strong>dplyr</strong> and <strong>tidyr</strong> for a <code>nest()</code>/<code>unnest()</code> approach.</p>
 <pre class="r"><code>library(purrr) # 0.3.2
 library(tidyr) # 1.0.0
 library(dplyr) # 0.8.3</code></pre>
@@ -66,8 +65,8 @@ dat</code></pre>
 </div>
 <div id="expanding-binomial-to-binary-with-pmap_dfr" class="section level1">
 <h1>Expanding binomial to binary with pmap_dfr()</h1>
-<p>To make the binomial data into binary data, I need to make a vector with a 1 for every success listed in <code>resp</code> and a 0 for every failure (the total number of trials minus the number of successes). I need this for every row in the dataset. Since I want to do a <em>rowwise</em> operation I’ll use one of the <code>pmap</code> functions. I want my output to be a dataset so I use <code>pmap_dfr()</code>.</p>
-<p>I use an anonymous function within <code>pmap_dfr()</code> for creating the output I want from each row. I purposely make the names of the function arguments match the column names. You can either match on position or on names in <code>pmap</code> functions, and I generally like to match on names. You can use formula coding with the tilde in <code>pmap</code> variants, but I find this more difficult to understand when I have more than three or so columns.</p>
+<p>To make the binomial data into binary data, I need to make a vector with a 1 for every success listed in <code>resp</code> and a 0 for every failure (the total number of trials minus the number of successes) in each row of the dataset. Since I want to do a <em>rowwise</em> operation I’ll use one of the <code>pmap</code> functions. I want my output to be a dataset so I use <code>pmap_dfr()</code>.</p>
+<p>I use an anonymous function within <code>pmap_dfr()</code> for creating the output I want from each row. I purposely make the names of the function arguments match the column names. You can either match on position or on names in <code>pmap</code> functions, and I tend to go for name matching. You can use formula coding with the tilde in <code>pmap</code> variants, but I find the code more difficult to understand when I have more than three or so columns.</p>
 <p>Within the function I make a column for the response variable, repeating 1 <code>resp</code> times and 0 <code>total - resp</code> times for each row of the original data. I’m taking advantage of <a href="http://www.hep.by/gnu/r-patched/r-lang/R-lang_41.html">recycling</a> in <code>data.frame()</code> to keep the <code>plot</code> and <code>group</code> columns in the output, as well.</p>
 <pre class="r"><code>binary_dat = pmap_dfr(dat, 
                       function(group, plot, resp, total) {
@@ -77,7 +76,7 @@ dat</code></pre>
                                                 rep(0, total - resp) ) )
                       }
 )</code></pre>
-<p>Here are the first 6 rows of the dataset. You can see for the first plot, <code>plot1</code>, there are five rows of 1 and 1 row with 0.</p>
+<p>Here are the first 6 rows of the dataset. You can see for the first plot, <code>plot1</code>, there are five rows of 1 and one row of 0.</p>
 <pre class="r"><code>head(binary_dat)</code></pre>
 <pre><code>#    plot group resp
 # 1 plot1    g1    1
@@ -91,14 +90,14 @@ dat</code></pre>
 <pre><code>#    plot group resp total
 # 1 plot1    g1    4     5</code></pre>
 </div>
-<div id="aside-pmap-with-more-columns" class="section level1">
-<h1>Aside: pmap() with more columns</h1>
+<div id="aside-pmap-functions-with-more-columns" class="section level1">
+<h1>Aside: pmap functions with more columns</h1>
 <p>My anonymous function in <code>pmap_dfr()</code> works fine as is as long as every column is included as a function argument. If I had extra columns that I didn’t want to remove and wasn’t using in the function, however, I would get an error. To bypass this you can add dots, <code>...</code>, to the anonymous function to refer to all other columns not being used.</p>
 <pre class="r"><code>function(group, plot, resp, total, ...)</code></pre>
 </div>
 <div id="comparing-analysis-results" class="section level1">
 <h1>Comparing analysis results</h1>
-<p>While I definitely learned that binomial data can be analyzed in binary format in a GLM class and returns identical, for some reason I often have to re-convince myself this is true. 😜 This is clear when I do an analysis with each dataset and compare results.</p>
+<p>While I definitely learned that binomial data can be analyzed in binary format in a GLM class and returns identical results, for some reason I often have to re-convince myself this is true. 😜 This is clear when I do an analysis with each dataset and compare results.</p>
 <div id="binomial-model" class="section level2">
 <h2>Binomial model</h2>
 <p>Here’s results from comparing the two groups for the binomial model.</p>
@@ -126,7 +125,7 @@ summary(fit_binary)$coefficients</code></pre>
 </div>
 <div id="expanding-binomial-to-binary-via-nesting" class="section level1">
 <h1>Expanding binomial to binary via nesting</h1>
-<p>I could do the same thing with nesting plus <code>map()</code> inside <code>mutate()</code>, although this seems less straightforward to me for this particular case. It does keep the other variables in the dataset, though, without having to manually include them in the output data.frame like I did above.</p>
+<p>I could do the expansion with nesting plus <code>purrr::map()</code> inside <code>mutate()</code>, although this seems less straightforward to me for this particular case. It does keep the other variables in the dataset, though, without having to manually include them in the output data.frame like I did above.</p>
 <pre class="r"><code>binary_dat2 = dat %&gt;%
      nest(data = c(resp, total) ) %&gt;%
      mutate(resp = map(data, ~c( rep(1, .x$resp),
@@ -147,7 +146,7 @@ head(binary_dat2)</code></pre>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
-<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-10-04-converting-binomial-to-binary.R">from here</a>.</p>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-10-04-expanding-binomial-to-binary.R">from here</a>.</p>
 <pre class="r"><code>library(purrr) # 0.3.2
 library(tidyr) # 1.0.0
 library(dplyr) # 0.8.3
