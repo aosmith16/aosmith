@@ -1,0 +1,180 @@
+---
+title: Expanding binomial counts to binary 0/1 with purrr::pmap()
+author: Ariel Muldoon
+date: '2019-10-04'
+slug: expanding-binomial-to-binary
+categories:
+  - r
+  - statistics
+tags:
+  - data
+  - purrr
+  - glmm
+description:  In this post I show how binomial count data can be expanded to long form binary 0/1 data.  I've used this approach for simulations to explore methods for diagnosing lack of fit due to non-independence of trials in a binomial vs binary analysis.
+---
+
+```{r setup, include = FALSE, message = FALSE, purl = FALSE}
+knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
+
+# Make small binomial dataset for 2 groups
+     # Total number of trials varies
+set.seed(16)
+sampsize = sample(5:10, size = 8, replace = TRUE) # sample size
+x1 = rbinom(n = 4, size = sampsize[1:4], p = 0.75) # group 1
+x2 = rbinom(n = 4, size = sampsize[5:8], p = 0.25) # group 2
+
+dat = data.frame(plot = paste0("plot", 1:8),
+                 group = rep( c("g1", "g2"), each = 4),
+                 num_dead = c(x1, x2),
+                 total = sampsize)
+```
+
+Data on successes and failures can be summarized and analyzed as counted proportions via the binomial distribution or as long format 0/1 binary data.  I most often see summarized data when there are multiple trials done within a study unit; for example, when tallying up the number of dead trees out of the total number of trees in a plot.  
+
+If these within-plot trials are all independent, analyzing data in a binary format instead of summarized binomial counts doesn't change the statistical results.  If trials are not independent, though, neither approach works correctly and we would see overdispersion/underdispersion in a binomial model.  The confusing piece in this is that binary data [by definition can't be overdispersed](https://stat.ethz.ch/pipermail/r-sig-mixed-models/2011q1/015534.html) and so the lack of fit from non-independence can't be diagnosed with standard overdispersion checks when working with binary data.
+
+In a future post I'll talk more about simulating data to explore binomial overdispersion and how lack of fit can be diagnosed in binomial vs binary datasets.  Today, however, my goal is show how to take binomial count data and expand it into binary data.  
+
+In the past I've done the data expansion with `rowwise()` and `do()` from package **dplyr**, but these days I'm using `purrr::pmap_dfr()`.  I'll demonstrate the `pmap_dfr()` approach as well as a `nest()`/`unnest()` approach using functions from **tidyr**.
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+input  = knitr::current_input()
+render_toc(input)
+```
+
+# Load R packages
+
+I'm using **purrr** for looping through rows with `pmap_dfr()`.  I also load **dplyr** and **tidyr** for a `nest()`/`unnest()` approach.
+
+```{r, message = FALSE, warning = FALSE}
+library(purrr) # 0.3.2
+library(tidyr) # 1.0.0
+library(dplyr) # 0.8.3
+
+```
+
+# The dataset
+
+I created a dataset with a total of 8 plots, 4 plots in each of two groups.  The data has been summarized up to the plot level.  The number of trials (`total`) per plot varied.  The number of successes observed is in `num_dead`.
+
+```{r}
+dat = structure(list(plot = structure(1:8, .Label = c("plot1", "plot2", 
+"plot3", "plot4", "plot5", "plot6", "plot7", "plot8"), class = "factor"), 
+    group = structure(c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L), .Label = c("g1", 
+    "g2"), class = "factor"), num_dead = c(4L, 6L, 6L, 5L, 1L, 4L, 
+    3L, 2L), total = c(5L, 7L, 9L, 7L, 8L, 10L, 10L, 7L)), class = "data.frame", row.names = c(NA, 
+-8L))
+
+dat
+
+```
+
+# Expanding binomial to binary with pmap_dfr()
+
+To make the binomial data into binary data, I need to make a vector with a $1$ for every "success" listed in `num_dead` and a $0$ for every "failure" (the total number of trials minus the number of successes).  Since I want to do a *rowwise* operation I'll use one of the `pmap` functions.  I want my output to be a data.frame so I use `pmap_dfr()`.
+
+I use an anonymous function within `pmap_dfr()` for creating the output I want from each row. I purposely make the names of the function arguments match the column names.  You can either match on position or on names in `pmap` functions, and I tend to go for name matching.  You can use formula coding with the tilde in `pmap` variants, but I find the code more difficult to understand when I have more than three or so columns.  
+
+Within the function I make a column for the response variable, repeating $1$ `num_dead` times and $0$ `total - num_dead` times for each row of the original data.  I'm taking advantage of [recycling](http://www.hep.by/gnu/r-patched/r-lang/R-lang_41.html) in `data.frame()` to keep the `plot` and `group` columns in the output, as well.
+
+```{r}
+binary_dat = pmap_dfr(dat, 
+                      function(group, plot, num_dead, total) {
+                           data.frame(plot = plot,
+                                      group = group,
+                                      dead = c( rep(1, num_dead),
+                                                rep(0, total - num_dead) ) )
+                      }
+)
+
+```
+
+Here are the first 6 rows of this new dataset.  You can see for the first plot, `plot1`, there are five rows of $1$ and one row of $0$.  
+
+```{r}
+head(binary_dat)
+```
+
+This matches the information in the first row of the original dataset.
+
+```{r}
+dat[1, ]
+
+```
+
+# Aside: pmap functions with more columns
+
+My anonymous function in `pmap_dfr()` works fine in its current form as long as every column is included as a function argument.  If I had extra columns that I didn't want to remove and wasn't using in the function, however, I would get an error.  
+
+To bypass this problem you can add dots, `...`, to the anonymous function to refer to all other columns not being used.  
+
+```{r, eval = FALSE}
+function(group, plot, num_dead, total, ...)
+     
+```
+
+# Comparing analysis results
+
+While I definitely learned that binomial data can be analyzed in binary format and returns identical results in a GLM class, for some reason I often have to re-convince myself this is true. `r emo::ji("stuck_out_tongue_winking_eye")` This is clear when I do an analysis with each dataset and compare results.
+
+## Binomial model
+
+Here's results from comparing the two groups for the binomial model.
+
+```{r}
+fit = glm( cbind(num_dead, total - num_dead) ~ group, 
+           data = dat,
+           family = binomial)
+summary(fit)$coefficients
+
+```
+
+## Binary model
+
+The binary model gives identical results for estimates and statistical tests.
+
+```{r}
+fit_binary = glm( dead ~ group, 
+                  data = binary_dat,
+                  family = binomial)
+summary(fit_binary)$coefficients
+
+```
+
+# Expanding binomial to binary via nesting
+
+Doing the expansion with nesting plus `purrr::map()` inside `mutate()` is another option, although this seems less straightforward to me for this particular case.  It does keep the other variables in the dataset, though, without having to manually include them in the output data.frame like I did above.
+
+```{r}
+binary_dat2 = dat %>%
+     nest(data = c(num_dead, total) ) %>%
+     mutate(dead = map(data, ~c( rep(1, .x$num_dead),
+                                 rep(0, .x$total - .x$num_dead) ) ) ) %>%
+     select(-data) %>%
+     unnest(dead)
+head(binary_dat2)
+```
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+scriptpath = paste(tools::file_path_sans_ext(input), "R", sep = ".")
+output = here::here("static", "script", scriptpath)
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](`r paste0("/script/", scriptpath)`).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```
