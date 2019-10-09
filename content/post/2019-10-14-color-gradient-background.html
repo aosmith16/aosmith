@@ -1,0 +1,144 @@
+---
+title: Making a color gradient background in ggplot2
+author: Ariel Muldoon
+date: '2019-10-14'
+slug: color-gradient-background
+categories:
+  - r
+tags:
+  - ggplot2
+description: This post demomstrates one way to add a gradient background based on a continuous variable with geom_segment().
+draft: TRUE
+---
+
+
+
+<p>I was recently making some arrangements for the 2020 eclipse in South America, which of course got me thinking of the day I was lucky enough to have the path of totality come to me.</p>
+<p>We have a weather station that records local temperature every 5 minutes, so after the eclipse I was able to plot the temperature change over time that we experienced at our house. Here was the basic plot I made then.</p>
+<p><img src="/img/eclipse_temp.png" /></p>
+<p>Looking at this again recently, I thought it’d be nice replace the gray rectangle with one that goes from light to dark as the eclipse progresses to totality, and then dark to light again back to full daylight.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#load-r-packages">Load R packages</a></li>
+<li><a href="#the-dataset">The dataset</a></li>
+<li><a href="#initial-plot">Initial plot</a></li>
+<li><a href="#adding-color-gradient-using-geom_segment">Adding color gradient using geom_segment()</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="load-r-packages" class="section level1">
+<h1>Load R packages</h1>
+<p>I’ll load <strong>ggplot2</strong> for plotting and <strong>dplyr</strong> for data manipulation.</p>
+<pre class="r"><code>library(ggplot2) # 3.2.1
+library(dplyr) # 0.8.3</code></pre>
+</div>
+<div id="the-dataset" class="section level1">
+<h1>The dataset</h1>
+<p>My weather station records the temperature in <span class="math inline">\(^{\circ}\)</span>Farenheit every 5 minutes. I downloaded the data from 6 AM to noon PDT and cleaned it up a bit. The times and temperature reading are in the dataset I named <code>temp</code>, which you can download if you’d like to play around with it.</p>
+<hr />
+<svg style="height:0.8em;top:.04em;position:relative;fill:#ee5863;" viewBox="0 0 512 512">
+<path d="M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"/>
+</svg>
+<a href="data:text/csv;base64,ImRhdGV0aW1lIiwidGVtcGYiDQoyMDE3LTA4LTIxIDA2OjAwOjAwLDU0LjkNCjIwMTctMDgtMjEgMDY6MDU6MDAsNTQuOQ0KMjAxNy0wOC0yMSAwNjoxMDowMCw1NC45DQoyMDE3LTA4LTIxIDA2OjE1OjAwLDU0LjkNCjIwMTctMDgtMjEgMDY6MjA6MDAsNTQuOQ0KMjAxNy0wOC0yMSAwNjoyNTowMCw1NC44DQoyMDE3LTA4LTIxIDA2OjMwOjAwLDU0LjcNCjIwMTctMDgtMjEgMDY6MzU6MDAsNTQuNg0KMjAxNy0wOC0yMSAwNjo0MDowMCw1NC42DQoyMDE3LTA4LTIxIDA2OjQ1OjAwLDU0LjUNCjIwMTctMDgtMjEgMDY6NTA6MDAsNTQuNg0KMjAxNy0wOC0yMSAwNjo1NTowMCw1NC42DQoyMDE3LTA4LTIxIDA3OjAwOjAwLDU0LjkNCjIwMTctMDgtMjEgMDc6MDU6MDAsNTQuOQ0KMjAxNy0wOC0yMSAwNzoxMDowMCw1NQ0KMjAxNy0wOC0yMSAwNzoxNTowMCw1NS4xDQoyMDE3LTA4LTIxIDA3OjIwOjAwLDU1LjQNCjIwMTctMDgtMjEgMDc6MjU6MDAsNTUuOQ0KMjAxNy0wOC0yMSAwNzozMDowMCw1Ni40DQoyMDE3LTA4LTIxIDA3OjM1OjAwLDU3DQoyMDE3LTA4LTIxIDA3OjQwOjAwLDU3LjcNCjIwMTctMDgtMjEgMDc6NDU6MDAsNTguMw0KMjAxNy0wOC0yMSAwNzo1MDowMCw1OS4xDQoyMDE3LTA4LTIxIDA3OjU1OjAwLDU5LjcNCjIwMTctMDgtMjEgMDg6MDA6MDAsNjAuNg0KMjAxNy0wOC0yMSAwODowNTowMCw2MS41DQoyMDE3LTA4LTIxIDA4OjEwOjAwLDYyLjQNCjIwMTctMDgtMjEgMDg6MTU6MDAsNjMuNA0KMjAxNy0wOC0yMSAwODoyMDowMCw2NC41DQoyMDE3LTA4LTIxIDA4OjI1OjAwLDY1LjUNCjIwMTctMDgtMjEgMDg6MzA6MDAsNjYuNQ0KMjAxNy0wOC0yMSAwODozNTowMCw2Ny4yDQoyMDE3LTA4LTIxIDA4OjQwOjAwLDY4DQoyMDE3LTA4LTIxIDA4OjQ1OjAwLDY4LjYNCjIwMTctMDgtMjEgMDg6NTA6MDAsNjkuNA0KMjAxNy0wOC0yMSAwODo1NTowMCw2OS45DQoyMDE3LTA4LTIxIDA5OjAwOjAwLDcwLjQNCjIwMTctMDgtMjEgMDk6MDU6MDAsNzAuOA0KMjAxNy0wOC0yMSAwOToxMDowMCw3MS4xDQoyMDE3LTA4LTIxIDA5OjE1OjAwLDcxLjMNCjIwMTctMDgtMjEgMDk6MjA6MDAsNzEuNA0KMjAxNy0wOC0yMSAwOToyNTowMCw3MS40DQoyMDE3LTA4LTIxIDA5OjMwOjAwLDcxLjMNCjIwMTctMDgtMjEgMDk6MzU6MDAsNzEuNA0KMjAxNy0wOC0yMSAwOTo0MDowMCw3MS4zDQoyMDE3LTA4LTIxIDA5OjQ1OjAwLDcxLjENCjIwMTctMDgtMjEgMDk6NTA6MDAsNzAuOQ0KMjAxNy0wOC0yMSAwOTo1NTowMCw3MC41DQoyMDE3LTA4LTIxIDEwOjAwOjAwLDY5LjkNCjIwMTctMDgtMjEgMTA6MDU6MDAsNjkuNQ0KMjAxNy0wOC0yMSAxMDoxMDowMCw2OC45DQoyMDE3LTA4LTIxIDEwOjE1OjAwLDY4LjMNCjIwMTctMDgtMjEgMTA6MjA6MDAsNjcuOA0KMjAxNy0wOC0yMSAxMDoyNTowMCw2Nw0KMjAxNy0wOC0yMSAxMDozMDowMCw2Ni4zDQoyMDE3LTA4LTIxIDEwOjM1OjAwLDY2DQoyMDE3LTA4LTIxIDEwOjQwOjAwLDY2DQoyMDE3LTA4LTIxIDEwOjQ1OjAwLDY2LjINCjIwMTctMDgtMjEgMTA6NTA6MDAsNjYuOA0KMjAxNy0wOC0yMSAxMDo1NTowMCw2Ny4zDQoyMDE3LTA4LTIxIDExOjAwOjAwLDY4DQoyMDE3LTA4LTIxIDExOjA1OjAwLDY4LjUNCjIwMTctMDgtMjEgMTE6MTA6MDAsNjkuMg0KMjAxNy0wOC0yMSAxMToxNTowMCw3MA0KMjAxNy0wOC0yMSAxMToyMDowMCw3MC44DQoyMDE3LTA4LTIxIDExOjI1OjAwLDcxLjcNCjIwMTctMDgtMjEgMTE6MzA6MDAsNzIuNA0KMjAxNy0wOC0yMSAxMTozNTowMCw3Mi45DQoyMDE3LTA4LTIxIDExOjQwOjAwLDczLjUNCjIwMTctMDgtMjEgMTE6NDU6MDAsNzMuOQ0KMjAxNy0wOC0yMSAxMTo1MDowMCw3NC4yDQoyMDE3LTA4LTIxIDExOjU1OjAwLDc0LjQNCjIwMTctMDgtMjEgMTI6MDA6MDAsNzQuNg0K" download="eclipse_temp.csv">Download eclipse_temp.csv</a>
+<hr />
+<p>Here are the first six lines of the temperature dataset.</p>
+<pre class="r"><code>head(temp)</code></pre>
+<pre><code># # A tibble: 6 x 2
+#   datetime            tempf
+#   &lt;dttm&gt;              &lt;dbl&gt;
+# 1 2017-08-21 06:00:00  54.9
+# 2 2017-08-21 06:05:00  54.9
+# 3 2017-08-21 06:10:00  54.9
+# 4 2017-08-21 06:15:00  54.9
+# 5 2017-08-21 06:20:00  54.9
+# 6 2017-08-21 06:25:00  54.8</code></pre>
+<p>I also stored the start and end times of the eclipse as well as the start and end times of totality, which I pulled for my location from <a href="http://xjubier.free.fr/en/site_pages/solar_eclipses/TSE_2017_GoogleMapFull.html">this website</a>.</p>
+<pre class="r"><code>eclipse = data.frame(start = as.POSIXct(&quot;2017-08-21 09:05:10&quot;),
+                     end = as.POSIXct(&quot;2017-08-21 11:37:19&quot;) )
+
+totality = data.frame(start = as.POSIXct(&quot;2017-08-21 10:16:55&quot;),
+                      end = as.POSIXct(&quot;2017-08-21 10:18:52&quot;) )</code></pre>
+</div>
+<div id="initial-plot" class="section level1">
+<h1>Initial plot</h1>
+<p>I decided to make a plot where I’ve zoomed to only the eclipse times. To keep the temperature line looking continuous even thought it’s taken every 5 minutes, I subset the data to times closer to the eclipse and then zoom the plot to include the start and end times of the eclipse with <code>coord_cartesian()</code>.</p>
+<p>Since the plot covers only about 2 and half hours, I make breaks on the x axis every 15 minutes.</p>
+<pre class="r"><code>plottemp = filter(temp, between(datetime, as.POSIXct(&quot;2017-08-21 09:00:00&quot;),
+                                as.POSIXct(&quot;2017-08-21 12:00:00&quot;) ) )
+g1 = ggplot(plottemp) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = &quot;15 min&quot;,
+                       date_labels = &quot;%H:%M&quot;,
+                       expand = c(0, 0) ) +
+     coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = &quot;Sapsucker Farm temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;09:05:10 - 11:37:19 PDT&quot;) ),
+          caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(16, 24, by = 1)) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid = element_blank() ) 
+
+g1</code></pre>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="adding-color-gradient-using-geom_segment" class="section level1">
+<h1>Adding color gradient using geom_segment()</h1>
+<p>I want the background of the plot to go from light to dark back to light as the eclipse progresses. This means a color gradient should go from left to right across the plot.</p>
+<p>Since I want to base my gradient on what is happening at a given time, I figured I could add a line from <code>geom_segment()</code> for every second of the eclipse and color that segment based on how far the time is from totality.</p>
+<p>First I made a dataset with one row for every second of the eclipse. I use <code>seq.POSIXt</code> for this.</p>
+<pre class="r"><code>color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = &quot;1 sec&quot;) )</code></pre>
+<pre class="r"><code>color_dat = mutate(color_dat,
+                   color = 0,
+                   color = replace(color, time &lt; totality$start, seq(100, 0, length.out = sum(time &lt; totality$start) ) ),
+                   color = replace(color, time &gt; totality$end, seq(0, 100, length.out = sum(time &gt; totality$end) ) ) )</code></pre>
+<p>Based on a bunch of internet searches, a gradient background in <strong>ggplot2</strong> generally takes some work. There are some nice examples using <code>rasterGrob()</code> and <code>annotate_custom()</code> for adding background gradients, such as <a href="https://stackoverflow.com/questions/48596582/change-orientation-of-grob-background-gradient">in this Stack Overflow question</a>. I’ve also seen approaches involving padding the dataset and drawing many filled rectangles, which is very much like what I’m doing with <code>geom_segment()</code>.</p>
+<p>While I don’t have an actual measurement of light from the eclipse, I could get the idea by doing a linear change in color to totality and then another linear change in color to the end of the eclipse.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-10-14-color-gradient-background.R">from here</a>.</p>
+<pre class="r"><code>library(ggplot2) # 3.2.1
+library(dplyr) # 0.8.3
+
+xfun::embed_file(path = here::here(&quot;static&quot;, &quot;data&quot;, &quot;2017-08-21_sapsucker_morning_temp.csv&quot;), 
+                  name = &quot;eclipse_temp.csv&quot;)
+head(temp)
+eclipse = data.frame(start = as.POSIXct(&quot;2017-08-21 09:05:10&quot;),
+                     end = as.POSIXct(&quot;2017-08-21 11:37:19&quot;) )
+
+totality = data.frame(start = as.POSIXct(&quot;2017-08-21 10:16:55&quot;),
+                      end = as.POSIXct(&quot;2017-08-21 10:18:52&quot;) )
+
+plottemp = filter(temp, between(datetime, as.POSIXct(&quot;2017-08-21 09:00:00&quot;),
+                                as.POSIXct(&quot;2017-08-21 12:00:00&quot;) ) )
+g1 = ggplot(plottemp) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = &quot;15 min&quot;,
+                       date_labels = &quot;%H:%M&quot;,
+                       expand = c(0, 0) ) +
+     coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = &quot;Sapsucker Farm temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;09:05:10 - 11:37:19 PDT&quot;) ),
+          caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(16, 24, by = 1)) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid = element_blank() ) 
+
+g1
+color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = &quot;1 sec&quot;) )
+color_dat = mutate(color_dat,
+                   color = 0,
+                   color = replace(color, time &lt; totality$start, seq(100, 0, length.out = sum(time &lt; totality$start) ) ),
+                   color = replace(color, time &gt; totality$end, seq(0, 100, length.out = sum(time &gt; totality$end) ) ) )</code></pre>
+</div>

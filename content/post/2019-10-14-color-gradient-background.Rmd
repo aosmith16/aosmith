@@ -1,0 +1,159 @@
+---
+title: Making a color gradient background in ggplot2
+author: Ariel Muldoon
+date: '2019-10-14'
+slug: color-gradient-background
+categories:
+  - r
+tags:
+  - ggplot2
+description: This post demomstrates one way to add a gradient background based on a continuous variable with geom_segment().
+draft: TRUE
+---
+
+```{r setup, include = FALSE, message = FALSE, purl = FALSE}
+knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
+
+temp = readr::read_csv( here::here("static", "data", "2017-08-21_sapsucker_morning_temp.csv") )
+# Set time zone to PDT
+lubridate::tz(temp$datetime) = "US/Pacific"
+```
+
+I was recently making some arrangements for the 2020 eclipse in South America, which of course got me thinking of the day I was lucky enough to have the path of totality come to me.
+
+We have a weather station that records local temperature every 5 minutes, so after the eclipse I was able to plot the temperature change over time that we experienced at our house.  Here was the basic plot I made then.
+
+![](/img/eclipse_temp.png)
+
+Looking at this again recently, I thought it'd be nice replace the gray rectangle with one that goes from light to dark as the eclipse progresses to totality, and then dark to light again back to full daylight.  
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+input  = knitr::current_input()
+render_toc(input)
+```
+
+# Load R packages
+
+I'll load **ggplot2** for plotting and **dplyr** for data manipulation.
+
+```{r, message = FALSE, warning = FALSE}
+library(ggplot2) # 3.2.1
+library(dplyr) # 0.8.3
+
+```
+
+# The dataset
+
+My weather station records the temperature in $^{\circ}$Farenheit every 5 minutes.  I downloaded the data from 6 AM to noon PDT and cleaned it up a bit.  The times and temperature reading are in the dataset I named `temp`, which you can download if you'd like to play around with it.  
+
+---
+
+`r fontawesome::fa("download", fill = "#ee5863")`
+```{r, echo = FALSE} 
+xfun::embed_file(path = here::here("static", "data", "2017-08-21_sapsucker_morning_temp.csv"), 
+                  name = "eclipse_temp.csv")
+```
+
+---
+
+Here are the first six lines of the temperature dataset.
+
+```{r}
+head(temp)
+```
+
+I also stored the start and end times of the eclipse as well as the start and end times of totality, which I pulled for my location from [this website](http://xjubier.free.fr/en/site_pages/solar_eclipses/TSE_2017_GoogleMapFull.html).
+
+```{r}
+eclipse = data.frame(start = as.POSIXct("2017-08-21 09:05:10"),
+                     end = as.POSIXct("2017-08-21 11:37:19") )
+
+totality = data.frame(start = as.POSIXct("2017-08-21 10:16:55"),
+                      end = as.POSIXct("2017-08-21 10:18:52") )
+
+```
+
+# Initial plot
+
+I decided to make a plot where I've zoomed to only the eclipse times.  To keep the temperature line looking continuous even thought it's taken every 5 minutes, I subset the data to times closer to the eclipse and then zoom the plot to include the start and end times of the eclipse with `coord_cartesian()`.
+
+Since the plot covers only about 2 and half hours, I make breaks on the x axis every 15 minutes.
+
+```{r}
+plottemp = filter(temp, between(datetime, as.POSIXct("2017-08-21 09:00:00"),
+                                as.POSIXct("2017-08-21 12:00:00") ) )
+g1 = ggplot(plottemp) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = "15 min",
+                       date_labels = "%H:%M",
+                       expand = c(0, 0) ) +
+     coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = "Sapsucker Farm temperature during 2017-08-21 solar eclipse",
+          subtitle = expression(italic("09:05:10 - 11:37:19 PDT") ),
+          caption = "Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds"
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(16, 24, by = 1)) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid = element_blank() ) 
+
+g1
+```
+
+# Adding color gradient using geom_segment()
+
+I want the background of the plot to go from light to dark back to light as the eclipse progresses.  This means a color gradient should go from left to right across the plot.
+
+Since I want to base my gradient on what is happening at a given time, I figured I could add a line from `geom_segment()` for every second of the eclipse and color that segment based on how far the time is from totality.
+
+First I made a dataset with one row for every second of the eclipse.  I use `seq.POSIXt` for this.
+
+```{r}
+color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = "1 sec") )
+```
+
+```{r}
+color_dat = mutate(color_dat,
+                   color = 0,
+                   color = replace(color, time < totality$start, seq(100, 0, length.out = sum(time < totality$start) ) ),
+                   color = replace(color, time > totality$end, seq(0, 100, length.out = sum(time > totality$end) ) ) )
+```
+
+
+Based on a bunch of internet searches, a gradient background in **ggplot2** generally takes some work.  There are some nice examples using `rasterGrob()` and `annotate_custom()` for adding background gradients, such as [in this Stack Overflow question](https://stackoverflow.com/questions/48596582/change-orientation-of-grob-background-gradient).  I've also seen approaches involving padding the dataset and drawing many filled rectangles, which is very much like what I'm doing with `geom_segment()`.
+
+While I don't have an actual measurement of light from the eclipse, I could get the idea by doing a linear change in color to totality and then another linear change in color to the end of the eclipse.
+
+
+
+```{r}
+
+```
+
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+scriptpath = paste(tools::file_path_sans_ext(input), "R", sep = ".")
+output = here::here("static", "script", scriptpath)
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](`r paste0("/script/", scriptpath)`).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```
