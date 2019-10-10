@@ -14,16 +14,27 @@ draft: TRUE
 
 
 <p>I was recently making some arrangements for the 2020 eclipse in South America, which of course got me thinking of the day I was lucky enough to have the path of totality come to me.</p>
-<p>We have a weather station that records local temperature every 5 minutes, so after the eclipse I was able to plot the temperature change over time that we experienced at our house. Here was the basic plot I made then.</p>
+<p>We have a weather station that records local temperature every 5 minutes, so after the eclipse I was able to plot the temperature change over time that we experienced at our house. Here is an example of a basic plot I made at the time.</p>
 <p><img src="/img/eclipse_temp.png" /></p>
-<p>Looking at this again recently, I thought it’d be nice replace the gray rectangle with one that goes from light to dark as the eclipse progresses to totality, and then dark to light again back to full daylight.</p>
+<p>Looking at this now, it might be nice replace the gray rectangle with one that goes from light to dark as the eclipse progresses to totality, and then back to light again back to full daylight.</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
 <li><a href="#load-r-packages">Load R packages</a></li>
 <li><a href="#the-dataset">The dataset</a></li>
 <li><a href="#initial-plot">Initial plot</a></li>
-<li><a href="#adding-color-gradient-using-geom_segment">Adding color gradient using geom_segment()</a></li>
+<li><a href="#adding-color-gradient-using-geom_segment">Adding color gradient using geom_segment()</a>
+<ul>
+<li><a href="#make-a-dataset-for-the-colors">Make a dataset for the colors</a></li>
+<li><a href="#adding-one-geom_segment-per-second">Adding one geom_segment() per second</a></li>
+<li><a href="#changing-to-a-gray-scale">Changing to a gray scale</a></li>
+</ul></li>
+<li><a href="#using-segments-to-make-a-rectangle-with-gradient-fill">Using segments to make a rectangle with gradient fill</a>
+<ul>
+<li><a href="#adding-annotations-with-arrows">Adding annotations with arrows</a></li>
+</ul></li>
+<li><a href="#other-ways-to-make-a-color-gradient-background">Other ways to make a color gradient background</a></li>
+<li><a href="#eclipses">Eclipses!</a></li>
 <li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
@@ -35,7 +46,7 @@ library(dplyr) # 0.8.3</code></pre>
 </div>
 <div id="the-dataset" class="section level1">
 <h1>The dataset</h1>
-<p>My weather station records the temperature in <span class="math inline">\(^{\circ}\)</span>Farenheit every 5 minutes. I downloaded the data from 6 AM to noon PDT and cleaned it up a bit. The times and temperature reading are in the dataset I named <code>temp</code>, which you can download if you’d like to play around with it.</p>
+<p>My weather station records the temperature in °Fahrenheit every 5 minutes. I downloaded the data from 6 AM to 12 PM PDT and cleaned it up a bit. The date-times and temperature are in a dataset I named <code>temp</code>. You can download this below you’d like to play around with these data.</p>
 <hr />
 <svg style="height:0.8em;top:.04em;position:relative;fill:#ee5863;" viewBox="0 0 512 512">
 <path d="M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"/>
@@ -53,7 +64,7 @@ library(dplyr) # 0.8.3</code></pre>
 # 4 2017-08-21 06:15:00  54.9
 # 5 2017-08-21 06:20:00  54.9
 # 6 2017-08-21 06:25:00  54.8</code></pre>
-<p>I also stored the start and end times of the eclipse as well as the start and end times of totality, which I pulled for my location from <a href="http://xjubier.free.fr/en/site_pages/solar_eclipses/TSE_2017_GoogleMapFull.html">this website</a>.</p>
+<p>I also stored the start and end times of the eclipse and totality in data.frames, which I pulled from <a href="http://xjubier.free.fr/en/site_pages/solar_eclipses/TSE_2017_GoogleMapFull.html">this website</a>for my location. If following along at home, make sure your time zones match for all date-time datasets.</p>
 <pre class="r"><code>eclipse = data.frame(start = as.POSIXct(&quot;2017-08-21 09:05:10&quot;),
                      end = as.POSIXct(&quot;2017-08-21 11:37:19&quot;) )
 
@@ -62,11 +73,13 @@ totality = data.frame(start = as.POSIXct(&quot;2017-08-21 10:16:55&quot;),
 </div>
 <div id="initial-plot" class="section level1">
 <h1>Initial plot</h1>
-<p>I decided to make a plot where I’ve zoomed to only the eclipse times. To keep the temperature line looking continuous even thought it’s taken every 5 minutes, I subset the data to times closer to the eclipse and then zoom the plot to include the start and end times of the eclipse with <code>coord_cartesian()</code>.</p>
-<p>Since the plot covers only about 2 and half hours, I make breaks on the x axis every 15 minutes.</p>
+<p>I decided to make a plot of the temperature during the hours of the eclipse only.</p>
+<p>To keep the temperature line looking continuous, even though it’s taken every 5 minutes, I subset the data to times near but not during the eclipse.</p>
 <pre class="r"><code>plottemp = filter(temp, between(datetime, as.POSIXct(&quot;2017-08-21 09:00:00&quot;),
-                                as.POSIXct(&quot;2017-08-21 12:00:00&quot;) ) )
-g1 = ggplot(plottemp) +
+                                as.POSIXct(&quot;2017-08-21 12:00:00&quot;) ) )</code></pre>
+<p>I then zoomed the plot to only include eclipse times with <code>coord_cartesian()</code>.</p>
+<p>Since the plot covers only about 2 and half hours, I make breaks on the x axis every 15 minutes.</p>
+<pre class="r"><code>ggplot(plottemp) +
      geom_line( aes(datetime, tempf), size = 1 ) +
      scale_x_datetime( date_breaks = &quot;15 min&quot;,
                        date_labels = &quot;%H:%M&quot;,
@@ -74,8 +87,57 @@ g1 = ggplot(plottemp) +
      coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
      labs(y = expression( Temperature~(degree*F) ),
           x = NULL,
-          title = &quot;Sapsucker Farm temperature during 2017-08-21 solar eclipse&quot;,
-          subtitle = expression(italic(&quot;09:05:10 - 11:37:19 PDT&quot;) ),
+          title = &quot;Temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;Sapsucker Farm, 09:05:10 - 11:37:19 PDT&quot;) ),
+          caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(16, 24, by = 1)) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid = element_blank() ) </code></pre>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="adding-color-gradient-using-geom_segment" class="section level1">
+<h1>Adding color gradient using geom_segment()</h1>
+<p>I want the background of the plot to go from light to dark back to light as the eclipse progresses. This means a color gradient should go from left to right across the plot.</p>
+<p>Since I want to base my gradient on what is happening at a given time, I figured I could add a line from <code>geom_segment()</code> for every second of the eclipse and color that segment based on how far the time is from totality.</p>
+<div id="make-a-dataset-for-the-colors" class="section level2">
+<h2>Make a dataset for the colors</h2>
+<p>The first step is to make dataset of every time on the x axis I want to put a segment. I decided to make a time variable with a row for every second of the eclipse with <code>seq.POSIXt</code> for this.</p>
+<pre class="r"><code>color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = &quot;1 sec&quot;) )</code></pre>
+<p>Then came some hard thinking. How would I make a continuous variable to map to <code>color</code>?</p>
+<p>While I don’t have an actual measurement of light from the eclipse, I could get the idea by doing a linear change in color to totality and then another linear change in color to the end of the eclipse.</p>
+<p>My initial idea for making a color variable was to use information on the current time and how it compared to totality start/end. After subtracting the times before totality from totality start and totality end from times after totality, I realized that the amount of time before totality wasn’t actually the same as the amount of time after totality. So I went back to the drawing board.</p>
+<p>Since I was making a linear change in color, I could make a sequence of values before totality and after totality that covered the same range but had a different total number of values to account for the difference in eclipse time before/after totality. I ended up making a sequence going from 100 to 0 before totality, assigned 0 during totality, and then made a sequence from 0 to 100 after totality.</p>
+<p>Here’s one way to get these sequences, using <code>base::replace()</code>.</p>
+<pre class="r"><code>color_dat = mutate(color_dat,
+                   color = 0,
+                   color = replace(color, 
+                                   time &lt; totality$start, 
+                                   seq(100, 0, length.out = sum(time &lt; totality$start) ) ),
+                   color = replace(color, 
+                                   time &gt; totality$end, 
+                                   seq(0, 100, length.out = sum(time &gt; totality$end) ) ) )</code></pre>
+</div>
+<div id="adding-one-geom_segment-per-second" class="section level2">
+<h2>Adding one geom_segment() per second</h2>
+<p>Now I can add the segments along the x axis. I want these across the entire plot, so I set <code>y</code> and <code>yend</code> to <code>-Inf</code> and <code>Inf</code>, respectively.</p>
+<p>This layer comes first so the other elements of the plot are on top of the gradient.</p>
+<pre class="r"><code>g1 = ggplot(plottemp) +
+     geom_segment(data = color_dat,
+                  aes(x = time, xend = time,
+                      y = -Inf, yend = Inf, color = color),
+                  show.legend = FALSE) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = &quot;15 min&quot;,
+                       date_labels = &quot;%H:%M&quot;,
+                       expand = c(0, 0) ) +
+     coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = &quot;Temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;Sapsucker Farm, 09:05:10 - 11:37:19 PDT&quot;) ),
           caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
      ) +
      scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
@@ -85,20 +147,84 @@ g1 = ggplot(plottemp) +
      theme(panel.grid = element_blank() ) 
 
 g1</code></pre>
-<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 </div>
-<div id="adding-color-gradient-using-geom_segment" class="section level1">
-<h1>Adding color gradient using geom_segment()</h1>
-<p>I want the background of the plot to go from light to dark back to light as the eclipse progresses. This means a color gradient should go from left to right across the plot.</p>
-<p>Since I want to base my gradient on what is happening at a given time, I figured I could add a line from <code>geom_segment()</code> for every second of the eclipse and color that segment based on how far the time is from totality.</p>
-<p>First I made a dataset with one row for every second of the eclipse. I use <code>seq.POSIXt</code> for this.</p>
-<pre class="r"><code>color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = &quot;1 sec&quot;) )</code></pre>
-<pre class="r"><code>color_dat = mutate(color_dat,
-                   color = 0,
-                   color = replace(color, time &lt; totality$start, seq(100, 0, length.out = sum(time &lt; totality$start) ) ),
-                   color = replace(color, time &gt; totality$end, seq(0, 100, length.out = sum(time &gt; totality$end) ) ) )</code></pre>
-<p>Based on a bunch of internet searches, a gradient background in <strong>ggplot2</strong> generally takes some work. There are some nice examples using <code>rasterGrob()</code> and <code>annotate_custom()</code> for adding background gradients, such as <a href="https://stackoverflow.com/questions/48596582/change-orientation-of-grob-background-gradient">in this Stack Overflow question</a>. I’ve also seen approaches involving padding the dataset and drawing many filled rectangles, which is very much like what I’m doing with <code>geom_segment()</code>.</p>
-<p>While I don’t have an actual measurement of light from the eclipse, I could get the idea by doing a linear change in color to totality and then another linear change in color to the end of the eclipse.</p>
+<div id="changing-to-a-gray-scale" class="section level2">
+<h2>Changing to a gray scale</h2>
+<p>The default blue color scheme for the segments actually works OK, but I was picturing going from white to dark. I picked gray colors with <code>gray.colors()</code> in <code>scale_color_gradient()</code>. In <code>gray.colors()</code>, <code>0</code> is black and <code>1</code> is white. I didn’t want to go all the way to black, since that would make the line impossible to see during totality and, of course, it’s not actually pitch black during totality. 😁</p>
+<pre class="r"><code>g1 + scale_color_gradient(low = gray.colors(1, .25),
+                          high = gray.colors(1, 1) )</code></pre>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>
+</div>
+<div id="using-segments-to-make-a-rectangle-with-gradient-fill" class="section level1">
+<h1>Using segments to make a rectangle with gradient fill</h1>
+<p>I can do this exact approach on only a portion of the x axis to give the look of a rectangle with gradient fill. Here’s an example using more of the eclipse day.</p>
+<pre class="r"><code>g2 = ggplot(temp) +
+     geom_segment(data = color_dat,
+                  aes(x = time, xend = time,
+                      y = -Inf, yend = Inf, color = color),
+                  show.legend = FALSE) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = &quot;1 hour&quot;,
+                       date_labels = &quot;%H:%M&quot;,
+                       expand = c(0, 0) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = &quot;Temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;Sapsucker Farm, Dallas, OR, USA&quot;) ),
+          caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(12, 24, by = 2)) ) +
+     scale_color_gradient(low = gray.colors(1, .25),
+                          high = gray.colors(1, 1) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid.major.x = element_blank(),
+           panel.grid.minor = element_blank() ) 
+
+g2</code></pre>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<div id="adding-annotations-with-arrows" class="section level2">
+<h2>Adding annotations with arrows</h2>
+<p>This also gives me a chance to try out Cédric Scherer’s <a href="https://cedricscherer.netlify.com/2019/05/17/the-evolution-of-a-ggplot-ep.-1/#text">very cool curved annotation arrow idea</a> for the first time 🎉.</p>
+<pre class="r"><code>g2 = g2 + 
+     annotate(&quot;text&quot;, x = as.POSIXct(&quot;2017-08-21 08:15&quot;),
+                   y = 74.5, label = &quot;Partial eclipse begins&quot;,
+              color = &quot;grey24&quot;) +
+     annotate(&quot;text&quot;, x = as.POSIXct(&quot;2017-08-21 09:00&quot;),
+              y = 57, label = &quot;Totality&quot;,
+              color = &quot;grey24&quot;)
+g2</code></pre>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>I’ll make a data.frame for the x and y positions needed to add the arrows. I’m skipping the work this took to get the positions where I wanted them, which is always iterative for me.</p>
+<pre class="r"><code>arrows = data.frame(x1 = as.POSIXct( c(&quot;2017-08-21 08:16&quot;,
+                                      &quot;2017-08-21 09:16&quot;) ),
+                    x2 = c(eclipse$start, totality$start),
+                    y1 = c(73.75, 57),
+                    y2 = c(72, 61) )</code></pre>
+<p>And then put the arrows on with <code>geom_curve()</code>. I change the arrowhead <code>length</code> and make it closed. I also thought the arrows looked better with less curvature.</p>
+<pre class="r"><code>g2 +
+     geom_curve(data = arrows,
+                aes(x = x1, xend = x2,
+                    y = y1, yend = y2),
+                arrow = arrow(length = unit(0.075, &quot;inches&quot;),
+                              type = &quot;closed&quot;),
+                curvature = 0.2)</code></pre>
+<p><img src="/post/2019-10-14-color-gradient-background_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+</div>
+</div>
+<div id="other-ways-to-make-a-color-gradient-background" class="section level1">
+<h1>Other ways to make a color gradient background</h1>
+<p>Based on a bunch of internet searches, a gradient background in <strong>ggplot2</strong> generally takes some work. There are some nice examples out there on how to use <code>rasterGrob()</code> and <code>annotate_custom()</code> to add background gradients, such as <a href="https://stackoverflow.com/questions/48596582/change-orientation-of-grob-background-gradient">in this Stack Overflow question</a>. I haven’t researched how to make this go from light to dark and back to light for the uneven time scale like in my example.</p>
+<p>I’ve also seen approaches involving padding the dataset and drawing many filled rectangles, which is very much like what I did with <code>geom_segment()</code>.</p>
+</div>
+<div id="eclipses" class="section level1">
+<h1>Eclipses!</h1>
+<p>Before actually experiencing totality, it seemed to me like the difference between a 99% and a 100% eclipse wasn’t a big deal. I mean, those numbers <em>are</em> pretty darn close.</p>
+<p>I was very wrong. 😜</p>
+<p>If you ever are lucky enough to be near a path of totality, definitely make a go for it even if it’s a little more trouble to get there. It’s amazing. 😻</p>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
@@ -117,7 +243,7 @@ totality = data.frame(start = as.POSIXct(&quot;2017-08-21 10:16:55&quot;),
 
 plottemp = filter(temp, between(datetime, as.POSIXct(&quot;2017-08-21 09:00:00&quot;),
                                 as.POSIXct(&quot;2017-08-21 12:00:00&quot;) ) )
-g1 = ggplot(plottemp) +
+ggplot(plottemp) +
      geom_line( aes(datetime, tempf), size = 1 ) +
      scale_x_datetime( date_breaks = &quot;15 min&quot;,
                        date_labels = &quot;%H:%M&quot;,
@@ -125,8 +251,38 @@ g1 = ggplot(plottemp) +
      coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
      labs(y = expression( Temperature~(degree*F) ),
           x = NULL,
-          title = &quot;Sapsucker Farm temperature during 2017-08-21 solar eclipse&quot;,
-          subtitle = expression(italic(&quot;09:05:10 - 11:37:19 PDT&quot;) ),
+          title = &quot;Temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;Sapsucker Farm, 09:05:10 - 11:37:19 PDT&quot;) ),
+          caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(16, 24, by = 1)) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid = element_blank() ) 
+color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = &quot;1 sec&quot;) )
+color_dat = mutate(color_dat,
+                   color = 0,
+                   color = replace(color, 
+                                   time &lt; totality$start, 
+                                   seq(100, 0, length.out = sum(time &lt; totality$start) ) ),
+                   color = replace(color, 
+                                   time &gt; totality$end, 
+                                   seq(0, 100, length.out = sum(time &gt; totality$end) ) ) )
+g1 = ggplot(plottemp) +
+     geom_segment(data = color_dat,
+                  aes(x = time, xend = time,
+                      y = -Inf, yend = Inf, color = color),
+                  show.legend = FALSE) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = &quot;15 min&quot;,
+                       date_labels = &quot;%H:%M&quot;,
+                       expand = c(0, 0) ) +
+     coord_cartesian(xlim = c(eclipse$start, eclipse$end) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = &quot;Temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;Sapsucker Farm, 09:05:10 - 11:37:19 PDT&quot;) ),
           caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
      ) +
      scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
@@ -136,9 +292,53 @@ g1 = ggplot(plottemp) +
      theme(panel.grid = element_blank() ) 
 
 g1
-color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = &quot;1 sec&quot;) )
-color_dat = mutate(color_dat,
-                   color = 0,
-                   color = replace(color, time &lt; totality$start, seq(100, 0, length.out = sum(time &lt; totality$start) ) ),
-                   color = replace(color, time &gt; totality$end, seq(0, 100, length.out = sum(time &gt; totality$end) ) ) )</code></pre>
+
+g1 + scale_color_gradient(low = gray.colors(1, .25),
+                          high = gray.colors(1, 1) )
+g2 = ggplot(temp) +
+     geom_segment(data = color_dat,
+                  aes(x = time, xend = time,
+                      y = -Inf, yend = Inf, color = color),
+                  show.legend = FALSE) +
+     geom_line( aes(datetime, tempf), size = 1 ) +
+     scale_x_datetime( date_breaks = &quot;1 hour&quot;,
+                       date_labels = &quot;%H:%M&quot;,
+                       expand = c(0, 0) ) +
+     labs(y = expression( Temperature~(degree*F) ),
+          x = NULL,
+          title = &quot;Temperature during 2017-08-21 solar eclipse&quot;,
+          subtitle = expression(italic(&quot;Sapsucker Farm, Dallas, OR, USA&quot;) ),
+          caption = &quot;Eclipse: 2 hours 32 minutes 9 seconds\nTotality: 1 minute 57 seconds&quot;
+     ) +
+     scale_y_continuous(sec.axis = sec_axis(~ (. - 32) * 5 / 9 , 
+                                            name =  expression( Temperature~(degree*C)),
+                                            breaks = seq(12, 24, by = 2)) ) +
+     scale_color_gradient(low = gray.colors(1, .25),
+                          high = gray.colors(1, 1) ) +
+     theme_bw(base_size = 14) +
+     theme(panel.grid.major.x = element_blank(),
+           panel.grid.minor = element_blank() ) 
+
+g2
+g2 = g2 + 
+     annotate(&quot;text&quot;, x = as.POSIXct(&quot;2017-08-21 08:15&quot;),
+                   y = 74.5, label = &quot;Partial eclipse begins&quot;,
+              color = &quot;grey24&quot;) +
+     annotate(&quot;text&quot;, x = as.POSIXct(&quot;2017-08-21 09:00&quot;),
+              y = 57, label = &quot;Totality&quot;,
+              color = &quot;grey24&quot;)
+g2
+
+arrows = data.frame(x1 = as.POSIXct( c(&quot;2017-08-21 08:16&quot;,
+                                      &quot;2017-08-21 09:16&quot;) ),
+                    x2 = c(eclipse$start, totality$start),
+                    y1 = c(73.75, 57),
+                    y2 = c(72, 61) )
+g2 +
+     geom_curve(data = arrows,
+                aes(x = x1, xend = x2,
+                    y = y1, yend = y2),
+                arrow = arrow(length = unit(0.075, &quot;inches&quot;),
+                              type = &quot;closed&quot;),
+                curvature = 0.2)</code></pre>
 </div>
