@@ -14,7 +14,8 @@ totality = data.frame(start = as.POSIXct("2017-08-21 10:16:55"),
                       end = as.POSIXct("2017-08-21 10:18:52") )
 
 
-plottemp = filter(temp, between(datetime, as.POSIXct("2017-08-21 09:00:00"),
+plottemp = filter(temp, between(datetime, 
+                                as.POSIXct("2017-08-21 09:00:00"),
                                 as.POSIXct("2017-08-21 12:00:00") ) )
 
 ggplot(plottemp) +
@@ -71,7 +72,7 @@ g1 = ggplot(plottemp) +
 g1
 
 
-g1 + scale_color_gradient(low = gray.colors(1, .25),
+g1 + scale_color_gradient(low = gray.colors(1, 0.25),
                           high = gray.colors(1, 1) )
 
 g2 = ggplot(temp) +
@@ -101,20 +102,22 @@ g2 = ggplot(temp) +
 g2
 
 g2 = g2 + 
-     annotate("text", x = as.POSIXct("2017-08-21 08:15"),
-                   y = 74.5, label = "Partial eclipse begins",
+     annotate("text", x = as.POSIXct("2017-08-21 08:00"),
+              y = 74, 
+              label = "Partial eclipse begins\n09:05:10 PDT",
               color = "grey24") +
      annotate("text", x = as.POSIXct("2017-08-21 09:00"),
-              y = 57, label = "Totality",
+              y = 57, 
+              label = "Totality begins\n10:16:55 PDT",
               color = "grey24")
 g2
 
 
-arrows = data.frame(x1 = as.POSIXct( c("2017-08-21 08:16",
-                                      "2017-08-21 09:16") ),
+arrows = data.frame(x1 = as.POSIXct( c("2017-08-21 08:35",
+                                      "2017-08-21 09:34") ),
                     x2 = c(eclipse$start, totality$start),
-                    y1 = c(73.75, 57),
-                    y2 = c(72, 61) )
+                    y1 = c(74, 57.5),
+                    y2 = c(72.5, 60) )
 
 g2 +
      geom_curve(data = arrows,
@@ -122,4 +125,4 @@ g2 +
                     y = y1, yend = y2),
                 arrow = arrow(length = unit(0.075, "inches"),
                               type = "closed"),
-                curvature = 0.2)
+                curvature = 0.25)

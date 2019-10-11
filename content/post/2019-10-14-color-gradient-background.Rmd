@@ -1,14 +1,14 @@
 ---
-title: Making a color gradient background in ggplot2
+title: Making a background color gradient in ggplot2
 author: Ariel Muldoon
 date: '2019-10-14'
-slug: color-gradient-background
+slug: background-color_gradient
 categories:
   - r
 tags:
   - ggplot2
-description: This post demomstrates one way to add a gradient background based on a continuous variable with geom_segment().
-draft: TRUE
+description: This post demomstrates one way to add a background color gradient in ggplot2 based on a continuous variable and geom_segment().
+draft: FALSE
 ---
 
 ```{r setup, include = FALSE, message = FALSE, purl = FALSE}
@@ -21,13 +21,18 @@ temp = readr::read_csv( here::here("static", "data", "2017-08-21_sapsucker_morni
 lubridate::tz(temp$datetime) = "US/Pacific"
 ```
 
-I was recently making some arrangements for the 2020 eclipse in South America, which of course got me thinking of the day I was lucky enough to have the path of totality come to me.
+I was recently making some arrangements for the 2020 eclipse in South America, which of course got me thinking of the day we were lucky enough to have a path of totality come to us.
 
-We have a weather station that records local temperature every 5 minutes, so after the eclipse I was able to plot the temperature change over time that we experienced at our house.  Here is an example of a basic plot I made at the time.
+![](/img/dog_eclipse.png)
 
-![](/img/eclipse_temp.png)
+We have a weather station that records local temperature every 5 minutes, so after the eclipse I was able to plot the temperature change over the eclipse as we experienced it at our house.  Here is an example of a basic plot I made at the time.
 
-Looking at this now, it might be nice replace the gray rectangle with one that goes from light to dark as the eclipse progresses to totality, and then back to light again back to full daylight.  
+```{r orig, echo = FALSE, purl = FALSE, out.width = "400px"}
+knitr::include_graphics("/img/eclipse_temp.png")
+```
+
+
+Looking at this now with new eyes, I see it might be nice replace the gray rectangle with one that goes from light to dark to light as the eclipse progresses to totality and then back. I'll show how I tackled making a gradient color background in this post. 
 
 ## Table of Contents
 
@@ -48,25 +53,27 @@ library(dplyr) # 0.8.3
 
 # The dataset
 
-My weather station records the temperature in °Fahrenheit every 5 minutes.  I downloaded the data from 6 AM to 12 PM PDT and cleaned it up a bit.  The date-times and temperature are in a dataset I named `temp`.  You can download this below you'd like to play around with these data.  
+My weather station records the temperature in °Fahrenheit every 5 minutes.  I downloaded the data from 6 AM to 12 PM local time and cleaned it up a bit.  The date-times and temperature are in a dataset I named `temp`.  You can download this below if you'd like to play around with these data.  
 
 ---
 
 `r fontawesome::fa("download", fill = "#ee5863")`
-```{r, echo = FALSE} 
+```{r embed, echo = FALSE} 
 xfun::embed_file(path = here::here("static", "data", "2017-08-21_sapsucker_morning_temp.csv"), 
                   name = "eclipse_temp.csv")
 ```
 
 ---
 
-Here are the first six lines of the temperature dataset.
+Here are the first six lines of this temperature dataset.
 
 ```{r}
 head(temp)
 ```
 
-I also stored the start and end times of the eclipse and totality in data.frames, which I pulled from [this website](http://xjubier.free.fr/en/site_pages/solar_eclipses/TSE_2017_GoogleMapFull.html)for my location.  If following along at home, make sure your time zones match for all date-time datasets.
+I also stored the start and end times of the eclipse and totality in data.frames, which I pulled for my location from [this website](http://xjubier.free.fr/en/site_pages/solar_eclipses/TSE_2017_GoogleMapFull.html).  
+
+If following along at home, make sure your time zones match for all the date-time variables or, from personal experience `r emo::ji("rofl")`, you'll run into problems.
 
 ```{r}
 eclipse = data.frame(start = as.POSIXct("2017-08-21 09:05:10"),
@@ -79,16 +86,17 @@ totality = data.frame(start = as.POSIXct("2017-08-21 10:16:55"),
 
 # Initial plot
 
-I decided to make a plot of the temperature during the hours of the eclipse only.  
+I decided to make a plot of the temperature change during the eclipse only.  
 
-To keep the temperature line looking continuous, even though it's taken every 5 minutes, I subset the data to times near but not during the eclipse.  
+To keep the temperature line looking continuous, even though it's taken every 5 minutes, I subset the data to times close but outside the start and end of the eclipse.  
 
 ```{r}
-plottemp = filter(temp, between(datetime, as.POSIXct("2017-08-21 09:00:00"),
+plottemp = filter(temp, between(datetime, 
+                                as.POSIXct("2017-08-21 09:00:00"),
                                 as.POSIXct("2017-08-21 12:00:00") ) )
 ```
 
-I then zoomed the plot to only include eclipse times with `coord_cartesian()`.
+I then zoomed the plot to only include times encompassed by the eclipse with `coord_cartesian()`.  I removed the x axis expansion in `scale_x_datetime()`.
 
 
 Since the plot covers only about 2 and half hours, I make breaks on the x axis every 15 minutes.
@@ -115,27 +123,27 @@ ggplot(plottemp) +
 
 # Adding color gradient using geom_segment()
 
-I want the background of the plot to go from light to dark back to light as the eclipse progresses.  This means a color gradient should go from left to right across the plot.
+I wanted the background of the plot to go from light to dark back to light through time.  This means a color gradient should go from left to right across the plot.
 
-Since I want to base my gradient on what is happening at a given time, I figured I could add a line from `geom_segment()` for every second of the eclipse and color that segment based on how far the time is from totality.
+Since the gradient will be based on time, I figured I could add a vertical line with `geom_segment()` for every second of the eclipse and color each segment based on how far that time was from totality.
 
-## Make a dataset for the colors
+## Make a variable for the color mapping
 
-The first step is to make dataset of every time on the x axis I want to put a segment.  I decided to make a time variable with a row for every second of the eclipse with `seq.POSIXt` for this.
+The first step I took was to make variable with a row for every second of the eclipse, since I wanted a segment drawn for each second.  I used `seq.POSIXt` for this.
 
 ```{r}
 color_dat = data.frame(time = seq(eclipse$start, eclipse$end, by = "1 sec") )
 ```
 
-Then came some hard thinking.  How would I make a continuous variable to map to `color`?
+Then came some hard thinking.  How would I make a continuous variable to map to color? `r emo::ji("thinking")`
 
-While I don't have an actual measurement of light from the eclipse, I could get the idea by doing a linear change in color to totality and then another linear change in color to the end of the eclipse.
+While I don't have an actual measurement of light throughout the eclipse, I can show the general idea of a light change with color by using a linear change in color from the start of the eclipse to totality and then another linear change in color from totality to the end of the eclipse.
 
-My initial idea for making a color variable was to use information on the current time and how it compared to totality start/end.  After subtracting the times before totality from totality start and totality end from times after totality, I realized that the amount of time before totality wasn't actually the same as the amount of time after totality.  So I went back to the drawing board.
+My first idea for creating a variable was to use information on the current time vs totality start/end.  After subtracting the times before totality from totality start and subtracting totality end from times after totality, I realized that the amount of time before totality wasn't actually the same as the amount of time after totality.  Back to the drawing board. 
 
-Since I was making a linear change in color, I could make a sequence of values before totality and after totality that covered the same range but had a different total number of values to account for the difference in eclipse time before/after totality.  I ended up making a sequence going from 100 to 0 before totality, assigned 0 during totality, and then made a sequence from 0 to 100 after totality.
+Since I was making a linear change in color, I realized I could make a sequence of values before totality and after totality that covered the same range but had a different total number of values.  This would account for the difference in the length of time before and after totality.  I ended up making a sequence going from 100 to 0 for times before totality and a sequence from 0 to 100 after totality.  Times during totality were assigned a 0.
 
-Here's one way to get these sequences, using `base::replace()`.
+Here's one way to get these sequences, using `base::replace()`.  My dataset is in order by time, which is key to this working correctly.
 
 ```{r}
 color_dat = mutate(color_dat,
@@ -150,9 +158,9 @@ color_dat = mutate(color_dat,
 
 ## Adding one geom_segment() per second
 
-Now I can add the segments along the x axis.  I want these across the entire plot, so I set `y` and `yend` to `-Inf` and `Inf`, respectively.  
+Once I had my color variable I was ready plot the segments along the x axis.  Since the segments neeeded to go across the full height of the plot, I set `y` and `yend` to `-Inf` and `Inf`, respectively.  
 
-This layer comes first so the other elements of the plot are on top of the gradient.
+I put this layer first to use it as a background that the temperature line was plotted on top of.
 
 ```{r}
 g1 = ggplot(plottemp) +
@@ -181,18 +189,18 @@ g1
 
 ```
 
-## Changing to a gray scale
+## Switching to a gray scale
 
-The default blue color scheme for the segments actually works OK, but I was picturing going from white to dark.  I picked gray colors with `gray.colors()` in `scale_color_gradient()`.  In `gray.colors()`, `0` is black and `1` is white.  I didn't want to go all the way to black, since that would make the line impossible to see during totality and, of course, it's not actually pitch black during totality. `r emo::ji("grin")`
+The default blue color scheme for the segments actually works OK, but I was picturing going from white to dark.  I picked gray colors with `grDevices::gray.colors()` in `scale_color_gradient()`.  In `gray.colors()`, `0` is black and `1` is white.  I didn't want the colors to go all the way to black, since that would make the temperature line impossible to see during totality.  And, of course, it's not actually pitch black during totality. `r emo::ji("grin")`
 
 ```{r}
-g1 + scale_color_gradient(low = gray.colors(1, .25),
+g1 + scale_color_gradient(low = gray.colors(1, 0.25),
                           high = gray.colors(1, 1) )
 ```
 
-# Using segments to make a rectangle with gradient fill
+# Using segments to make a gradient rectangle
 
-I can do this exact approach on only a portion of the x axis to give the look of a rectangle with gradient fill.  Here's an example using more of the eclipse day.  
+I can use this same approach on only a portion of the x axis to give the appearance of a rectangle with gradient fill.  Here's an example using times outside the eclipse.  
 
 ```{r}
 g2 = ggplot(temp) +
@@ -222,33 +230,35 @@ g2 = ggplot(temp) +
 g2
 ```
 
-## Adding annotations with arrows
+## Bonus: annotations with curved arrows
 
-This also gives me a chance to try out Cédric Scherer's [very cool curved annotation arrow idea](https://cedricscherer.netlify.com/2019/05/17/the-evolution-of-a-ggplot-ep.-1/#text) for the first time `r emo::ji("tada")`.
+This second plot gives me a chance to try out Cédric Scherer's [very cool curved annotation arrow idea](https://cedricscherer.netlify.com/2019/05/17/the-evolution-of-a-ggplot-ep.-1/#text) for the first time `r emo::ji("tada")`.
 
 ```{r}
 g2 = g2 + 
-     annotate("text", x = as.POSIXct("2017-08-21 08:15"),
-                   y = 74.5, label = "Partial eclipse begins",
+     annotate("text", x = as.POSIXct("2017-08-21 08:00"),
+              y = 74, 
+              label = "Partial eclipse begins\n09:05:10 PDT",
               color = "grey24") +
      annotate("text", x = as.POSIXct("2017-08-21 09:00"),
-              y = 57, label = "Totality",
+              y = 57, 
+              label = "Totality begins\n10:16:55 PDT",
               color = "grey24")
 g2
 
 ```
 
-I'll make a data.frame for the x and y positions needed to add the arrows.  I'm skipping the work this took to get the positions where I wanted them, which is always iterative for me.
+I'll make a data.frame for the arrow start/end positions.  I'm skipping all the work it took to get the positions where I wanted them, which is always iterative for me.
 
 ```{r}
-arrows = data.frame(x1 = as.POSIXct( c("2017-08-21 08:16",
-                                      "2017-08-21 09:16") ),
+arrows = data.frame(x1 = as.POSIXct( c("2017-08-21 08:35",
+                                      "2017-08-21 09:34") ),
                     x2 = c(eclipse$start, totality$start),
-                    y1 = c(73.75, 57),
-                    y2 = c(72, 61) )
+                    y1 = c(74, 57.5),
+                    y2 = c(72.5, 60) )
 ```
 
-And then put the arrows on with `geom_curve()`.  I change the arrowhead `length` and make it closed.  I also thought the arrows looked better with less curvature.
+I add arrows with `geom_curve()`.  I changed the size of the arrowhead and made it closed in `arrow()`.  I also thought the arrows looked better with a little less curvature.
 
 ```{r}
 g2 +
@@ -257,14 +267,14 @@ g2 +
                     y = y1, yend = y2),
                 arrow = arrow(length = unit(0.075, "inches"),
                               type = "closed"),
-                curvature = 0.2)
+                curvature = 0.25)
 ```
 
-# Other ways to make a color gradient background
+# Other ways to make a gradient color background
 
-Based on a bunch of internet searches, a gradient background in **ggplot2** generally takes some work.  There are some nice examples out there on how to use `rasterGrob()` and `annotate_custom()` to add background gradients, such as [in this Stack Overflow question](https://stackoverflow.com/questions/48596582/change-orientation-of-grob-background-gradient).  I haven't researched how to make this go from light to dark and back to light for the uneven time scale like in my example.
+Based on a bunch of internet searches, it looks like a gradient background in **ggplot2** generally takes some work.  There are some nice examples out there on how to use `rasterGrob()` and `annotate_custom()` to add background gradients, such as [in this Stack Overflow question](https://stackoverflow.com/questions/48596582/change-orientation-of-grob-background-gradient).  I haven't researched how to make this go from light to dark and back to light for the uneven time scale like in my example.
 
-I've also seen approaches involving padding the dataset and drawing many filled rectangles, which is very much like what I did with `geom_segment()`.
+I've also seen approaches involving dataset expansion and drawing many filled rectangles or using rasters, which is like what I did with `geom_segment()`.
 
 # Eclipses!
 
@@ -272,14 +282,15 @@ Before actually experiencing totality, it seemed to me like the difference betwe
 
 I was very wrong. `r emo::ji("stuck_out_tongue_winking_eye")` 
 
-If you ever are lucky enough to be near a path of totality, definitely make a go for it even if it's a little more trouble to get there.  It's amazing. `r emo::ji("heart_eyes_cat")`
+If you ever are lucky enough to be near a path of totality, definitely try to get there even if it's a little more trouble then the 99.9% partial eclipse.  It's an amazing experience. `r emo::ji("heart_eyes_cat")`
 
+![](/img/eclipse.png)
 
 # Just the code, please
 
 ```{r getlabels, echo = FALSE, purl = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript", "orig", "embed")]
 ```
 
 ```{r makescript, include = FALSE, purl = FALSE}
