@@ -9,6 +9,7 @@ tags:
   - loops
   - list
 description: The base::split() function "splits" data by defined groups, returning a list with one element per group.  This post goes through an example of the utility of split() for looping through groups and applying a function.
+draft: TRUE
 ---
 
 ```{r setup, include = FALSE, message = FALSE, purl = FALSE}
