@@ -1,0 +1,147 @@
+---
+title: An example of base::split() for looping through groups
+author: Ariel Muldoon
+date: '2019-11-28'
+slug: split-example
+categories:
+  - r
+tags:
+  - loops
+  - list
+description: The base::split() function "splits" data by defined groups, returning a list with one element per group.  This post goes through an example of the utility of split() for looping through groups and applying a function.
+---
+
+```{r setup, include = FALSE, message = FALSE, purl = FALSE}
+knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
+
+set.seed(16)
+
+dat = data.frame(id = rep(letters[1:3], each = 10),
+                 var1 = round( runif(n = 30, min = 2, max = 5), 1),
+                 var2 = round( runif(n = 30, min = 5, max = 25), 1) )
+```
+
+I recently had a question from a client about the simplest way to subset a data.frame and apply a function to each subset.  "Simplest" could mean many things, of course, since what is simple to someone could be very difficult for someone else.  In this specific case I suggested an approach using `base::split()` as a possible option.
+
+I turns out I didn't have a go-to example for how to get started with a `split()` approach, though.  So here's a quick blog post about it`! `r emo::ji("smile")`
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+input  = knitr::current_input()
+render_toc(input)
+```
+
+# Load R packages
+
+I'll load **purrr** for looping through a list.
+
+```{r, message = FALSE, warning = FALSE}
+library(purrr) # 0.3.3
+
+```
+
+# A dataset with groups
+
+I made a small dataset to use with `split()`.  The `id` variable indicates the group information.  There are three groups, "a", "b", and "c", with 10 observations per group.  
+
+In my example the interest is in getting an $R^2$ value for a linear model of `var1` vs `var2` for every group in `id`.
+
+```{r}
+dat = structure(list(id = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 
+3L, 3L, 3L, 3L, 3L, 3L), .Label = c("a", "b", "c"), class = "factor"), 
+    var1 = c(4, 2.7, 3.4, 2.7, 4.6, 2.9, 2.2, 4.5, 4.6, 2.4, 
+    3, 3.8, 2.5, 4, 3.6, 2.7, 4.5, 4.1, 4.2, 2.2, 4.9, 4.4, 3.6, 
+    3.3, 2.7, 3.9, 4.9, 4.9, 4.3, 3.4), var2 = c(6, 22.3, 19.4, 
+    22.8, 18.6, 14.2, 10.9, 22.7, 22.4, 11.7, 6, 13.3, 12.5, 
+    6.3, 13.6, 20.5, 23.6, 10.9, 8.9, 20.9, 23.7, 15.9, 22.1, 
+    11.6, 22, 17.7, 21, 20.8, 16.7, 21.4)), class = "data.frame", row.names = c(NA, 
+-30L))
+
+head(dat)
+
+```
+
+# Making separate data.frames per group
+
+One approach to do an analysis for each group for a dataset like this would be to make a subset for each group and then do whatever analysis was of interest.  I think this would classicaly be done in a `for()` loop.  
+
+Using `split()` takes that same idea but splits the data by group for us so we don't have to do the work manually.  Here's an example, where I split `dat` by the `id` variable.
+
+The output is a list.  Each element of the list is a data.frame for a specific group.  Note the name of the group is used as the name of the corresponding list element.  This is handy for keeping track of groups.
+
+```{r}
+dat_list = split(dat, dat$id)
+dat_list
+
+```
+
+# Looping through the list
+
+Now that the data are split into separate data.frames per group, we can loop through the list and apply a function to each one using whatever looping approach we prefer.  For example, if I want to fit a linear model of `var1` vs `var2` for each group I might do that with `purrr::map()`.
+
+Each element of the new list still has the grouping information via the list names.
+
+```{r}
+map(dat_list, ~lm(var1 ~ var2, data = .x) )
+
+```
+
+I could also make a function that fit a model and then returned model output.  
+
+```{r}
+r2 = function(data) {
+     fit = lm(var1 ~ var2, data = data)
+     
+     broom::glance(fit)
+}
+
+```
+
+Since the output is going to be a data.frame from `broom::augment()`, I can use `purrr::map_dfr()` to return the final output as a combined data.frame.  The `.id` argument makes a new variable so the list names can be added back to the output.
+
+```{r}
+map_dfr(dat_list, r2, .id = "id")
+
+```
+
+# Splitting by multiple groups
+
+It is possible to split data by multiple grouping variables in the `split()` function.  To do this the grouping variables must be passed as a list.
+
+Here's an example of how to write this, using the `mtcars` dataset.  I show only the first two list element to demonstrate that the list names are based on a combination of the values for the two groups.
+
+```{r}
+mtcars_cylam = split(mtcars, list(mtcars$cyl, mtcars$am) )
+mtcars_cylam[1:2]
+
+```
+
+If all combinations of groups are not present, the `drop` argument in `split()` allows you to drop such combinations.  Otherwise combinations that aren't present are kept as 0-length data.frames.
+
+# Final thoughts
+
+I feel like `base::split()` was a gateway for me in getting started with lists and the convenience functions like `lapply()` and `purrr::map()` for looping through lists.  I believe learning to understand lists and "list loops" also made the learning curve for list-columns in data.frames and the `nest()`/`unnest()` approach a little less steep.
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+scriptpath = paste(tools::file_path_sans_ext(input), "R", sep = ".")
+output = here::here("static", "script", scriptpath)
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](`r paste0("/script/", scriptpath)`).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

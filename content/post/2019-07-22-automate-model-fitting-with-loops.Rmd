@@ -10,6 +10,7 @@ tags:
   - analysis
   - purrr
   - ggplot2
+  - loops
 keywords:
   - purrr
   - rstats

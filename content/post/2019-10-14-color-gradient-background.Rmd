@@ -7,7 +7,7 @@ categories:
   - r
 tags:
   - ggplot2
-description: This post demomstrates one way to add a background color gradient in ggplot2 based on a continuous variable and geom_segment().
+description: This post demonstrates one way to add a background color gradient in ggplot2 based on a continuous variable and geom_segment().
 draft: FALSE
 ---
 

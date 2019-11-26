@@ -8,6 +8,7 @@ categories:
 tags:
   - ggplot2
   - purrr
+  - loops
 draft: FALSE
 description: "In this post I show an example of how to automate the process of making many exploratory plots in ggplot2 with multiple continuous response and explanatory variables.  To loop through both x and y variables involves nested looping.  In the latter section of the post I go over options for saving the resulting plots, either together in a single document, separately, or by creating combined plots prior to saving."
 ---

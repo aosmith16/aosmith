@@ -1,0 +1,212 @@
+---
+draft: yes
+title: An example of base::split() for looping through groups
+author: Ariel Muldoon
+date: '2019-11-28'
+slug: split-example
+categories:
+  - r
+tags:
+  - loops
+  - list
+description: The base::split() function "splits" data by defined groups, returning a list with one element per group.  This post goes through an example of the utility of split() for looping through groups and applying a function.
+---
+
+
+
+<p>I recently had a question from a client about the simplest way to subset a data.frame and apply a function to each subset. “Simplest” could mean many things, of course, since what is simple to someone could be very difficult for someone else. In this specific case I suggested an approach using <code>base::split()</code> as a possible option.</p>
+<p>I turns out I didn’t have a go-to example for how to get started with a <code>split()</code> approach, though. So here’s a quick blog post about it`! 😄</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#load-r-packages">Load R packages</a></li>
+<li><a href="#a-dataset-with-groups">A dataset with groups</a></li>
+<li><a href="#making-separate-data.frames-per-group">Making separate data.frames per group</a></li>
+<li><a href="#looping-through-the-list">Looping through the list</a></li>
+<li><a href="#splitting-by-multiple-groups">Splitting by multiple groups</a></li>
+<li><a href="#final-thoughts">Final thoughts</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="load-r-packages" class="section level1">
+<h1>Load R packages</h1>
+<p>I’ll load <strong>purrr</strong> for looping through a list.</p>
+<pre class="r"><code>library(purrr) # 0.3.3</code></pre>
+</div>
+<div id="a-dataset-with-groups" class="section level1">
+<h1>A dataset with groups</h1>
+<p>I made a small dataset to use with <code>split()</code>. The <code>id</code> variable indicates the group information. There are three groups, “a”, “b”, and “c”, with 10 observations per group.</p>
+<p>In my example the interest is in getting an <span class="math inline">\(R^2\)</span> value for a linear model of <code>var1</code> vs <code>var2</code> for every group in <code>id</code>.</p>
+<pre class="r"><code>dat = structure(list(id = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 
+3L, 3L, 3L, 3L, 3L, 3L), .Label = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;), class = &quot;factor&quot;), 
+    var1 = c(4, 2.7, 3.4, 2.7, 4.6, 2.9, 2.2, 4.5, 4.6, 2.4, 
+    3, 3.8, 2.5, 4, 3.6, 2.7, 4.5, 4.1, 4.2, 2.2, 4.9, 4.4, 3.6, 
+    3.3, 2.7, 3.9, 4.9, 4.9, 4.3, 3.4), var2 = c(6, 22.3, 19.4, 
+    22.8, 18.6, 14.2, 10.9, 22.7, 22.4, 11.7, 6, 13.3, 12.5, 
+    6.3, 13.6, 20.5, 23.6, 10.9, 8.9, 20.9, 23.7, 15.9, 22.1, 
+    11.6, 22, 17.7, 21, 20.8, 16.7, 21.4)), class = &quot;data.frame&quot;, row.names = c(NA, 
+-30L))
+
+head(dat)</code></pre>
+<pre><code>#   id var1 var2
+# 1  a  4.0  6.0
+# 2  a  2.7 22.3
+# 3  a  3.4 19.4
+# 4  a  2.7 22.8
+# 5  a  4.6 18.6
+# 6  a  2.9 14.2</code></pre>
+</div>
+<div id="making-separate-data.frames-per-group" class="section level1">
+<h1>Making separate data.frames per group</h1>
+<p>One approach to do an analysis for each group for a dataset like this would be to make a subset for each group and then do whatever analysis was of interest. I think this would classicaly be done in a <code>for()</code> loop.</p>
+<p>Using <code>split()</code> takes that same idea but splits the data by group for us so we don’t have to do the work manually. Here’s an example, where I split <code>dat</code> by the <code>id</code> variable.</p>
+<p>The output is a list. Each element of the list is a data.frame for a specific group. Note the name of the group is used as the name of the corresponding list element. This is handy for keeping track of groups.</p>
+<pre class="r"><code>dat_list = split(dat, dat$id)
+dat_list</code></pre>
+<pre><code># $a
+#    id var1 var2
+# 1   a  4.0  6.0
+# 2   a  2.7 22.3
+# 3   a  3.4 19.4
+# 4   a  2.7 22.8
+# 5   a  4.6 18.6
+# 6   a  2.9 14.2
+# 7   a  2.2 10.9
+# 8   a  4.5 22.7
+# 9   a  4.6 22.4
+# 10  a  2.4 11.7
+# 
+# $b
+#    id var1 var2
+# 11  b  3.0  6.0
+# 12  b  3.8 13.3
+# 13  b  2.5 12.5
+# 14  b  4.0  6.3
+# 15  b  3.6 13.6
+# 16  b  2.7 20.5
+# 17  b  4.5 23.6
+# 18  b  4.1 10.9
+# 19  b  4.2  8.9
+# 20  b  2.2 20.9
+# 
+# $c
+#    id var1 var2
+# 21  c  4.9 23.7
+# 22  c  4.4 15.9
+# 23  c  3.6 22.1
+# 24  c  3.3 11.6
+# 25  c  2.7 22.0
+# 26  c  3.9 17.7
+# 27  c  4.9 21.0
+# 28  c  4.9 20.8
+# 29  c  4.3 16.7
+# 30  c  3.4 21.4</code></pre>
+</div>
+<div id="looping-through-the-list" class="section level1">
+<h1>Looping through the list</h1>
+<p>Now that the data are split into separate data.frames per group, we can loop through the list and apply a function to each one using whatever looping approach we prefer. For example, if I want to fit a linear model of <code>var1</code> vs <code>var2</code> for each group I might do that with <code>purrr::map()</code>.</p>
+<p>Each element of the new list still has the grouping information via the list names.</p>
+<pre class="r"><code>map(dat_list, ~lm(var1 ~ var2, data = .x) )</code></pre>
+<pre><code># $a
+# 
+# Call:
+# lm(formula = var1 ~ var2, data = .x)
+# 
+# Coefficients:
+# (Intercept)         var2  
+#     2.64826      0.04396  
+# 
+# 
+# $b
+# 
+# Call:
+# lm(formula = var1 ~ var2, data = .x)
+# 
+# Coefficients:
+# (Intercept)         var2  
+#     3.80822     -0.02551  
+# 
+# 
+# $c
+# 
+# Call:
+# lm(formula = var1 ~ var2, data = .x)
+# 
+# Coefficients:
+# (Intercept)         var2  
+#     3.35241      0.03513</code></pre>
+<p>I could also make a function that fit a model and then returned model output.</p>
+<pre class="r"><code>r2 = function(data) {
+     fit = lm(var1 ~ var2, data = data)
+     
+     broom::glance(fit)
+}</code></pre>
+<p>Since the output is going to be a data.frame from <code>broom::augment()</code>, I can use <code>purrr::map_dfr()</code> to return the final output as a combined data.frame. The <code>.id</code> argument makes a new variable so the list names can be added back to the output.</p>
+<pre class="r"><code>map_dfr(dat_list, r2, .id = &quot;id&quot;)</code></pre>
+<pre><code># # A tibble: 3 x 12
+#   id    r.squared adj.r.squared sigma statistic p.value    df logLik   AIC
+#   &lt;chr&gt;     &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt;
+# 1 a        0.0775       -0.0378 0.968     0.672   0.436     2  -12.7  31.5
+# 2 b        0.0387       -0.0815 0.832     0.322   0.586     2  -11.2  28.5
+# 3 c        0.0285       -0.0930 0.808     0.235   0.641     2  -10.9  27.9
+# # ... with 3 more variables: BIC &lt;dbl&gt;, deviance &lt;dbl&gt;, df.residual &lt;int&gt;</code></pre>
+</div>
+<div id="splitting-by-multiple-groups" class="section level1">
+<h1>Splitting by multiple groups</h1>
+<p>It is possible to split data by multiple grouping variables in the <code>split()</code> function. To do this the grouping variables must be passed as a list.</p>
+<p>Here’s an example of how to write this, using the <code>mtcars</code> dataset. I show only the first two list element to demonstrate that the list names are based on a combination of the values for the two groups.</p>
+<pre class="r"><code>mtcars_cylam = split(mtcars, list(mtcars$cyl, mtcars$am) )
+mtcars_cylam[1:2]</code></pre>
+<pre><code># $`4.0`
+#                mpg cyl  disp hp drat    wt  qsec vs am gear carb
+# Merc 240D     24.4   4 146.7 62 3.69 3.190 20.00  1  0    4    2
+# Merc 230      22.8   4 140.8 95 3.92 3.150 22.90  1  0    4    2
+# Toyota Corona 21.5   4 120.1 97 3.70 2.465 20.01  1  0    3    1
+# 
+# $`6.0`
+#                 mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+# Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
+# Valiant        18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+# Merc 280       19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
+# Merc 280C      17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4</code></pre>
+<p>If all combinations of groups are not present, the <code>drop</code> argument in <code>split()</code> allows you to drop such combinations. Otherwise combinations that aren’t present are kept as 0-length data.frames.</p>
+</div>
+<div id="final-thoughts" class="section level1">
+<h1>Final thoughts</h1>
+<p>I feel like <code>base::split()</code> was a gateway for me in getting started with lists and the convenience functions like <code>lapply()</code> and <code>purrr::map()</code> for looping through lists. I believe learning to understand lists and “list loops” also made the learning curve for list-columns in data.frames and the <code>nest()</code>/<code>unnest()</code> approach a little less steep.</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-11-26-split-example.R">from here</a>.</p>
+<pre class="r"><code>library(purrr) # 0.3.3
+
+dat = structure(list(id = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 
+3L, 3L, 3L, 3L, 3L, 3L), .Label = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;), class = &quot;factor&quot;), 
+    var1 = c(4, 2.7, 3.4, 2.7, 4.6, 2.9, 2.2, 4.5, 4.6, 2.4, 
+    3, 3.8, 2.5, 4, 3.6, 2.7, 4.5, 4.1, 4.2, 2.2, 4.9, 4.4, 3.6, 
+    3.3, 2.7, 3.9, 4.9, 4.9, 4.3, 3.4), var2 = c(6, 22.3, 19.4, 
+    22.8, 18.6, 14.2, 10.9, 22.7, 22.4, 11.7, 6, 13.3, 12.5, 
+    6.3, 13.6, 20.5, 23.6, 10.9, 8.9, 20.9, 23.7, 15.9, 22.1, 
+    11.6, 22, 17.7, 21, 20.8, 16.7, 21.4)), class = &quot;data.frame&quot;, row.names = c(NA, 
+-30L))
+
+head(dat)
+
+dat_list = split(dat, dat$id)
+dat_list
+
+map(dat_list, ~lm(var1 ~ var2, data = .x) )
+
+r2 = function(data) {
+     fit = lm(var1 ~ var2, data = data)
+     
+     broom::glance(fit)
+}
+
+map_dfr(dat_list, r2, .id = &quot;id&quot;)
+
+mtcars_cylam = split(mtcars, list(mtcars$cyl, mtcars$am) )
+mtcars_cylam[1:2]</code></pre>
+</div>
