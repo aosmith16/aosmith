@@ -1,42 +1,41 @@
 ---
 title: An example of base::split() for looping through groups
 author: Ariel Muldoon
-date: '2019-11-28'
+date: '2019-11-27'
 slug: split-example
 categories:
   - r
 tags:
   - loops
   - list
-description: The base::split() function "splits" data by defined groups, returning a list with one element per group.  This post goes through an example of the utility of split() for looping through groups and applying a function.
-draft: TRUE
+description: The base::split() function allows you to "split" your data into defined groups, returning a list with one element per group.  This post goes through an example to show the utility of split() for looping through groups.
+draft: FALSE
 ---
 
 
 
-<p>I recently had a question from a client about the simplest way to subset a data.frame and apply a function to each subset. “Simplest” could mean many things, of course, since what is simple to someone could be very difficult for someone else. In this specific case I suggested an approach using <code>base::split()</code> as a possible option.</p>
-<p>I turns out I didn’t have a go-to example for how to get started with a <code>split()</code> approach, though. So here’s a quick blog post about it`! 😄</p>
+<p>I recently had a question from a client about the simplest way to subset a data.frame and apply a function to each subset. “Simplest” could mean many things, of course, since what is simple for one person could appear very difficult to another. In this specific case I suggested using <code>base::split()</code> as a possible option since it is one I find fairly approachable.</p>
+<p>I turns out I don’t have a go-to example for how to get started with a <code>split()</code> approach. So here’s a quick blog post about it! 😄</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
 <li><a href="#load-r-packages">Load R packages</a></li>
 <li><a href="#a-dataset-with-groups">A dataset with groups</a></li>
-<li><a href="#making-separate-data.frames-per-group">Making separate data.frames per group</a></li>
+<li><a href="#create-separate-data.frames-per-group">Create separate data.frames per group</a></li>
 <li><a href="#looping-through-the-list">Looping through the list</a></li>
 <li><a href="#splitting-by-multiple-groups">Splitting by multiple groups</a></li>
-<li><a href="#final-thoughts">Final thoughts</a></li>
+<li><a href="#other-thoughts-on-split">Other thoughts on split()</a></li>
 <li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
-<p>I’ll load <strong>purrr</strong> for looping through a list.</p>
+<p>I’ll load <strong>purrr</strong> for looping through lists.</p>
 <pre class="r"><code>library(purrr) # 0.3.3</code></pre>
 </div>
 <div id="a-dataset-with-groups" class="section level1">
 <h1>A dataset with groups</h1>
-<p>I made a small dataset to use with <code>split()</code>. The <code>id</code> variable indicates the group information. There are three groups, “a”, “b”, and “c”, with 10 observations per group.</p>
-<p>In my example the interest is in getting an <span class="math inline">\(R^2\)</span> value for a linear model of <code>var1</code> vs <code>var2</code> for every group in <code>id</code>.</p>
+<p>I made a small dataset to use with <code>split()</code>. The <code>id</code> variable contains the group information. There are three groups, a, b, and c, with 10 observations per group. There are also two numeric variables, <code>var1</code> and <code>var2</code>.</p>
 <pre class="r"><code>dat = structure(list(id = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 
 3L, 3L, 3L, 3L, 3L, 3L), .Label = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;), class = &quot;factor&quot;), 
@@ -57,11 +56,12 @@ head(dat)</code></pre>
 # 5  a  4.6 18.6
 # 6  a  2.9 14.2</code></pre>
 </div>
-<div id="making-separate-data.frames-per-group" class="section level1">
-<h1>Making separate data.frames per group</h1>
-<p>One approach to do an analysis for each group for a dataset like this would be to make a subset for each group and then do whatever analysis was of interest. I think this would classicaly be done in a <code>for()</code> loop.</p>
-<p>Using <code>split()</code> takes that same idea but splits the data by group for us so we don’t have to do the work manually. Here’s an example, where I split <code>dat</code> by the <code>id</code> variable.</p>
-<p>The output is a list. Each element of the list is a data.frame for a specific group. Note the name of the group is used as the name of the corresponding list element. This is handy for keeping track of groups.</p>
+<div id="create-separate-data.frames-per-group" class="section level1">
+<h1>Create separate data.frames per group</h1>
+<p>If the goal is to apply a function to each dataset in each group, we need to pull out a dataset for each <code>id</code>. One approach to do this is to make a subset for each group and then apply the function of interest to the subset. A classic approach would be to do the subsetting within a <code>for()</code> loop.</p>
+<p>This is a situation where I find <code>split()</code> to be really convenient. It splits the data by a defined group variable so we don’t have to subset things manually.</p>
+<p>The output from <code>split()</code> is a list. If I split a dataset by groups, each element of the list will be a data.frame for one of the groups. Note the group values are used as the names of the list elements. I find the list-naming aspect of <code>split()</code> handy for keeping track of groups in subsequent steps.</p>
+<p>Here’s an example, where I split <code>dat</code> by the <code>id</code> variable.</p>
 <pre class="r"><code>dat_list = split(dat, dat$id)
 dat_list</code></pre>
 <pre><code># $a
@@ -105,8 +105,9 @@ dat_list</code></pre>
 </div>
 <div id="looping-through-the-list" class="section level1">
 <h1>Looping through the list</h1>
-<p>Now that the data are split into separate data.frames per group, we can loop through the list and apply a function to each one using whatever looping approach we prefer. For example, if I want to fit a linear model of <code>var1</code> vs <code>var2</code> for each group I might do that with <code>purrr::map()</code>.</p>
-<p>Each element of the new list still has the grouping information via the list names.</p>
+<p>Once the data are split into separate data.frames per group, we can loop through the list and apply a function to each one using whatever looping approach we prefer.</p>
+<p>For example, if I want to fit a linear model of <code>var1</code> vs <code>var2</code> for each group I might do the looping with <code>purrr::map()</code> or <code>lapply()</code>.</p>
+<p>Each element of the new list still has the grouping information attached via the list names.</p>
 <pre class="r"><code>map(dat_list, ~lm(var1 ~ var2, data = .x) )</code></pre>
 <pre><code># $a
 # 
@@ -136,13 +137,20 @@ dat_list</code></pre>
 # Coefficients:
 # (Intercept)         var2  
 #     3.35241      0.03513</code></pre>
-<p>I could also make a function that fit a model and then returned model output.</p>
+<p>I could also create a function that fit a model and then returned model output. For example, maybe what I really wanted to do is the fit a linear model and extract <span class="math inline">\(R^2\)</span> for each group model fit.</p>
 <pre class="r"><code>r2 = function(data) {
      fit = lm(var1 ~ var2, data = data)
      
      broom::glance(fit)
 }</code></pre>
-<p>Since the output is going to be a data.frame from <code>broom::augment()</code>, I can use <code>purrr::map_dfr()</code> to return the final output as a combined data.frame. The <code>.id</code> argument makes a new variable so the list names can be added back to the output.</p>
+<p>The output of my <code>r2</code> function, which uses <code>broom::glance()</code>, is a data.frame.</p>
+<pre class="r"><code>r2(data = dat)</code></pre>
+<pre><code># # A tibble: 1 x 11
+#   r.squared adj.r.squared sigma statistic p.value    df logLik   AIC   BIC
+#       &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+# 1    0.0292      -0.00550 0.867     0.841   0.367     2  -37.3  80.5  84.7
+# # ... with 2 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;</code></pre>
+<p>Since the function output is a data.frame, I can use <code>purrr::map_dfr()</code> to combine the output per group into a single data.frame. The <code>.id</code> argument creates a new variable to store the list names in the output.</p>
 <pre class="r"><code>map_dfr(dat_list, r2, .id = &quot;id&quot;)</code></pre>
 <pre><code># # A tibble: 3 x 12
 #   id    r.squared adj.r.squared sigma statistic p.value    df logLik   AIC
@@ -154,8 +162,8 @@ dat_list</code></pre>
 </div>
 <div id="splitting-by-multiple-groups" class="section level1">
 <h1>Splitting by multiple groups</h1>
-<p>It is possible to split data by multiple grouping variables in the <code>split()</code> function. To do this the grouping variables must be passed as a list.</p>
-<p>Here’s an example of how to write this, using the <code>mtcars</code> dataset. I show only the first two list element to demonstrate that the list names are based on a combination of the values for the two groups.</p>
+<p>It is possible to split data by multiple grouping variables in the <code>split()</code> function. The grouping variables must be passed as a list.</p>
+<p>Here’s an example, using the built-in <code>mtcars</code> dataset. I show only the first two list elements to demonstrate that the list names are now based on a combination of the values for the two groups. By default these values are separated by a <code>.</code> (but see the <code>sep</code> argument to control this).</p>
 <pre class="r"><code>mtcars_cylam = split(mtcars, list(mtcars$cyl, mtcars$am) )
 mtcars_cylam[1:2]</code></pre>
 <pre><code># $`4.0`
@@ -170,11 +178,11 @@ mtcars_cylam[1:2]</code></pre>
 # Valiant        18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
 # Merc 280       19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
 # Merc 280C      17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4</code></pre>
-<p>If all combinations of groups are not present, the <code>drop</code> argument in <code>split()</code> allows you to drop such combinations. Otherwise combinations that aren’t present are kept as 0-length data.frames.</p>
+<p>If all combinations of groups are not present, the <code>drop</code> argument in <code>split()</code> allows us to drop missing combinations. By default combinations that aren’t present are kept as 0-length data.frames.</p>
 </div>
-<div id="final-thoughts" class="section level1">
-<h1>Final thoughts</h1>
-<p>I feel like <code>base::split()</code> was a gateway for me in getting started with lists and the convenience functions like <code>lapply()</code> and <code>purrr::map()</code> for looping through lists. I believe learning to understand lists and “list loops” also made the learning curve for list-columns in data.frames and the <code>nest()</code>/<code>unnest()</code> approach a little less steep.</p>
+<div id="other-thoughts-on-split" class="section level1">
+<h1>Other thoughts on split()</h1>
+<p>I feel like <code>split()</code> was a gateway function for me to get started working with lists and associated convenience functions like <code>lapply()</code> and <code>purrr::map()</code> for looping through lists. I think learning to work with lists and “list loops” also made the learning curve for <a href="https://r4ds.had.co.nz/many-models.html#list-columns-1">list-columns</a> in data.frames and the <code>nest()</code>/<code>unnest()</code> approach of analysis-by-groups a little less steep for me.</p>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
@@ -204,6 +212,7 @@ r2 = function(data) {
      
      broom::glance(fit)
 }
+r2(data = dat)
 
 map_dfr(dat_list, r2, .id = &quot;id&quot;)
 

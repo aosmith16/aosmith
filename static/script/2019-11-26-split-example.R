@@ -28,10 +28,11 @@ r2 = function(data) {
      broom::glance(fit)
 }
 
+r2(data = dat)
+
 
 map_dfr(dat_list, r2, .id = "id")
 
 
 mtcars_cylam = split(mtcars, list(mtcars$cyl, mtcars$am) )
 mtcars_cylam[1:2]
-
