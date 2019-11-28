@@ -14,7 +14,7 @@
 
 baseurl = "https://aosmith.rbind.io/"
 # languageCode = "en-us"
-title = "Very statisticious by Ariel Muldoon"
+title = "Very statisticious"
 theme = "hugo-tranquilpeak-theme-master"
 enableEmoji = true
 preserveTaxonomyNames = true
