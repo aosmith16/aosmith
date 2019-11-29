@@ -1,5 +1,5 @@
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.0
-library(ggplot2) # v. 3.1.0
+library(dplyr) # v. 0.8.0
+library(ggplot2) # v. 3.2.0
 library(purrr) # v. 0.3.1
 library(broom) # v. 0.5.1
 
@@ -48,12 +48,14 @@ ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
      ylim(10, 32)
 
 
-xlabs = c("Displacement (cu.in.)", "Gross horsepower",
-          "Rear axle ratio", "Weight (1000 lbs)")
+xlabs = c("Displacement (cu.in.)", 
+          "Gross horsepower",
+          "Rear axle ratio", 
+          "Weight (1000 lbs)")
 
 
 pred_plot = function(data, variable, xlab) {
-     ggplot(data, aes_string(x = variable, y = "pred") ) +
+     ggplot(data, aes(x = .data[[variable]], y = pred) ) +
           geom_line(size = 1) +
           geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
           geom_rug(sides = "b") +

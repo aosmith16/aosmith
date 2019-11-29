@@ -28,7 +28,7 @@ description: "In this post I show one approach for making added variable plots f
 <li><a href="#making-a-prediction-dataset-for-each-variable">Making a prediction dataset for each variable</a></li>
 <li><a href="#calculate-model-predictions-for-each-variable">Calculate model predictions for each variable</a></li>
 <li><a href="#making-one-added-variable-plot">Making one added variable plot</a></li>
-<li><a href="#a-function-for-plotting">A function for plotting</a></li>
+<li><a href="#build-a-plotting-function">Build a plotting function</a></li>
 <li><a href="#making-all-the-plots">Making all the plots</a>
 <ul>
 <li><a href="#using-the-plots">Using the plots</a></li>
@@ -45,8 +45,8 @@ description: "In this post I show one approach for making added variable plots f
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
 <p>The main workhorses I’m using today is <strong>purrr</strong> for looping through variables/lists and <strong>ggplot2</strong> for plotting. I also use helper functions from <strong>dplyr</strong> for data manipulation and <strong>broom</strong> for getting the model predictions and standard errors.</p>
-<pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.0
-library(ggplot2) # v. 3.1.0
+<pre class="r"><code>library(dplyr) # v. 0.8.0
+library(ggplot2) # v. 3.2.0
 library(purrr) # v. 0.3.1
 library(broom) # v. 0.5.1</code></pre>
 </div>
@@ -149,17 +149,17 @@ str(pred_dats)</code></pre>
                  pred = exp(.fitted) ) )</code></pre>
 <p>Here is what the structure of the list elements look like now (showing only the first list element).</p>
 <pre class="r"><code>str(preds$disp)</code></pre>
-<pre><code># Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;: 32 obs. of  10 variables:
-#  $ .rownames: chr  &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
-#  $ disp     : num  160 160 108 258 360 ...
-#  $ hp       : num  123 123 123 123 123 123 123 123 123 123 ...
-#  $ drat     : num  3.7 3.7 3.7 3.7 3.7 ...
-#  $ wt       : num  3.33 3.33 3.33 3.33 3.33 ...
-#  $ .fitted  : num  2.99 2.99 2.99 2.97 2.96 ...
-#  $ .se.fit  : num  0.0367 0.0367 0.0574 0.0309 0.0713 ...
-#  $ lower    : num  18.4 18.4 17.8 18.4 16.8 ...
-#  $ upper    : num  21.3 21.3 22.4 20.8 22.3 ...
-#  $ pred     : num  19.8 19.8 20 19.6 19.3 ...</code></pre>
+<pre><code># tibble [32 x 10] (S3: tbl_df/tbl/data.frame)
+#  $ .rownames: chr [1:32] &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
+#  $ disp     : num [1:32] 160 160 108 258 360 ...
+#  $ hp       : num [1:32] 123 123 123 123 123 123 123 123 123 123 ...
+#  $ drat     : num [1:32] 3.7 3.7 3.7 3.7 3.7 ...
+#  $ wt       : num [1:32] 3.33 3.33 3.33 3.33 3.33 ...
+#  $ .fitted  : num [1:32] 2.99 2.99 2.99 2.97 2.96 ...
+#  $ .se.fit  : num [1:32] 0.0367 0.0367 0.0574 0.0309 0.0713 ...
+#  $ lower    : num [1:32] 18.4 18.4 17.8 18.4 16.8 ...
+#  $ upper    : num [1:32] 21.3 21.3 22.4 20.8 22.3 ...
+#  $ pred     : num [1:32] 19.8 19.8 20 19.6 19.3 ...</code></pre>
 </div>
 <div id="making-one-added-variable-plot" class="section level1">
 <h1>Making one added variable plot</h1>
@@ -175,15 +175,19 @@ str(pred_dats)</code></pre>
      ylim(10, 32)</code></pre>
 <p><img src="/post/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 </div>
-<div id="a-function-for-plotting" class="section level1">
-<h1>A function for plotting</h1>
+<div id="build-a-plotting-function" class="section level1">
+<h1>Build a plotting function</h1>
 <p>Once I’ve worked out what one plot should look like I can make function for making plots. This is a reasonable approach for when making many plots that all look basically the same.</p>
 <p>One problem I anticipated running into when automating the plotting is with the x axis labels. The variable names in the dataset aren’t very nice looking. If I want the x axis labels to be more polished in the plots I’ll need replacement labels. I decided to make a vector of nicer labels, one label for each focus variable. This vector needs to be the same length and in the same order as the vector of variable names and the list of prediction datasets so each plot gets the correct new axis label.</p>
-<pre class="r"><code>xlabs = c(&quot;Displacement (cu.in.)&quot;, &quot;Gross horsepower&quot;,
-          &quot;Rear axle ratio&quot;, &quot;Weight (1000 lbs)&quot;)</code></pre>
-<p>My plotting function has three arguments: the dataset to plot, the explanatory variable to plot on the x axis (as a string), and label for the x axis (also as a string). Your variable names for <code>x</code> must by <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/make.names.html">syntactically valid</a> to use the <code>aes_string()</code> approach I’m demonstrating here.</p>
+<pre class="r"><code>xlabs = c(&quot;Displacement (cu.in.)&quot;, 
+          &quot;Gross horsepower&quot;,
+          &quot;Rear axle ratio&quot;, 
+          &quot;Weight (1000 lbs)&quot;)</code></pre>
+<p>My plotting function has three arguments: the dataset to plot, the explanatory variable to plot on the x axis (as a string), and label for the x axis (also as a string).</p>
+<p>I will use the <code>.data</code> pronoun for passing strings in <code>aes()</code>. This approach became available starting with <strong>rlang</strong> version 0.4.0.</p>
+<p>If using earlier versions of <strong>ggplot2</strong> and <strong>rlang</strong>, use <code>aes_string()</code> with code <code>aes_string(x = variable, y = "pred")</code>. Note your variable names for <code>x</code> must by <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/make.names.html">syntactically valid</a> to use the <code>aes_string()</code> approach.</p>
 <pre class="r"><code>pred_plot = function(data, variable, xlab) {
-     ggplot(data, aes_string(x = variable, y = &quot;pred&quot;) ) +
+     ggplot(data, aes(x = .data[[variable]], y = pred) ) +
           geom_line(size = 1) +
           geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
           geom_rug(sides = &quot;b&quot;) +
@@ -228,8 +232,8 @@ all_plots</code></pre>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-01-31-making-many-added-variable-plots-with-purrr-and-ggplot2.R">from here</a>.</p>
-<pre class="r"><code>suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.0
-library(ggplot2) # v. 3.1.0
+<pre class="r"><code>library(dplyr) # v. 0.8.0
+library(ggplot2) # v. 3.2.0
 library(purrr) # v. 0.3.1
 library(broom) # v. 0.5.1
 
@@ -269,11 +273,13 @@ ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
           y = &quot;Miles/(US) gallon&quot;) +
      ylim(10, 32)
 
-xlabs = c(&quot;Displacement (cu.in.)&quot;, &quot;Gross horsepower&quot;,
-          &quot;Rear axle ratio&quot;, &quot;Weight (1000 lbs)&quot;)
+xlabs = c(&quot;Displacement (cu.in.)&quot;, 
+          &quot;Gross horsepower&quot;,
+          &quot;Rear axle ratio&quot;, 
+          &quot;Weight (1000 lbs)&quot;)
 
 pred_plot = function(data, variable, xlab) {
-     ggplot(data, aes_string(x = variable, y = &quot;pred&quot;) ) +
+     ggplot(data, aes(x = .data[[variable]], y = pred) ) +
           geom_line(size = 1) +
           geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
           geom_rug(sides = &quot;b&quot;) +

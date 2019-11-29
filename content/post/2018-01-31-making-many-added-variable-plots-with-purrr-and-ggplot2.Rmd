@@ -41,9 +41,9 @@ When making an added variable plot, it is fairly standard to make the prediction
 
 The main workhorses I'm using today is **purrr** for looping through variables/lists and **ggplot2** for plotting.  I also use helper functions from **dplyr** for data manipulation and **broom** for getting the model predictions and standard errors.
 
-```{r}
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.0
-library(ggplot2) # v. 3.1.0
+```{r, warning = FALSE, message = FALSE}
+library(dplyr) # v. 0.8.0
+library(ggplot2) # v. 3.2.0
 library(purrr) # v. 0.3.1
 library(broom) # v. 0.5.1
 
@@ -153,23 +153,29 @@ ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
 
 ```
 
-# A function for plotting
+# Build a plotting function
 
 Once I've worked out what one plot should look like I can make function for making plots.  This is a reasonable approach for when making many plots that all look basically the same.  
 
 One problem I anticipated running into when automating the plotting is with the x axis labels.  The variable names in the dataset aren't very nice looking.  If I want the x axis labels to be more polished in the plots I'll need replacement labels.  I decided to make a vector of nicer labels, one label for each focus variable.  This vector needs to be the same length and in the same order as the vector of variable names and the list of prediction datasets so each plot gets the correct new axis label.
 
 ```{r}
-xlabs = c("Displacement (cu.in.)", "Gross horsepower",
-          "Rear axle ratio", "Weight (1000 lbs)")
+xlabs = c("Displacement (cu.in.)", 
+          "Gross horsepower",
+          "Rear axle ratio", 
+          "Weight (1000 lbs)")
 
 ```
 
-My plotting function has three arguments: the dataset to plot, the explanatory variable to plot on the x axis (as a string), and label for the x axis (also as a string).  Your variable names for `x` must by [syntactically valid](https://stat.ethz.ch/R-manual/R-devel/library/base/html/make.names.html) to use the `aes_string()` approach I'm demonstrating here.
+My plotting function has three arguments: the dataset to plot, the explanatory variable to plot on the x axis (as a string), and label for the x axis (also as a string).  
+
+I will use the `.data` pronoun for passing strings in `aes()`.  This approach became available starting with **rlang** version 0.4.0.  
+
+If using earlier versions of **ggplot2** and **rlang**, use `aes_string()` with code `aes_string(x = variable, y = "pred")`.  Note your variable names for `x` must by [syntactically valid](https://stat.ethz.ch/R-manual/R-devel/library/base/html/make.names.html) to use the `aes_string()` approach.
 
 ```{r}
 pred_plot = function(data, variable, xlab) {
-     ggplot(data, aes_string(x = variable, y = "pred") ) +
+     ggplot(data, aes(x = .data[[variable]], y = pred) ) +
           geom_line(size = 1) +
           geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .25) +
           geom_rug(sides = "b") +
