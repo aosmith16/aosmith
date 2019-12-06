@@ -9,7 +9,7 @@ tags:
   - ggplot2
   - tidyr
 draft: FALSE
-description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show three approaches to make such a plot: using facets, with package cowplot, and with package egg."
+description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show four approaches to make such a plot: using facets and with packages cowplot, egg and patchwork."
 ---
 
 ```{r setup, echo = FALSE, message = FALSE, purl = FALSE}
@@ -20,10 +20,13 @@ devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
 
 There are a variety of ways to combine **ggplot2** plots with a single shared axis.  However, things can get tricky if you want a lot of control over all plot elements.  
 
-I demonstrate three different approaches for this:  
+I demonstrate four different approaches for this:  
 1. Using facets, which is built in to **ggplot2** but doesn't allow much control over the non-shared axes.  
 2. Using package **cowplot**, which has a lot of nice features but the plot spacing doesn't play well with a single shared axis.  
-3. Using package **egg**, which allows nice spacing for plots with a shared axis.  
+3. Using package **egg**.  
+4. Using package **patchwork**. 
+
+The last two packages allow nice spacing for plots with a shared axis.
 
 ## Table of Contents
 
@@ -33,7 +36,7 @@ render_toc("2019-05-13-small-multiples-plot.Rmd")
 
 # Load R packages
 
-I'll be plotting with **ggplot2**, reshaping with **tidyr**, and combining plots with package **egg**.  
+I'll be plotting with **ggplot2**, reshaping with **tidyr**, and combining plots with packages **egg** and **patchwork**.  
 
 I'll also be using package **cowplot** version 0.9.4 to combine individual plots into one, but will use the package functions via `cowplot::` instead of loading the package.  (I believe the next version of **cowplot** will not be so opinionated about the theme.)
 
@@ -41,6 +44,7 @@ I'll also be using package **cowplot** version 0.9.4 to combine individual plots
 library(ggplot2) # v. 3.1.1
 library(tidyr) # v. 0.8.3
 library(egg) # v. 0.4.2
+library(patchwork) # v. 1.0.0
 
 ```
 
@@ -231,7 +235,7 @@ ggarrange(elevplot +
 
 ```
 
-# Adding plot labels with tag_facet() in **egg**
+## Adding plot labels with tag_facet()
 
 You'll see there is a `labels` argument in `ggarrange()` documentation, but it didn't work well for me out of the box with only one plot with a y axis.  However, we can get tricky with `egg::tag_facet()` if we add a facet strip to each of the individual plots.
 
@@ -258,9 +262,55 @@ ggarrange(tag_facet(elevplot +
                           facet_wrap(~"slp"),
                      tag_pool = "c"),
           nrow = 1)
+
 ```
 
 We might want to add a right y axis to the right-most plot.  In this case we'd want to change the axis ticks length to 0 via `theme()` elements.  This can be done [separately per axis in the development version of **ggplot2**](https://github.com/tidyverse/ggplot2/pull/2934), and will be included in version 3.2.0.
+
+# Using **patchwork** to combine plots
+
+The patchwork package is another one that is great for combining plots, and is now on CRAN (as of December 2019) `r emo::ji("tada")`. It has nice vignettes [here](https://patchwork.data-imaginist.com/articles/) to help you get started.
+
+In **patchwork** the `+` operator is used to add plots together.  Here's an example, combining my three original plots.
+
+```{r}
+elevplot + gradplot + slpplot
+
+```
+
+If we give the resulting combined plot a name, we can remove the titles from the last two subplots using double-bracket indexing.  (Of course, I also could have built the plots how I wanted them in the first place. `r emo::ji("stuck_out_tongue_winking_eye")`)
+
+The result has nice spacing for a single, shared y axis.  Margins can be controlled the same was as in the **egg** example above.
+
+```{r}
+patchwork = elevplot + gradplot + slpplot
+
+# Remove title from second subplot
+patchwork[[2]] = patchwork[[2]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+# Remove title from third subplot
+patchwork[[3]] = patchwork[[3]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+patchwork
+
+```
+
+## Adding plots labels with plot_annotation()
+
+There are many annotation options in **patchwork**.  I'll focus on adding tags, but see the [annotation vignette](https://patchwork.data-imaginist.com/articles/guides/annotation.html).
+
+Tags can be added with the `tag_levels` argument in `plot_annotation()`.  I want lowercase Latin letter so use `"a"` as my `tag_levels`.
+
+Plot tags go outside the plot by default.  You can control the position at least somewhat with the `theme` option `plot.tag.position`, which works on the individual subplots and not the entire combined plot.
+
+```{r}
+patchwork + plot_annotation(tag_levels = "a")
+```
+
 
 # Just the code, please
 

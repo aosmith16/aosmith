@@ -1,6 +1,7 @@
 library(ggplot2) # v. 3.1.1
 library(tidyr) # v. 0.8.3
 library(egg) # v. 0.4.2
+library(patchwork) # v. 1.0.0
 
 
 set.seed(16)
@@ -140,3 +141,24 @@ ggarrange(tag_facet(elevplot +
                           facet_wrap(~"slp"),
                      tag_pool = "c"),
           nrow = 1)
+
+
+elevplot + gradplot + slpplot
+
+
+patchwork = elevplot + gradplot + slpplot
+
+# Remove title from second subplot
+patchwork[[2]] = patchwork[[2]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+# Remove title from third subplot
+patchwork[[3]] = patchwork[[3]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+patchwork
+
+
+patchwork + plot_annotation(tag_levels = "a")

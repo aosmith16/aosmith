@@ -9,16 +9,18 @@ tags:
   - ggplot2
   - tidyr
 draft: FALSE
-description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show three approaches to make such a plot: using facets, with package cowplot, and with package egg."
+description: "There are a variety of ways to combine ggplot2 plots with a single shared axis, but things can get tricky if you want a lot of control over all plot elements.  I show four approaches to make such a plot: using facets and with packages cowplot, egg and patchwork."
 ---
 
 
 
 <p>There are a variety of ways to combine <strong>ggplot2</strong> plots with a single shared axis. However, things can get tricky if you want a lot of control over all plot elements.</p>
-<p>I demonstrate three different approaches for this:<br />
+<p>I demonstrate four different approaches for this:<br />
 1. Using facets, which is built in to <strong>ggplot2</strong> but doesn’t allow much control over the non-shared axes.<br />
 2. Using package <strong>cowplot</strong>, which has a lot of nice features but the plot spacing doesn’t play well with a single shared axis.<br />
-3. Using package <strong>egg</strong>, which allows nice spacing for plots with a shared axis.</p>
+3. Using package <strong>egg</strong>.<br />
+4. Using package <strong>patchwork</strong>.</p>
+<p>The last two packages allow nice spacing for plots with a shared axis.</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
@@ -26,18 +28,25 @@ description: "There are a variety of ways to combine ggplot2 plots with a single
 <li><a href="#the-set-up">The set-up</a></li>
 <li><a href="#using-facets-for-small-multiples">Using facets for small multiples</a></li>
 <li><a href="#using-cowplot-to-combine-plots">Using <strong>cowplot</strong> to combine plots</a></li>
-<li><a href="#using-egg-to-combine-plots">Using <strong>egg</strong> to combine plots</a></li>
-<li><a href="#adding-plot-labels-with-tag_facet-in-egg">Adding plot labels with tag_facet() in <strong>egg</strong></a></li>
+<li><a href="#using-egg-to-combine-plots">Using <strong>egg</strong> to combine plots</a>
+<ul>
+<li><a href="#adding-plot-labels-with-tag_facet">Adding plot labels with tag_facet()</a></li>
+</ul></li>
+<li><a href="#using-patchwork-to-combine-plots">Using <strong>patchwork</strong> to combine plots</a>
+<ul>
+<li><a href="#adding-plots-labels-with-plot_annotation">Adding plots labels with plot_annotation()</a></li>
+</ul></li>
 <li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
-<p>I’ll be plotting with <strong>ggplot2</strong>, reshaping with <strong>tidyr</strong>, and combining plots with package <strong>egg</strong>.</p>
+<p>I’ll be plotting with <strong>ggplot2</strong>, reshaping with <strong>tidyr</strong>, and combining plots with packages <strong>egg</strong> and <strong>patchwork</strong>.</p>
 <p>I’ll also be using package <strong>cowplot</strong> version 0.9.4 to combine individual plots into one, but will use the package functions via <code>cowplot::</code> instead of loading the package. (I believe the next version of <strong>cowplot</strong> will not be so opinionated about the theme.)</p>
 <pre class="r"><code>library(ggplot2) # v. 3.1.1
 library(tidyr) # v. 0.8.3
-library(egg) # v. 0.4.2</code></pre>
+library(egg) # v. 0.4.2
+library(patchwork) # v. 1.0.0</code></pre>
 </div>
 <div id="the-set-up" class="section level1">
 <h1>The set-up</h1>
@@ -186,9 +195,8 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
                      plot.margin = margin(l = 1)  ),
           nrow = 1)</code></pre>
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-</div>
-<div id="adding-plot-labels-with-tag_facet-in-egg" class="section level1">
-<h1>Adding plot labels with tag_facet() in <strong>egg</strong></h1>
+<div id="adding-plot-labels-with-tag_facet" class="section level2">
+<h2>Adding plot labels with tag_facet()</h2>
 <p>You’ll see there is a <code>labels</code> argument in <code>ggarrange()</code> documentation, but it didn’t work well for me out of the box with only one plot with a y axis. However, we can get tricky with <code>egg::tag_facet()</code> if we add a facet strip to each of the individual plots.</p>
 <p>It’d make sense to build these plots outside of <code>ggarrange()</code> and then add the tags and combine them instead of nesting everything like I did here, since the code is now a little hard to follow.</p>
 <pre class="r"><code>ggarrange(tag_facet(elevplot +
@@ -214,12 +222,45 @@ slpplot = ggplot(dat, aes(x = slp, y = resp) ) +
 <p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>We might want to add a right y axis to the right-most plot. In this case we’d want to change the axis ticks length to 0 via <code>theme()</code> elements. This can be done <a href="https://github.com/tidyverse/ggplot2/pull/2934">separately per axis in the development version of <strong>ggplot2</strong></a>, and will be included in version 3.2.0.</p>
 </div>
+</div>
+<div id="using-patchwork-to-combine-plots" class="section level1">
+<h1>Using <strong>patchwork</strong> to combine plots</h1>
+<p>The patchwork package is another one that is great for combining plots, and is now on CRAN (as of December 2019) 🎉. It has nice vignettes <a href="https://patchwork.data-imaginist.com/articles/">here</a> to help you get started.</p>
+<p>In <strong>patchwork</strong> the <code>+</code> operator is used to add plots together. Here’s an example, combining my three original plots.</p>
+<pre class="r"><code>elevplot + gradplot + slpplot</code></pre>
+<p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>If we give the resulting combined plot a name, we can remove the titles from the last two subplots using double-bracket indexing. (Of course, I also could have built the plots how I wanted them in the first place. 😜)</p>
+<p>The result has nice spacing for a single, shared y axis. Margins can be controlled the same was as in the <strong>egg</strong> example above.</p>
+<pre class="r"><code>patchwork = elevplot + gradplot + slpplot
+
+# Remove title from second subplot
+patchwork[[2]] = patchwork[[2]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+# Remove title from third subplot
+patchwork[[3]] = patchwork[[3]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+patchwork</code></pre>
+<p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<div id="adding-plots-labels-with-plot_annotation" class="section level2">
+<h2>Adding plots labels with plot_annotation()</h2>
+<p>There are many annotation options in <strong>patchwork</strong>. I’ll focus on adding tags, but see the <a href="https://patchwork.data-imaginist.com/articles/guides/annotation.html">annotation vignette</a>.</p>
+<p>Tags can be added with the <code>tag_levels</code> argument in <code>plot_annotation()</code>. I want lowercase Latin letter so use <code>"a"</code> as my <code>tag_levels</code>.</p>
+<p>Plot tags go outside the plot by default. You can control the position at least somewhat with the <code>theme</code> option <code>plot.tag.position</code>, which works on the individual subplots and not the entire combined plot.</p>
+<pre class="r"><code>patchwork + plot_annotation(tag_levels = &quot;a&quot;)</code></pre>
+<p><img src="/post/2019-05-13-small-multiples-plot_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+</div>
+</div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-05-13-small-multiples-plot.R">from here</a>.</p>
 <pre class="r"><code>library(ggplot2) # v. 3.1.1
 library(tidyr) # v. 0.8.3
 library(egg) # v. 0.4.2
+library(patchwork) # v. 1.0.0
 
 set.seed(16)
 dat = data.frame(elev = round( runif(20, 100, 500), 1),
@@ -346,5 +387,23 @@ ggarrange(tag_facet(elevplot +
                                 plot.margin = margin(l = 1)  ) +
                           facet_wrap(~&quot;slp&quot;),
                      tag_pool = &quot;c&quot;),
-          nrow = 1)</code></pre>
+          nrow = 1)
+
+elevplot + gradplot + slpplot
+
+patchwork = elevplot + gradplot + slpplot
+
+# Remove title from second subplot
+patchwork[[2]] = patchwork[[2]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+# Remove title from third subplot
+patchwork[[3]] = patchwork[[3]] + theme(axis.text.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.y = element_blank() )
+
+patchwork
+
+patchwork + plot_annotation(tag_levels = &quot;a&quot;)</code></pre>
 </div>
