@@ -18,6 +18,21 @@ description: "In my second simulation example I show how to simulate data from a
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
+# Make data
+set.seed(16)
+nstand = 5
+nplot = 4
+mu = 10
+sds = 2
+sd = 1
+
+stand = rep(LETTERS[1:nstand], each = nplot) 
+plot = letters[1:(nstand*nplot)] 
+standeff = rnorm(nstand, 0, sds) 
+standeff = rep(standeff, each = nplot) 
+ploteff = rnorm(nstand*nplot, 0, sd) 
+dat = data.frame(stand, standeff, plot, ploteff)
+dat$resp = with(dat, mu + standeff + ploteff )
 ```
 
 I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation.  I've seen instances where residual autocorrelation isn't detectable when I *know* it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance.  Such results are often due to small sample sizes, which even in this era of big data still isn't so unusual in ecology.  I've found exploring the effect of sample size on statistical results to be quite eye-opening `r emo::ji("eye")`.
@@ -40,6 +55,8 @@ It wasn't until I started working with clients and teaching labs on mixed models
 
 **Danger, equations below!**  
 
+You can opt to [jump to the next section](#a-single-simulation-for-the-two-level-model) if you don't find equations useful.
+
 If you don't have a good understanding of the statistical model (or even if you do), writing it out in mathematical notation can actually be pretty useful.  I'll write a relatively simple model with random effects below. (Note that I only have an overall mean in this model; I'll do a short example at the end of the post to show how one can simulate additional fixed effects.)
 
 The study design that is the basis of my model has two different sizes of study units.  I'm using a classic forestry example, where stands of trees are somehow chosen for sampling and then multiple plots within each stand are measured.  This is a design with two levels, stands and plots; we could add a third level if individual trees were measured in each plot.
@@ -57,9 +74,13 @@ $$y_t = \mu + (b_s)_t + \epsilon_t$$
 
 # A single simulation for the two-level model
 
-Let's jump in and start simulating, as I find the statistical model and all those words I used trying to explain it become clearer once we have a simulated dataset to look at.
+Let's jump in and start simulating, as I find the statistical model becomes clearer once we have a simulated dataset to look at.
 
-I couldn't think of a good name for a plot-level response `r emo::ji("stuck_out_tongue_winking_eye")` so I'll call the response variable `resp`, the stands `stand` and the plots `plot`.
+Here is what the dataset I will create will look like.  I have a variable for stands (`stand`), plots (`plot`), and the response variable (`resp`).
+
+```{r datex, echo = FALSE, purl = FALSE}
+dat[,c("stand", "plot", "resp")]
+```
 
 I'll start by setting the seed so these results can be exactly reproduced.
 
@@ -68,7 +89,8 @@ set.seed(16)
 ```
 
 I need to define the "truth" in the simulation by setting all the parameters in the statistical model to a value of my choosing.  Here's what I'll do today.  
-
+    
+  
 + The true mean ($\mu$) will be 10 
 + The stand-level variance ($\sigma^2_s$) will be set at 4, so the standard deviation ($\sigma_s$) is 2.
 + The observation-level random effect variance ($\sigma^2$) will be set at 1, so the standard deviation ($\sigma$) is 1.
@@ -141,8 +163,8 @@ is my guide for how to combine these pieces to create the simulated response var
 
 It's time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer()` function from package **lme4**.
 
-```{r}
-library(lme4)
+```{r, warning = FALSE, message = FALSE}
+library(lme4) # v. 1.1-21
 
 ```
 
@@ -188,7 +210,7 @@ Now that I have a working function to simulate data and fit the model it's time 
 
 This is a task for `replicate()`, which repeatedly calls a function and saves the output.  The output is a list, which is convenient for going through to extract elements from the models later.  I'll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.  
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 sims = replicate(100, twolevel_fun() )
 sims[[100]]
 
@@ -200,8 +222,8 @@ After running all the models we will want to extract whatever we are interested 
 
 Below is an example on the practice model.  You'll notice there are no p-values for fixed effects.  If those are desired and the degrees of freedom can be calculated, see packages **lmerTest** and [**broom.mixed**](https://github.com/bbolker/broom.mixed).
 
-```{r}
-library(broom)
+```{r, message = FALSE, warning = FALSE}
+library(broom) # v. 0.5.2
 tidy(fit1)
 
 ```
@@ -227,15 +249,15 @@ Today I'll look at how well we estimate variances of random effects for differen
 I'm going to load some helper packages for this, including **purrr** for looping, **dplyr** for data manipulation tasks, and **ggplot2** for plotting.
 
 ```{r, message = FALSE, warning = FALSE}
-library(purrr) # v. 0.2.4
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
-library(ggplot2) # v. 2.2.1
+library(purrr) # v. 0.3.3
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
+library(ggplot2) # v. 3.2.1
 
 ```
 
-I'm going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one.  I'm using **purrr** functions for this, and I end up with a list of lists (1000 models for each sample size). It takes a minute or two to fit the 3000 models.
+I'm going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one.  I'm using **purrr** functions for this, and I end up with a list of lists (1000 models for each sample size). It takes a minute or two to fit the 3000 models.  I'm ignoring all warning messages (but this isn't always a good idea).
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 stand_sims = c(5, 20, 100) %>%
      set_names() %>%
      map(~replicate(1000, twolevel_fun(nstand = .x) ) )
@@ -314,7 +336,7 @@ Here are some additional descriptive statistics of the distribution of variances
 ```{r}
 stand_vars %>%
      group_by(stand_num) %>%
-     summarise_at("estimate", funs(min, mean, median, max) )
+     summarise_at("estimate", list(min, mean, median, max) )
 
 ```
 
@@ -415,7 +437,7 @@ lmer(resp2 ~ elevation + slope + (1|stand) )
 
 ```{r getlabels, echo = FALSE, purl = FALSE}
 labs = knitr::all_labels()
-labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+labs = labs[!labs %in% c("setup", "toc", "datex", "getlabels", "allcode", "makescript")]
 ```
 
 ```{r makescript, include = FALSE, purl = FALSE}

@@ -40,6 +40,7 @@ description: "In my second simulation example I show how to simulate data from a
 <div id="the-statistical-model" class="section level1">
 <h1>The statistical model</h1>
 <p><strong>Danger, equations below!</strong></p>
+<p>You can opt to <a href="#a-single-simulation-for-the-two-level-model">jump to the next section</a> if you don’t find equations useful.</p>
 <p>If you don’t have a good understanding of the statistical model (or even if you do), writing it out in mathematical notation can actually be pretty useful. I’ll write a relatively simple model with random effects below. (Note that I only have an overall mean in this model; I’ll do a short example at the end of the post to show how one can simulate additional fixed effects.)</p>
 <p>The study design that is the basis of my model has two different sizes of study units. I’m using a classic forestry example, where stands of trees are somehow chosen for sampling and then multiple plots within each stand are measured. This is a design with two levels, stands and plots; we could add a third level if individual trees were measured in each plot.</p>
 <p>Everything today will be perfectly balanced, so the same number of plots will be sampled in each stand.</p>
@@ -54,8 +55,29 @@ description: "In my second simulation example I show how to simulate data from a
 </div>
 <div id="a-single-simulation-for-the-two-level-model" class="section level1">
 <h1>A single simulation for the two-level model</h1>
-<p>Let’s jump in and start simulating, as I find the statistical model and all those words I used trying to explain it become clearer once we have a simulated dataset to look at.</p>
-<p>I couldn’t think of a good name for a plot-level response 😜 so I’ll call the response variable <code>resp</code>, the stands <code>stand</code> and the plots <code>plot</code>.</p>
+<p>Let’s jump in and start simulating, as I find the statistical model becomes clearer once we have a simulated dataset to look at.</p>
+<p>Here is what the dataset I will create will look like. I have a variable for stands (<code>stand</code>), plots (<code>plot</code>), and the response variable (<code>resp</code>).</p>
+<pre><code>#    stand plot      resp
+# 1      A    a 10.484415
+# 2      A    b  9.946876
+# 3      A    c 11.016389
+# 4      A    d 11.977799
+# 5      B    e 10.322382
+# 6      B    f 11.596422
+# 7      B    g  9.861173
+# 8      B    h  9.003203
+# 9      C    i 13.850646
+# 10     C    j 12.914153
+# 11     C    k 10.529352
+# 12     C    l 12.768342
+# 13     D    m  7.584302
+# 14     D    n  6.568810
+# 15     D    o  8.239229
+# 16     D    p  5.463744
+# 17     E    q 11.981485
+# 18     E    r 12.112977
+# 19     E    s 13.766137
+# 20     E    t 11.429760</code></pre>
 <p>I’ll start by setting the seed so these results can be exactly reproduced.</p>
 <pre class="r"><code>set.seed(16)</code></pre>
 <p>I need to define the “truth” in the simulation by setting all the parameters in the statistical model to a value of my choosing. Here’s what I’ll do today.</p>
@@ -127,8 +149,7 @@ sd = 1</code></pre>
 #  [8]  9.003203 13.850646 12.914153 10.529352 12.768342  7.584302  6.568810
 # [15]  8.239229  5.463744 11.981485 12.112977 13.766137 11.429760</code></pre>
 <p>It’s time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the <code>lmer()</code> function from package <strong>lme4</strong>.</p>
-<pre class="r"><code>library(lme4)</code></pre>
-<pre><code># Loading required package: Matrix</code></pre>
+<pre class="r"><code>library(lme4) # v. 1.1-21</code></pre>
 <p>The results for the estimated overall mean and standard deviations of random effects in this model look pretty similar to my defined parameter values.</p>
 <pre class="r"><code>fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
 fit1</code></pre>
@@ -178,9 +199,8 @@ twolevel_fun()</code></pre>
 <h1>Repeat the simulation many times</h1>
 <p>Now that I have a working function to simulate data and fit the model it’s time to do the simulation many times. The model from each individual simulation is saved to allow exploration of long run model performance.</p>
 <p>This is a task for <code>replicate()</code>, which repeatedly calls a function and saves the output. The output is a list, which is convenient for going through to extract elements from the models later. I’ll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.</p>
-<pre class="r"><code>sims = replicate(100, twolevel_fun() )</code></pre>
-<pre><code># boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>sims[[100]]</code></pre>
+<pre class="r"><code>sims = replicate(100, twolevel_fun() )
+sims[[100]]</code></pre>
 <pre><code># Linear mixed model fit by REML [&#39;lmerMod&#39;]
 # Formula: resp ~ 1 + (1 | stand)
 #    Data: dat
@@ -198,12 +218,8 @@ twolevel_fun()</code></pre>
 <h1>Extract results from the linear mixed model</h1>
 <p>After running all the models we will want to extract whatever we are interested in. The <code>tidy()</code> function from package <strong>broom</strong> can be used to conveniently extract both fixed and random effects.</p>
 <p>Below is an example on the practice model. You’ll notice there are no p-values for fixed effects. If those are desired and the degrees of freedom can be calculated, see packages <strong>lmerTest</strong> and <a href="https://github.com/bbolker/broom.mixed"><strong>broom.mixed</strong></a>.</p>
-<pre class="r"><code>library(broom)
+<pre class="r"><code>library(broom) # v. 0.5.2
 tidy(fit1)</code></pre>
-<pre><code># Warning in bind_rows_(x, .id): binding factor and character vector,
-# coercing into character vector</code></pre>
-<pre><code># Warning in bind_rows_(x, .id): binding character and factor vector,
-# coercing into character vector</code></pre>
 <pre><code># # A tibble: 3 x 5
 #   term                    estimate std.error statistic group   
 #   &lt;chr&gt;                      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;   
@@ -228,29 +244,13 @@ tidy(fit1)</code></pre>
 <h1>Explore the effect of sample size on variance estimation</h1>
 <p>Today I’ll look at how well we estimate variances of random effects for different samples sizes. I’ll simulate data for sampling 5 stands, 20 stands, and 100 stands.</p>
 <p>I’m going to load some helper packages for this, including <strong>purrr</strong> for looping, <strong>dplyr</strong> for data manipulation tasks, and <strong>ggplot2</strong> for plotting.</p>
-<pre class="r"><code>library(purrr) # v. 0.2.4
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
-library(ggplot2) # v. 2.2.1</code></pre>
-<p>I’m going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one. I’m using <strong>purrr</strong> functions for this, and I end up with a list of lists (1000 models for each sample size). It takes a minute or two to fit the 3000 models.</p>
+<pre class="r"><code>library(purrr) # v. 0.3.3
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
+library(ggplot2) # v. 3.2.1</code></pre>
+<p>I’m going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one. I’m using <strong>purrr</strong> functions for this, and I end up with a list of lists (1000 models for each sample size). It takes a minute or two to fit the 3000 models. I’m ignoring all warning messages (but this isn’t always a good idea).</p>
 <pre class="r"><code>stand_sims = c(5, 20, 100) %&gt;%
      set_names() %&gt;%
      map(~replicate(1000, twolevel_fun(nstand = .x) ) )</code></pre>
-<pre><code># boundary (singular) fit: see ?isSingular
-# boundary (singular) fit: see ?isSingular
-# boundary (singular) fit: see ?isSingular
-# boundary (singular) fit: see ?isSingular</code></pre>
-<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
-# control$checkConv, : Model failed to converge with max|grad| = 0.00680678
-# (tol = 0.002, component 1)</code></pre>
-<pre><code># boundary (singular) fit: see ?isSingular</code></pre>
-<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
-# control$checkConv, : Model failed to converge with max|grad| = 0.00681447
-# (tol = 0.002, component 1)</code></pre>
-<pre><code># boundary (singular) fit: see ?isSingular
-# boundary (singular) fit: see ?isSingular</code></pre>
-<pre><code># Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl =
-# control$checkConv, : Model failed to converge with max|grad| = 0.00297126
-# (tol = 0.002, component 1)</code></pre>
 <p>Next I’ll pull out the stand variance for each model via <code>tidy()</code>.</p>
 <p>I use <code>modify_depth()</code> to work on the nested (innermost) list, and then row bind the nested lists into a data.frame to get things in a convenient format for plotting. I finish by filtering things to keep only the <code>stand</code> variance, as I extracted both stand and residual variances from the model.</p>
 <pre class="r"><code>stand_vars = stand_sims %&gt;%
@@ -300,22 +300,13 @@ head(stand_vars)</code></pre>
 <p>Here are some additional descriptive statistics of the distribution of variances in each group to complement the info in the plot.</p>
 <pre class="r"><code>stand_vars %&gt;%
      group_by(stand_num) %&gt;%
-     summarise_at(&quot;estimate&quot;, funs(min, mean, median, max) )</code></pre>
-<pre><code># Warning: funs() is soft deprecated as of dplyr 0.8.0
-# please use list() instead
-# 
-#   # Before:
-#   funs(name = f(.))
-# 
-#   # After: 
-#   list(name = ~ f(.))
-# This warning is displayed once per session.</code></pre>
+     summarise_at(&quot;estimate&quot;, list(min, mean, median, max) )</code></pre>
 <pre><code># # A tibble: 3 x 5
-#   stand_num   min  mean median   max
-#   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
-# 1 5         0      4.04   3.39 17.6 
-# 2 20        0.994  4.03   3.88  9.15
-# 3 100       1.27   4.04   3.92  8.71</code></pre>
+#   stand_num   fn1   fn2   fn3   fn4
+#   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+# 1 5         0      4.04  3.39 17.6 
+# 2 20        0.994  4.03  3.88  9.15
+# 3 100       1.27   4.04  3.92  8.71</code></pre>
 <p>So how much of the distribution is below 4 for each estimate?</p>
 <p>We can see for 5 samples that the variance is definitely underestimated more often than it is overestimated; almost 60% of the distribution is below the true variance of 4.</p>
 <p>Every time I do this sort of simulation I am newly surprised that even large samples tend to underestimate variances slightly more often than overestimate them.</p>
@@ -416,7 +407,7 @@ sd = 1
 
 ( dat$resp = with(dat, mu + standeff + ploteff ) )
 
-library(lme4)
+library(lme4) # v. 1.1-21
 
 fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
 fit1
@@ -436,16 +427,16 @@ twolevel_fun()
 sims = replicate(100, twolevel_fun() )
 sims[[100]]
 
-library(broom)
+library(broom) # v. 0.5.2
 tidy(fit1)
 
 tidy(fit1, effects = &quot;fixed&quot;)
 
 tidy(fit1, effects = &quot;ran_pars&quot;, scales = &quot;vcov&quot;)
 
-library(purrr) # v. 0.2.4
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.7.4
-library(ggplot2) # v. 2.2.1
+library(purrr) # v. 0.3.3
+suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
+library(ggplot2) # v. 3.2.1
 
 stand_sims = c(5, 20, 100) %&gt;%
      set_names() %&gt;%
@@ -486,7 +477,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
 
 stand_vars %&gt;%
      group_by(stand_num) %&gt;%
-     summarise_at(&quot;estimate&quot;, funs(min, mean, median, max) )
+     summarise_at(&quot;estimate&quot;, list(min, mean, median, max) )
 
 stand_vars %&gt;%
      group_by(stand_num) %&gt;%
