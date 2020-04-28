@@ -97,7 +97,7 @@ knitr::include_graphics("https://raw.githubusercontent.com/aosmith16/r-basics-wo
 Second, functions for distributions will give information about the density function used in the **Details** section.  Since the help pages for distributions almost always describe multiple functions at once, you can see what each of the functions return in **Value**.  Here's an example from `?rnorm`.
 
 ```{r, echo = FALSE}
-knitr::include_graphics("/img/rnorm_help.PNG")
+knitr::include_graphics("https://raw.githubusercontent.com/aosmith16/aosmith/master/static/img/rnorm_help.PNG")
 ```
 
 # Using argument order instead of labels
@@ -132,5 +132,5 @@ Another reason I try to use argument labels is that new R users can get stung le
 I talk about this issue here because I don't often see a lot of explicit discussion on why and when argument labels can be left off even though there are a lot of code examples out there that do this.  This reminds me of when I was a new beekeeper and I made the mistake of going into a hive in the evening.  (Do not try this at home, folks!)  It turns out "everyone" who is an expert beekeeper knows what happens if you do this, but it wasn't mentioned in any of my beginner books and classes. I don't think beginners shouldn't have to learn this sort of thing the hard way.
 
 ```{r, echo = FALSE, fig.cap = "No worries, this is a daytime hive inspection."}
-knitr::include_graphics("/img/bees.jpg")
+knitr::include_graphics("https://raw.githubusercontent.com/aosmith16/aosmith/master/static/img/bees.jpg")
 ```

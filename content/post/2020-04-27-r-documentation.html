@@ -67,7 +67,7 @@ description: "Learning how to get help in R is an essential part of learning R. 
 <p>First up is <code>rbind()</code> for stacking datasets. It turns out that <code>rbind()</code> stacks columns based on matching column names and not column positions. This is mentioned in the function documentation, but you have to dive deep into the very long <strong>Details</strong> section of the help file at <code>?rbind</code> to find the information.</p>
 <p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/rbind.png" /><!-- --></p>
 <p>Second, functions for distributions will give information about the density function used in the <strong>Details</strong> section. Since the help pages for distributions almost always describe multiple functions at once, you can see what each of the functions return in <strong>Value</strong>. Here’s an example from <code>?rnorm</code>.</p>
-<p><img src="/img/rnorm_help.PNG" /><!-- --></p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/aosmith/master/static/img/rnorm_help.PNG" /><!-- --></p>
 </div>
 </div>
 <div id="using-argument-order-instead-of-labels" class="section level1">
@@ -89,7 +89,7 @@ mean(vals, na.rm = TRUE, trim = 0.1)</code></pre>
 <p>Another reason I try to use argument labels is that new R users can get stung leaving off argument labels when they don’t realize how/why it works. 🐝 I worked with an R newbie recently who was getting weird results from a GLM with an offset. It turns out they weren’t using argument labels and so had passed the offset to <code>weights</code> instead of <code>offset</code>. Whoops! Luckily they saw something was weird and I could help get them on the right path. And now they know more about why it can be useful to write out argument labels. 😄</p>
 <p>I talk about this issue here because I don’t often see a lot of explicit discussion on why and when argument labels can be left off even though there are a lot of code examples out there that do this. This reminds me of when I was a new beekeeper and I made the mistake of going into a hive in the evening. (Do not try this at home, folks!) It turns out “everyone” who is an expert beekeeper knows what happens if you do this, but it wasn’t mentioned in any of my beginner books and classes. I don’t think beginners shouldn’t have to learn this sort of thing the hard way.</p>
 <div class="figure"><span id="fig:unnamed-chunk-5"></span>
-<img src="/img/bees.jpg" alt="No worries, this is a daytime hive inspection."  />
+<img src="https://raw.githubusercontent.com/aosmith16/aosmith/master/static/img/bees.jpg" alt="No worries, this is a daytime hive inspection."  />
 <p class="caption">
 Figure 1: No worries, this is a daytime hive inspection.
 </p>
