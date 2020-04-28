@@ -1,0 +1,97 @@
+---
+title: 'Analysis essentials: Using the help page for a function in R'
+author: Ariel Muldoon
+date: '2020-04-28'
+slug: r-documentation
+categories:
+  - r
+tags:
+  - analysis
+  - functions
+description: "Learning how to get help in R is an essential part of learning R.  In this short post I walk through how I use some of the sections of an R help page.  I end the post by talking about the argument order of a function and why we can (sometimes!) leave off the argument labels." 
+---
+
+
+
+<p>Since I tend to work with relatively new R users, I think a lot about what folks need to know when they are getting started. Learning how to get help tops my list of essential skills. Some of this involves learning about useful help forums like <a href="https://stackoverflow.com/questions/tagged/r#">Stack Overflow</a> and the <a href="https://community.rstudio.com/">RStudio Community</a>. Some of this is about learning good search terms (this is a hard one!). And some of this is learning how to use the R documentation help pages.</p>
+<p>While there are still exceptions, most often the help pages in R contain a bunch of useful information. Here I talk a little about what is generally in a help page for a function and what I focus on in each section.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#r-help-pages">R help pages</a>
+<ul>
+<li><a href="#help-page-structure">Help page structure</a></li>
+<li><a href="#usage">Usage</a></li>
+<li><a href="#arguments">Arguments</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#other-sections">Other sections</a></li>
+</ul></li>
+<li><a href="#using-argument-order-instead-of-labels">Using argument order instead of labels</a></li>
+</ul>
+</div>
+<div id="r-help-pages" class="section level1">
+<h1>R help pages</h1>
+<p>Every time I use a function for a first time or reuse a function after some time has passed (like, 5 minutes in some cases 😜), I spend time looking at the R help page for that function. You can get to a help page in R by typing <code>?functionname</code> into your Console and pressing Enter, where <code>functionname</code> is some R function you are using.</p>
+<p>For example, if I wanted to take an average of some numbers with the <code>mean()</code> function, I would type <code>?mean</code> at the <code>&gt;</code> in the R Console and then press Enter. The help page opens up; if using RStudio this will default to open in the Help pane.</p>
+<div id="help-page-structure" class="section level2">
+<h2>Help page structure</h2>
+<p>A help page for an R function always has the same basic set-up. Here’s what the first half of the help page for <code>mean()</code> looks like.</p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/mean_help.png" /><!-- --></p>
+<p>At the very top you’ll see the function name, followed by the package the function is in surrounded by curly braces. You can see that <code>mean()</code> is part of the <strong>base</strong> package.</p>
+<p>This is followed by a function title and basic <strong>Description</strong> of the function. Sometimes this description can be in fairly in depth and useful but often, like here, it’s not and I quickly skim over it.</p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/help_section1.png" /><!-- --></p>
+</div>
+<div id="usage" class="section level2">
+<h2>Usage</h2>
+<p>The <strong>Usage</strong> section is usually my first stop in a help page. This is where I can see the arguments available in the function along with any default values. The function <em>arguments</em> are labels for the inputs you can give to a function. A <em>default value</em> means that is the value the function will use if you don’t input something else.</p>
+<p>For example, for <code>mean()</code> you can see that the first argument is <code>x</code> (no default value), followed by <code>trim</code> that defaults to a value of <code>0</code>, and then <code>na.rm</code> with a default of <code>FALSE</code>.</p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/help_section2.png" /><!-- --></p>
+</div>
+<div id="arguments" class="section level2">
+<h2>Arguments</h2>
+<p>The arguments the function takes and a description of those arguments is given in the <strong>Arguments</strong> section. This is a section I often spend a lot of time in and go back to regularly, figuring out what arguments do and the options available for each argument.</p>
+<p>In the <code>mean()</code> example I’m using, this section tells me that the <code>trim</code> argument can take numeric values between 0 and 0.5 in order to <em>trim</em> the dataset prior to calculating the mean. I know from <strong>Usage</strong> it defaults to <code>0</code> but note in this case the default is not explicitly listed in the argument description.</p>
+<p>The <code>na.rm</code> argument takes a logical value (i.e., <code>TRUE</code> or <code>FALSE</code>) and controls whether or not <code>NA</code> values are stripped before the function calculates the means. Since it defaults to <code>FALSE</code>, the <code>NA</code> values are not stripped prior to calculation unless I change this.</p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/help_section3.png" /><!-- --></p>
+</div>
+<div id="examples" class="section level2">
+<h2>Examples</h2>
+<p>If you scroll to the very bottom of a help page you will find the <strong>Examples</strong> section. This gives examples of how the function works. You can practice using the function by copying and pasting the example and running the code. In RStudio you can also highlight the code and run it directly from the Help pane with <code>Ctrl+Enter</code> (MacOS <code>Cmd+Enter</code>).</p>
+<p>After looking at <strong>Usage</strong> and <strong>Arguments</strong> I often scroll right down to the <strong>Examples</strong> section to see an example of the code in use. The <strong>Examples</strong> section for <code>mean()</code> is pretty sparse, but you’ll find that this section is quite extensive for some functions.</p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/help_section4.png" /><!-- --></p>
+</div>
+<div id="other-sections" class="section level2">
+<h2>Other sections</h2>
+<p>Depending on the function, there can be a variety of different and important information after <strong>Arguments</strong> and before <strong>Examples</strong>. You may see mathematical notation that shows what the function does (in <strong>Details</strong>), a description of what the function returns (in <strong>Value</strong>), references in support of what the function does (in <strong>References</strong>), etc. This can be extremely valuable information, but I often don’t read it until I run into trouble using the function or need more information to understand exactly what the function does.</p>
+<p>I have a couple examples of useful information I’ve found in these other sections for various functions.</p>
+<p>First up is <code>rbind()</code> for stacking datasets. It turns out that <code>rbind()</code> stacks columns based on matching column names and not column positions. This is mentioned in the function documentation, but you have to dive deep into the very long <strong>Details</strong> section of the help file at <code>?rbind</code> to find the information.</p>
+<p><img src="https://raw.githubusercontent.com/aosmith16/r-basics-workshop/master/images/rbind.png" /><!-- --></p>
+<p>Second, functions for distributions will give information about the density function used in the <strong>Details</strong> section. Since the help pages for distributions almost always describe multiple functions at once, you can see what each of the functions return in <strong>Value</strong>. Here’s an example from <code>?rnorm</code>.</p>
+<p><img src="/img/rnorm_help.PNG" /><!-- --></p>
+</div>
+</div>
+<div id="using-argument-order-instead-of-labels" class="section level1">
+<h1>Using argument order instead of labels</h1>
+<p>You will see plenty of examples in R where the argument labels are not written out explicitly. This is because we can take advantage of the <em>argument order</em> when writing code in R.</p>
+<p>You can see this in the <code>mean()</code> <strong>Examples</strong> section, for example. You can pass a vector to the first argument of <code>mean()</code> without explicitly writing the <code>x</code> argument label.</p>
+<pre class="r"><code>vals = c(0:10, 50)
+mean(vals)</code></pre>
+<pre><code># [1] 8.75</code></pre>
+<p>In fact, you can pass in values to all the arguments without labels as long as you input them in the order the arguments come into the function. This relies heavily on you remembering the order of the arguments, as listed in <strong>Usage</strong>.</p>
+<pre class="r"><code>vals = c(0:10, 50, NA)
+mean(vals, 0.1, TRUE)</code></pre>
+<pre><code># [1] 5.5</code></pre>
+<p>You will definitely catch me leaving argument labels off in my own code. These days, though, I try to be more careful and primarily only leave off only the first label. One reason for this is it turns out my future self needs the arguments written out to better understand the code. I’m much more likely to figure out what the <code>mean()</code> code is doing if I put the argument labels back in. I think the code above, without the labels for <code>trim</code> and <code>na.rm</code>, is hard to understand.</p>
+<p>Here’s the same code, this time with the argument labels written out. Note the argument order doesn’t matter if the argument labels are used.</p>
+<pre class="r"><code>vals = c(0:10, 50, NA)
+mean(vals, na.rm = TRUE, trim = 0.1)</code></pre>
+<pre><code># [1] 5.5</code></pre>
+<p>Another reason I try to use argument labels is that new R users can get stung leaving off argument labels when they don’t realize how/why it works. 🐝 I worked with an R newbie recently who was getting weird results from a GLM with an offset. It turns out they weren’t using argument labels and so had passed the offset to <code>weights</code> instead of <code>offset</code>. Whoops! Luckily they saw something was weird and I could help get them on the right path. And now they know more about why it can be useful to write out argument labels. 😄</p>
+<p>I talk about this issue here because I don’t often see a lot of explicit discussion on why and when argument labels can be left off even though there are a lot of code examples out there that do this. This reminds me of when I was a new beekeeper and I made the mistake of going into a hive in the evening. (Do not try this at home, folks!) It turns out “everyone” who is an expert beekeeper knows what happens if you do this, but it wasn’t mentioned in any of my beginner books and classes. I don’t think beginners shouldn’t have to learn this sort of thing the hard way.</p>
+<div class="figure"><span id="fig:unnamed-chunk-5"></span>
+<img src="/img/bees.jpg" alt="No worries, this is a daytime hive inspection."  />
+<p class="caption">
+Figure 1: No worries, this is a daytime hive inspection.
+</p>
+</div>
+</div>
