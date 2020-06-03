@@ -94,12 +94,12 @@ sds = 2
 sd = 1</code></pre>
 <p>I need to create a <code>stand</code> variable, containing unique names for the five sampled stands. I use capital letters for this. Each stand name will be repeated four times, because each one was measured four times (i.e., there are four plots in each stand).</p>
 <pre class="r"><code>( stand = rep(LETTERS[1:nstand], each = nplot) )</code></pre>
-<pre><code>#  [1] &quot;A&quot; &quot;A&quot; &quot;A&quot; &quot;A&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;E&quot;
-# [18] &quot;E&quot; &quot;E&quot; &quot;E&quot;</code></pre>
+<pre><code>#  [1] &quot;A&quot; &quot;A&quot; &quot;A&quot; &quot;A&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;E&quot; &quot;E&quot; &quot;E&quot;
+# [20] &quot;E&quot;</code></pre>
 <p>I can make a <code>plot</code> variable, as well, although it’s not needed for modelling since we have a single value per plot. It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I’m a big believer in giving plots unique names. I’ll name plots uniquely using lowercase letters. There are a total of 20 plots.</p>
 <pre class="r"><code>( plot = letters[1:(nstand*nplot)] )</code></pre>
-<pre><code>#  [1] &quot;a&quot; &quot;b&quot; &quot;c&quot; &quot;d&quot; &quot;e&quot; &quot;f&quot; &quot;g&quot; &quot;h&quot; &quot;i&quot; &quot;j&quot; &quot;k&quot; &quot;l&quot; &quot;m&quot; &quot;n&quot; &quot;o&quot; &quot;p&quot; &quot;q&quot;
-# [18] &quot;r&quot; &quot;s&quot; &quot;t&quot;</code></pre>
+<pre><code>#  [1] &quot;a&quot; &quot;b&quot; &quot;c&quot; &quot;d&quot; &quot;e&quot; &quot;f&quot; &quot;g&quot; &quot;h&quot; &quot;i&quot; &quot;j&quot; &quot;k&quot; &quot;l&quot; &quot;m&quot; &quot;n&quot; &quot;o&quot; &quot;p&quot; &quot;q&quot; &quot;r&quot; &quot;s&quot;
+# [20] &quot;t&quot;</code></pre>
 <p>Now I will simulate the stand-level random effects. I defined these as <span class="math inline">\(b_s \thicksim N(0, \sigma^2_s)\)</span>, so will randomly draw from a normal distribution with a mean of 0 and standard deviation of 2 (remember that <code>rnorm()</code> in R uses standard deviation, not variance). I have five stands, so I draw five values.</p>
 <pre class="r"><code>( standeff = rnorm(nstand, 0, sds) )</code></pre>
 <pre><code># [1]  0.9528268 -0.2507600  2.1924324 -2.8884581  2.2956586</code></pre>
@@ -113,10 +113,10 @@ sd = 1</code></pre>
 <p>The observation-level random effect is simulated the same way as for a linear model. Every unique plot measurement has some effect on the response, and that effect is drawn from a normal distribution with a mean of 0 and a standard deviation of 1 (<span class="math inline">\(\epsilon_t \thicksim N(0, \sigma^2)\)</span>).</p>
 <p>I make 20 draws from this distribution, one for every plot/observation.</p>
 <pre class="r"><code>( ploteff = rnorm(nstand*nplot, 0, sd) )</code></pre>
-<pre><code>#  [1] -0.46841204 -1.00595059  0.06356268  1.02497260  0.57314202
-#  [6]  1.84718210  0.11193337 -0.74603732  1.65821366  0.72172057
-# [11] -1.66308050  0.57590953  0.47276012 -0.54273166  1.12768707
-# [16] -1.64779762 -0.31417395 -0.18268157  1.47047849 -0.86589878</code></pre>
+<pre><code>#  [1] -0.46841204 -1.00595059  0.06356268  1.02497260  0.57314202  1.84718210
+#  [7]  0.11193337 -0.74603732  1.65821366  0.72172057 -1.66308050  0.57590953
+# [13]  0.47276012 -0.54273166  1.12768707 -1.64779762 -0.31417395 -0.18268157
+# [19]  1.47047849 -0.86589878</code></pre>
 <p>I’m going to put all of these variables in a dataset together. This helps me keep things organized for modelling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect. This becomes clear when you peruse the 20-row dataset shown below.</p>
 <pre class="r"><code>( dat = data.frame(stand, standeff, plot, ploteff) )</code></pre>
 <pre><code>#    stand   standeff plot     ploteff
@@ -198,8 +198,8 @@ twolevel_fun()</code></pre>
 <div id="repeat-the-simulation-many-times" class="section level1">
 <h1>Repeat the simulation many times</h1>
 <p>Now that I have a working function to simulate data and fit the model it’s time to do the simulation many times. The model from each individual simulation is saved to allow exploration of long run model performance.</p>
-<p>This is a task for <code>replicate()</code>, which repeatedly calls a function and saves the output. The output is a list, which is convenient for going through to extract elements from the models later. I’ll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.</p>
-<pre class="r"><code>sims = replicate(100, twolevel_fun() )
+<p>This is a task for <code>replicate()</code>, which repeatedly calls a function and saves the output. When using <code>simplify = FALSE</code> the output is a list, which is convenient for going through to extract elements from the models later. I’ll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.</p>
+<pre class="r"><code>sims = replicate(100, twolevel_fun(), simplify = FALSE )
 sims[[100]]</code></pre>
 <pre><code># Linear mixed model fit by REML [&#39;lmerMod&#39;]
 # Formula: resp ~ 1 + (1 | stand)
@@ -218,7 +218,7 @@ sims[[100]]</code></pre>
 <h1>Extract results from the linear mixed model</h1>
 <p>After running all the models we will want to extract whatever we are interested in. The <code>tidy()</code> function from package <strong>broom</strong> can be used to conveniently extract both fixed and random effects.</p>
 <p>Below is an example on the practice model. You’ll notice there are no p-values for fixed effects. If those are desired and the degrees of freedom can be calculated, see packages <strong>lmerTest</strong> and <a href="https://github.com/bbolker/broom.mixed"><strong>broom.mixed</strong></a>.</p>
-<pre class="r"><code>library(broom) # v. 0.5.2
+<pre class="r"><code>library(broom) # v. 0.5.6
 tidy(fit1)</code></pre>
 <pre><code># # A tibble: 3 x 5
 #   term                    estimate std.error statistic group   
@@ -291,7 +291,7 @@ head(stand_vars)</code></pre>
      geom_vline(aes(xintercept = 4, linetype = &quot;True variance&quot;), size = .5 ) +
      geom_vline(data = groupmed, aes(xintercept = mvar, linetype = &quot;Median variance&quot;),
                 size = .5) +
-     theme_bw() +
+     theme_bw(base_size = 14) +
      scale_linetype_manual(name = &quot;&quot;, values = c(2, 1) ) +
      theme(legend.position = &quot;bottom&quot;,
            legend.key.width = unit(.1, &quot;cm&quot;) ) +
@@ -300,9 +300,10 @@ head(stand_vars)</code></pre>
 <p>Here are some additional descriptive statistics of the distribution of variances in each group to complement the info in the plot.</p>
 <pre class="r"><code>stand_vars %&gt;%
      group_by(stand_num) %&gt;%
-     summarise_at(&quot;estimate&quot;, list(min, mean, median, max) )</code></pre>
+     summarise_at(&quot;estimate&quot;, 
+                  list(min = min, mean = mean, med = median, max = max) )</code></pre>
 <pre><code># # A tibble: 3 x 5
-#   stand_num   fn1   fn2   fn3   fn4
+#   stand_num   min  mean   med   max
 #   &lt;fct&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
 # 1 5         0      4.04  3.39 17.6 
 # 2 20        0.994  4.03  3.88  9.15
@@ -357,14 +358,14 @@ ploteff = rnorm(nstand*nplot, 0, sd)</code></pre>
 <p>I will simulate the explanatory variables by randomly drawing from uniform distributions via <code>runif()</code>. I change the minimum and maximum values of the uniform distribution as needed to get an appropriate spread for a given variable. If the distribution of your explanatory variables are more skewed you could use a different distribution (like the Gamma distribution).</p>
 <p>First I simulate values for elevation. This variable only five values, as it is a stand-level variable. I need to repeat each value for the four plots measured in each stand like I did when making the <code>stand</code> variable.</p>
 <pre class="r"><code>( elevation = rep( runif(nstand, 1000, 1500), each = nplot) )</code></pre>
-<pre><code>#  [1] 1468.339 1468.339 1468.339 1468.339 1271.581 1271.581 1271.581
-#  [8] 1271.581 1427.050 1427.050 1427.050 1427.050 1166.014 1166.014
-# [15] 1166.014 1166.014 1424.256 1424.256 1424.256 1424.256</code></pre>
+<pre><code>#  [1] 1468.339 1468.339 1468.339 1468.339 1271.581 1271.581 1271.581 1271.581
+#  [9] 1427.050 1427.050 1427.050 1427.050 1166.014 1166.014 1166.014 1166.014
+# [17] 1424.256 1424.256 1424.256 1424.256</code></pre>
 <p>I can simulate slope the same way, pulling random values from a uniform distribution with different limits. The slope is measured at the plot level, so I have one value for every plot in the dataset.</p>
 <pre class="r"><code>( slope = runif(nstand*nplot, 2, 75) )</code></pre>
-<pre><code>#  [1] 48.45477 60.37014 59.58588 44.76939 61.88313 20.29559 71.51617
-#  [8] 42.35035 63.67044 36.43613 10.58778 14.62304 35.11192 13.19697
-# [15]  9.29946 46.56462 34.68245 53.61456 37.00606 42.30044</code></pre>
+<pre><code>#  [1] 48.45477 60.37014 59.58588 44.76939 61.88313 20.29559 71.51617 42.35035
+#  [9] 63.67044 36.43613 10.58778 14.62304 35.11192 13.19697  9.29946 46.56462
+# [17] 34.68245 53.61456 37.00606 42.30044</code></pre>
 <p>We now have everything we need to create the response variable.</p>
 <p>Based on our equation <span class="math display">\[y_t = \beta_0 + \beta_1*(Elevation_s)_t + \beta_2*Slope_t + (b_s)_t + \epsilon_t\]</span></p>
 <p>the response variable will be calculated via</p>
@@ -424,10 +425,10 @@ twolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 2, sigma = 1) 
 set.seed(16)
 twolevel_fun()
 
-sims = replicate(100, twolevel_fun() )
+sims = replicate(100, twolevel_fun(), simplify = FALSE )
 sims[[100]]
 
-library(broom) # v. 0.5.2
+library(broom) # v. 0.5.6
 tidy(fit1)
 
 tidy(fit1, effects = &quot;fixed&quot;)
@@ -469,7 +470,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
      geom_vline(aes(xintercept = 4, linetype = &quot;True variance&quot;), size = .5 ) +
      geom_vline(data = groupmed, aes(xintercept = mvar, linetype = &quot;Median variance&quot;),
                 size = .5) +
-     theme_bw() +
+     theme_bw(base_size = 14) +
      scale_linetype_manual(name = &quot;&quot;, values = c(2, 1) ) +
      theme(legend.position = &quot;bottom&quot;,
            legend.key.width = unit(.1, &quot;cm&quot;) ) +
@@ -477,7 +478,8 @@ ggplot(stand_vars, aes(x = estimate) ) +
 
 stand_vars %&gt;%
      group_by(stand_num) %&gt;%
-     summarise_at(&quot;estimate&quot;, list(min, mean, median, max) )
+     summarise_at(&quot;estimate&quot;, 
+                  list(min = min, mean = mean, med = median, max = max) )
 
 stand_vars %&gt;%
      group_by(stand_num) %&gt;%

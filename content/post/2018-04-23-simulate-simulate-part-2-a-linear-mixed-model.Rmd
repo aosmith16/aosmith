@@ -208,10 +208,10 @@ twolevel_fun()
 
 Now that I have a working function to simulate data and fit the model it's time to do the simulation many times.  The model from each individual simulation is saved to allow exploration of long run model performance.
 
-This is a task for `replicate()`, which repeatedly calls a function and saves the output.  The output is a list, which is convenient for going through to extract elements from the models later.  I'll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.  
+This is a task for `replicate()`, which repeatedly calls a function and saves the output.  When using `simplify = FALSE` the output is a list, which is convenient for going through to extract elements from the models later.  I'll re-run the simulation 100 times as an example, although I will do 1000 runs later when I explore the long-run performance of variance estimates.  
 
 ```{r, warning = FALSE, message = FALSE}
-sims = replicate(100, twolevel_fun() )
+sims = replicate(100, twolevel_fun(), simplify = FALSE )
 sims[[100]]
 
 ```
@@ -223,7 +223,7 @@ After running all the models we will want to extract whatever we are interested 
 Below is an example on the practice model.  You'll notice there are no p-values for fixed effects.  If those are desired and the degrees of freedom can be calculated, see packages **lmerTest** and [**broom.mixed**](https://github.com/bbolker/broom.mixed).
 
 ```{r, message = FALSE, warning = FALSE}
-library(broom) # v. 0.5.2
+library(broom) # v. 0.5.6
 tidy(fit1)
 
 ```
@@ -305,7 +305,7 @@ add_prefix = function(string) {
 
 And finally I'll add the median of each distribution as a second vertical line.
 
-```{r}
+```{r, message = FALSE}
 groupmed = stand_vars %>%
      group_by(stand_num) %>%
      summarise(mvar = median(estimate) )
@@ -323,7 +323,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
      geom_vline(aes(xintercept = 4, linetype = "True variance"), size = .5 ) +
      geom_vline(data = groupmed, aes(xintercept = mvar, linetype = "Median variance"),
                 size = .5) +
-     theme_bw() +
+     theme_bw(base_size = 14) +
      scale_linetype_manual(name = "", values = c(2, 1) ) +
      theme(legend.position = "bottom",
            legend.key.width = unit(.1, "cm") ) +
@@ -336,7 +336,8 @@ Here are some additional descriptive statistics of the distribution of variances
 ```{r}
 stand_vars %>%
      group_by(stand_num) %>%
-     summarise_at("estimate", list(min, mean, median, max) )
+     summarise_at("estimate", 
+                  list(min = min, mean = mean, med = median, max = max) )
 
 ```
 
@@ -346,7 +347,7 @@ We can see for 5 samples that the variance is definitely underestimated more oft
 
 Every time I do this sort of simulation I am newly surprised that even large samples tend to underestimate variances slightly more often than overestimate them.
 
-```{r}
+```{r, message = FALSE}
 stand_vars %>%
      group_by(stand_num) %>%
      summarise(mean(estimate < 4) )

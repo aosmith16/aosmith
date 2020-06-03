@@ -45,11 +45,11 @@ set.seed(16)
 twolevel_fun()
 
 
-sims = replicate(100, twolevel_fun() )
+sims = replicate(100, twolevel_fun(), simplify = FALSE )
 sims[[100]]
 
 
-library(broom) # v. 0.5.2
+library(broom) # v. 0.5.6
 tidy(fit1)
 
 
@@ -101,7 +101,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
      geom_vline(aes(xintercept = 4, linetype = "True variance"), size = .5 ) +
      geom_vline(data = groupmed, aes(xintercept = mvar, linetype = "Median variance"),
                 size = .5) +
-     theme_bw() +
+     theme_bw(base_size = 14) +
      scale_linetype_manual(name = "", values = c(2, 1) ) +
      theme(legend.position = "bottom",
            legend.key.width = unit(.1, "cm") ) +
@@ -110,7 +110,8 @@ ggplot(stand_vars, aes(x = estimate) ) +
 
 stand_vars %>%
      group_by(stand_num) %>%
-     summarise_at("estimate", list(min, mean, median, max) )
+     summarise_at("estimate", 
+                  list(min = min, mean = mean, med = median, max = max) )
 
 
 stand_vars %>%
