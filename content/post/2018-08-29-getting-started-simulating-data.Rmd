@@ -30,11 +30,11 @@ devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
 
 I've been trying to participate a little more in the R community outside of my narrow professional world, so when the co-organizer of the [Eugene R Users Group](https://www.meetup.com/meetup-group-cwPiAlnB/) invited me to come talk at one of their meet-ups I agreed (even though it involved public speaking! `r emo::ji("scream")`).
 
-I started out thinking I'd talk about doing simulations.  But could I do that in 45 minutes?  Maybe not.  After much pondering I ended up settling on the topic of how we start a simulation: by making data in R.
+I started out thinking I'd talk about doing simulations.  But could I do that in 45 minutes?  Probably not.  After much pondering I ended up settling on the topic of how we start a simulation: by making data in R.
 
-Possibly out of habit from making written versions of labs and workshops as resources for students, I created a written version of the talk.  You can see the [full PDF version](https://github.com/aosmith16/simulation-helper-functions/blob/master/functions_for_simulations_detailed.pdf) at [the GitHub repository](https://github.com/aosmith16/simulation-helper-functions) I made for the talk materials.  
+You can see a [written version of this talk as a PDF](https://github.com/aosmith16/simulation-helper-functions/blob/master/functions_for_simulations_detailed.pdf) at [the GitHub repository](https://github.com/aosmith16/simulation-helper-functions) I made for the talk materials.  In June 2020 I added an [interactive tutorial](https://aosmith.shinyapps.io/tutorial_simulation_helper_functions/) so you can work through the same material in your browser.
 
-I've copied the R markdown code below, as well, for a "blog" version, although this ends up being quite long for a blog post. `r emo::ji("smile")`
+I've copied the R markdown code below, as well, for a "blog" version, although this ends up being quite long for a blog post. `r emo::ji("smile")`  
 
 ## Table of Contents
 
@@ -508,12 +508,17 @@ data.frame(group = rep(LETTERS[3:4], each = 10),
            y = runif(n = 20, min = 100, max = 150))
 ```
 
-What happens if we get the number wrong?  If we're lucky we get an error.
+What happens if we get the number wrong?  If we're lucky we get an error that will help us troubleshoot the problem.
 
-```{r, error = TRUE}
+```{r, eval = FALSE}
 data.frame(group = rep(LETTERS[3:4], each = 10),
            x = runif(n = 15, min = 10, max = 15),
            y = runif(n = 15, min = 100, max = 150))
+```
+
+```{r, echo = FALSE}
+cat("Error in data.frame(group = rep(LETTERS[3:4], each = 10), x = runif(n =
+15, : arguments imply differing number of rows: 20, 15")
 ```
 
 But if we get things wrong and the number we use happens to go into the number we need evenly, R will *recycle* the vector to the end of the `data.frame()`.  

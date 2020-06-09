@@ -17,8 +17,8 @@ description: "Here is the written version of a talk I gave at the Eugene R Users
 
 
 <p>I’ve been trying to participate a little more in the R community outside of my narrow professional world, so when the co-organizer of the <a href="https://www.meetup.com/meetup-group-cwPiAlnB/">Eugene R Users Group</a> invited me to come talk at one of their meet-ups I agreed (even though it involved public speaking! 😱).</p>
-<p>I started out thinking I’d talk about doing simulations. But could I do that in 45 minutes? Maybe not. After much pondering I ended up settling on the topic of how we start a simulation: by making data in R.</p>
-<p>Possibly out of habit from making written versions of labs and workshops as resources for students, I created a written version of the talk. You can see the <a href="https://github.com/aosmith16/simulation-helper-functions/blob/master/functions_for_simulations_detailed.pdf">full PDF version</a> at <a href="https://github.com/aosmith16/simulation-helper-functions">the GitHub repository</a> I made for the talk materials.</p>
+<p>I started out thinking I’d talk about doing simulations. But could I do that in 45 minutes? Probably not. After much pondering I ended up settling on the topic of how we start a simulation: by making data in R.</p>
+<p>You can see a <a href="https://github.com/aosmith16/simulation-helper-functions/blob/master/functions_for_simulations_detailed.pdf">written version of this talk as a PDF</a> at <a href="https://github.com/aosmith16/simulation-helper-functions">the GitHub repository</a> I made for the talk materials. In June 2020 I added an <a href="https://aosmith.shinyapps.io/tutorial_simulation_helper_functions/">interactive tutorial</a> so you can work through the same material in your browser.</p>
 <p>I’ve copied the R markdown code below, as well, for a “blog” version, although this ends up being quite long for a blog post. 😄</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
@@ -86,14 +86,14 @@ description: "Here is the written version of a talk I gave at the Eugene R Users
 <p>The <code>n</code> argument is the number of observations we want to generate. The <code>mean</code> and <code>sd</code> arguments show what the default values of the parameters are (note that <code>sd</code> is the <em>standard deviation</em>, not the variance). Not all <code>r</code> functions have defaults to the parameter arguments like this.</p>
 <p>To get 5 random numbers from a <span class="math inline">\(Normal(0, 1)\)</span> (aka the <em>standard</em> normal) distribution we can write code like:</p>
 <pre class="r"><code>rnorm(5)</code></pre>
-<pre><code>[1]  0.6440418  0.6278510 -0.1729285 -1.9277982  1.3427472</code></pre>
+<pre><code>[1]  1.7930319 -1.4595365  0.1785649 -0.3500435 -0.1665776</code></pre>
 <p>There are a couple things about this code and the output to discuss.</p>
 <p>First, the code did get me 5 numbers, which is what I wanted. However, the code itself isn’t particularly clear. What I might refer to as lazy coding on my part can look pretty mysterious to someone reading my code (or to my future self reading my code). Since I used the default values for <code>mean</code> and <code>sd</code>, it’s not clear exactly what distribution I drew the numbers from.</p>
 <div id="writing-out-arguments-in-for-clearer-code" class="section level3">
 <h3>Writing out arguments in for clearer code</h3>
 <p>Here’s clearer code to do the same thing, where I write out the mean and standard deviation arguments explicitly even though I’m using the default values. It is certainly not necessary to always be this careful, but I don’t think I’ve run into a situation were it was bad to have clear code.</p>
 <pre class="r"><code>rnorm(n = 5, mean = 0, sd = 1)</code></pre>
-<pre><code>[1]  0.4037251  0.4170926 -0.6804443 -0.5961538 -0.3283543</code></pre>
+<pre><code>[1] -0.36778344  0.42699706 -0.73419911 -1.25398250 -0.06248306</code></pre>
 </div>
 <div id="setting-the-random-seed-for-reproducible-random-numbers" class="section level3">
 <h3>Setting the random seed for reproducible random numbers</h3>
@@ -375,8 +375,8 @@ group</code></pre>
 <h2>Multiple quantitative variables with groups</h2>
 <p>For our last dataset we’ll have two groups, with 10 observations per group.</p>
 <pre class="r"><code>rep(LETTERS[3:4], each = 10)</code></pre>
-<pre><code> [1] &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot;
-[18] &quot;D&quot; &quot;D&quot; &quot;D&quot;</code></pre>
+<pre><code> [1] &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot;
+[20] &quot;D&quot;</code></pre>
 <p>Let’s make a dataset that has two quantitative variables, unrelated to both each other and the groups. One variable ranges from 10 and 15 and one from 100 and 150.</p>
 <p>How many observations should we draw from each uniform distribution?</p>
 <pre class="r"><code>runif(n = ?, min = 10, max = 15)</code></pre>
@@ -406,43 +406,38 @@ group</code></pre>
 18     D 14.91621 112.6612
 19     D 13.53270 104.8965
 20     D 14.40677 119.5231</code></pre>
-<p>What happens if we get the number wrong? If we’re lucky we get an error.</p>
+<p>What happens if we get the number wrong? If we’re lucky we get an error that will help us troubleshoot the problem.</p>
 <pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
            x = runif(n = 15, min = 10, max = 15),
            y = runif(n = 15, min = 100, max = 150))</code></pre>
-<pre><code>Error in data.frame(group = rep(LETTERS[3:4], each = 10), x =
-runif(n = 15, : arguments imply differing number of rows: 20, 15```
-
-But if we get things wrong and the number we use happens to go into the number we need evenly, R will *recycle* the vector to the end of the `data.frame()`.  
-
-This is a hard mistake to catch.  If you look carefully through the output below you can see that the continuous variables start to repeat on line 10 because I used `n = 10` instead of `n = 20`.
-
-
-```r
-data.frame(group = rep(LETTERS[3:4], each = 10),
+<pre><code>Error in data.frame(group = rep(LETTERS[3:4], each = 10), x = runif(n =
+15, : arguments imply differing number of rows: 20, 15</code></pre>
+<p>But if we get things wrong and the number we use happens to go into the number we need evenly, R will <em>recycle</em> the vector to the end of the <code>data.frame()</code>.</p>
+<p>This is a hard mistake to catch. If you look carefully through the output below you can see that the continuous variables start to repeat on line 10 because I used <code>n = 10</code> instead of <code>n = 20</code>.</p>
+<pre class="r"><code>data.frame(group = rep(LETTERS[3:4], each = 10),
            x = runif(n = 10, min = 10, max = 15),
            y = runif(n = 10, min = 100, max = 150))</code></pre>
 <pre><code>   group        x        y
-1      C 12.28493 108.3455
-2      C 13.84490 114.8247
-3      C 12.42386 105.1358
-4      C 10.08725 125.1979
-5      C 10.83277 129.6310
-6      C 10.96766 129.4584
-7      C 11.51180 149.2819
-8      C 13.48253 139.2530
-9      C 11.64337 119.6663
-10     C 12.88603 119.8368
-11     D 12.28493 108.3455
-12     D 13.84490 114.8247
-13     D 12.42386 105.1358
-14     D 10.08725 125.1979
-15     D 10.83277 129.6310
-16     D 10.96766 129.4584
-17     D 11.51180 149.2819
-18     D 13.48253 139.2530
-19     D 11.64337 119.6663
-20     D 12.88603 119.8368</code></pre>
+1      C 10.82006 112.9378
+2      C 12.42877 114.4226
+3      C 11.57143 123.7625
+4      C 14.28623 139.3863
+5      C 11.46303 130.4657
+6      C 14.11453 138.4861
+7      C 13.78674 102.5954
+8      C 11.17580 116.3792
+9      C 13.75111 116.8000
+10     C 11.35357 147.0055
+11     D 10.82006 112.9378
+12     D 12.42877 114.4226
+13     D 11.57143 123.7625
+14     D 14.28623 139.3863
+15     D 11.46303 130.4657
+16     D 14.11453 138.4861
+17     D 13.78674 102.5954
+18     D 11.17580 116.3792
+19     D 13.75111 116.8000
+20     D 11.35357 147.0055</code></pre>
 </div>
 </div>
 <div id="repeatedly-simulate-data-with-replicate" class="section level1">
@@ -529,13 +524,13 @@ list1</code></pre>
 <pre class="r"><code>str(simlist)</code></pre>
 <pre><code>List of 3
  $ :&#39;data.frame&#39;:   6 obs. of  2 variables:
-  ..$ group   : Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 1 1 2 2 2
+  ..$ group   : chr [1:6] &quot;a&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; ...
   ..$ response: num [1:6] -0.314 -0.183 1.47 -0.866 1.527 ...
  $ :&#39;data.frame&#39;:   6 obs. of  2 variables:
-  ..$ group   : Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 1 1 2 2 2
+  ..$ group   : chr [1:6] &quot;a&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; ...
   ..$ response: num [1:6] 1.03 0.84 0.217 -0.673 0.133 ...
  $ :&#39;data.frame&#39;:   6 obs. of  2 variables:
-  ..$ group   : Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 1 1 2 2 2
+  ..$ group   : chr [1:6] &quot;a&quot; &quot;a&quot; &quot;a&quot; &quot;b&quot; ...
   ..$ response: num [1:6] -0.943 -1.022 0.281 0.545 0.131 ...</code></pre>
 <p>Here is the first one.</p>
 <pre class="r"><code>simlist[[1]]</code></pre>
