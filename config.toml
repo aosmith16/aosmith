@@ -84,7 +84,7 @@ canonifyurls = true
   # If false it will flat categories.
   hierarchicalCategories = true
 
-  description = "A blog about R and statistics by Ariel Muldoon"
+  description = "A blog about statistics and programming in R by Ariel Muldoon"
 
   # Customization
   # Define the behavior of the sidebar
