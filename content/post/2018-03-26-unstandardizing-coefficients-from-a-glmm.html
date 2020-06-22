@@ -15,6 +15,7 @@ description: "Unstandardizing coefficients in order to interpret them on the ori
 
 
 
+<p><em>This post was last updated on 2020-06-22.</em></p>
 <p>Fitting generalized linear mixed models (GLMM) can be tricky. For example, having explanatory variables with very different magnitudes can cause problems with model convergence. <em>Standardizing</em> the explanatory variables by subtracting the mean and dividing by the standard deviation prior to model fitting can often fix this issue. However, the interpretation of standardized coefficients is about the change in mean response for a 1 standard deviation increase in a variable; this is not particularly intuitive. Most often the coefficients need to be converted back to their unstandardized values for interpretation.</p>
 <p>It turns out the math for converting the standardized slope estimates to unstandardized ones is fairly straightforward. Coefficients for each variable need to be divided by the standard deviation of that variable (this is only true for slopes, not intercepts). A nice write-up of the math involved is shown in the answer to <a href="https://stats.stackexchange.com/questions/74622/converting-standardized-betas-back-to-original-variables">this Cross Validated question</a>.</p>
 <p>The first time I went though the process of unstandardizing many explanatory variables the process felt pretty clunky. Since then I’ve managed to tidy things up quite a bit to make it more automated. I’ll outline that process in this post.</p>

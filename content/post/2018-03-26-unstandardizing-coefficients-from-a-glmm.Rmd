@@ -20,6 +20,8 @@ devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
 options(pillar.sigfig = 4) # More #'s in tibble output
 ```
 
+*This post was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
+
 Fitting generalized linear mixed models (GLMM) can be tricky. For example, having explanatory variables with very different magnitudes can cause problems with model convergence.  *Standardizing* the explanatory variables by subtracting the mean and dividing by the standard deviation prior to model fitting can often fix this issue.  However, the interpretation of standardized coefficients is about the change in mean response for a 1 standard deviation increase in a variable; this is not particularly intuitive.  Most often the coefficients need to be converted back to their unstandardized values for interpretation.  
 
 It turns out the math for converting the standardized slope estimates to unstandardized ones is fairly straightforward.  Coefficients for each variable need to be divided by the standard deviation of that variable (this is only true for slopes, not intercepts).  A nice write-up of the math involved is shown in the answer to [this Cross Validated question](https://stats.stackexchange.com/questions/74622/converting-standardized-betas-back-to-original-variables).
