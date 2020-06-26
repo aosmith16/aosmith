@@ -15,7 +15,7 @@ description: "Unstandardizing coefficients in order to interpret them on the ori
 
 
 
-<p><em>This post was last updated on 2020-06-22.</em></p>
+<p><em>This post was last updated on 2020-06-26.</em></p>
 <p>Fitting generalized linear mixed models (GLMM) can be tricky. For example, having explanatory variables with very different magnitudes can cause problems with model convergence. <em>Standardizing</em> the explanatory variables by subtracting the mean and dividing by the standard deviation prior to model fitting can often fix this issue. However, the interpretation of standardized coefficients is about the change in mean response for a 1 standard deviation increase in a variable; this is not particularly intuitive. Most often the coefficients need to be converted back to their unstandardized values for interpretation.</p>
 <p>It turns out the math for converting the standardized slope estimates to unstandardized ones is fairly straightforward. Coefficients for each variable need to be divided by the standard deviation of that variable (this is only true for slopes, not intercepts). A nice write-up of the math involved is shown in the answer to <a href="https://stats.stackexchange.com/questions/74622/converting-standardized-betas-back-to-original-variables">this Cross Validated question</a>.</p>
 <p>The first time I went though the process of unstandardizing many explanatory variables the process felt pretty clunky. Since then I’ve managed to tidy things up quite a bit to make it more automated. I’ll outline that process in this post.</p>
@@ -43,11 +43,11 @@ description: "Unstandardizing coefficients in order to interpret them on the ori
 </div>
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
-<p>Model fitting will be done via <strong>lme4</strong>. Data manipulation tools from <strong>dplyr</strong> will be useful for getting results tidied up. I’ll also use helper functions from <strong>purrr</strong> to loop through variables and <strong>broom</strong> for the tidy extraction of fixed-effects coefficients from the model.</p>
+<p>Model fitting will be done via <strong>lme4</strong>. Data manipulation tools from <strong>dplyr</strong> will be useful for getting results tidied up. I’ll also use helper functions from <strong>purrr</strong> to loop through variables and <strong>broom.mixed</strong> for the tidy extraction of fixed-effects coefficients from mixed models.</p>
 <pre class="r"><code>library(lme4) # v. 1.1-23
 suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.0
 library(purrr) # 0.3.4
-library(broom) # 0.5.6</code></pre>
+library(broom.mixed) # 0.2.6</code></pre>
 </div>
 <div id="the-dataset" class="section level1">
 <h1>The dataset</h1>
@@ -135,13 +135,13 @@ glimpse(cbpp)</code></pre>
                conf.method = &quot;profile&quot;)</code></pre>
 <pre><code># Computing profile confidence intervals ...</code></pre>
 <pre class="r"><code>coef_st</code></pre>
-<pre><code># # A tibble: 4 x 7
-#   term        estimate std.error statistic   p.value  conf.low conf.high
-#   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
-# 1 (Intercept)  -2.096     0.2161   -9.699  3.037e-22 -2.566      -1.654 
-# 2 y1_s          0.2640    0.1396    1.892  5.851e- 2 -0.009310    0.5473
-# 3 y2_s          0.1032    0.1295    0.7968 4.256e- 1 -0.1515      0.3636
-# 4 y3_s          0.1570    0.1229    1.277  2.016e- 1 -0.08629     0.4033</code></pre>
+<pre><code># # A tibble: 4 x 8
+#   effect term        estimate std.error statistic   p.value  conf.low conf.high
+#   &lt;chr&gt;  &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+# 1 fixed  (Intercept)  -2.096     0.2161   -9.699  3.037e-22 -2.566      -1.654 
+# 2 fixed  y1_s          0.2640    0.1396    1.892  5.851e- 2 -0.009310    0.5473
+# 3 fixed  y2_s          0.1032    0.1295    0.7968 4.256e- 1 -0.1515      0.3636
+# 4 fixed  y3_s          0.1570    0.1229    1.277  2.016e- 1 -0.08629     0.4033</code></pre>
 </div>
 <div id="calculate-standard-deviations-for-each-variable" class="section level2">
 <h2>Calculate standard deviations for each variable</h2>
@@ -175,29 +175,29 @@ sd_all</code></pre>
 <p>Once the names of the variables match between the datasets I can join the “standard deviations” data.frame to the “coefficients” data.frame. I’m not unstandardizing the intercept at this point, so I use <code>inner_join()</code> to keep only rows that have a match in both data.frames. Notice that the columns I’m joining by have different names in the two data.frames.</p>
 <pre class="r"><code>coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) )</code></pre>
-<pre><code># # A tibble: 3 x 8
-#   term  estimate std.error statistic p.value  conf.low conf.high        sd
-#   &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
-# 1 y1_s    0.2640    0.1396    1.892  0.05851 -0.009310    0.5473   90.44  
-# 2 y2_s    0.1032    0.1295    0.7968 0.4256  -0.1515      0.3636    0.2952
-# 3 y3_s    0.1570    0.1229    1.277  0.2016  -0.08629     0.4033 2943.</code></pre>
+<pre><code># # A tibble: 3 x 9
+#   effect term  estimate std.error statistic p.value  conf.low conf.high       sd
+#   &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+# 1 fixed  y1_s    0.2640    0.1396    1.892  0.05851 -0.009310    0.5473 9.044e+1
+# 2 fixed  y2_s    0.1032    0.1295    0.7968 0.4256  -0.1515      0.3636 2.952e-1
+# 3 fixed  y3_s    0.1570    0.1229    1.277  0.2016  -0.08629     0.4033 2.943e+3</code></pre>
 <p>Once everything in one data.frame I can divide <code>estimate</code>, <code>conf.low</code> and <code>conf.high</code> by <code>sd</code> via <code>mutate_at()</code>. I will round the results, as well, although I am ignoring the vast differences in the variable range when I do this rounding.</p>
 <pre class="r"><code>coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
      mutate_at( .vars = vars(estimate, conf.low, conf.high), 
                 .funs = list(~round( ./sd, 4) ) )</code></pre>
-<pre><code># # A tibble: 3 x 8
-#   term  estimate std.error statistic p.value conf.low conf.high        sd
-#   &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
-# 1 y1_s   0.00290    0.1396    1.892  0.05851  -0.0001    0.0061   90.44  
-# 2 y2_s   0.3495     0.1295    0.7968 0.4256   -0.5131    1.232     0.2952
-# 3 y3_s   0.0001     0.1229    1.277  0.2016    0         0.0001 2943.</code></pre>
+<pre><code># # A tibble: 3 x 9
+#   effect term  estimate std.error statistic p.value conf.low conf.high        sd
+#   &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+# 1 fixed  y1_s   0.00290    0.1396    1.892  0.05851  -0.0001    0.0061   90.44  
+# 2 fixed  y2_s   0.3495     0.1295    0.7968 0.4256   -0.5131    1.232     0.2952
+# 3 fixed  y3_s   0.0001     0.1229    1.277  0.2016    0         0.0001 2943.</code></pre>
 <p>I’ll get rid of the extra variables via <code>select()</code>, so I end up with only the unstandardized coefficients and confidence interval limits along with the variable names.</p>
 <pre class="r"><code>coef_unst = coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
      mutate_at( .vars = vars(estimate, conf.low, conf.high), 
                 .funs = list(~round( ./sd, 4) ) ) %&gt;%
-     select(-(std.error:p.value), -sd)
+     select(-effect, -(std.error:p.value), -sd)
 
 coef_unst</code></pre>
 <pre><code># # A tibble: 3 x 4
@@ -220,13 +220,13 @@ coef_unst</code></pre>
      conf.int = TRUE,
      conf.method = &quot;profile&quot;)</code></pre>
 <pre><code># Computing profile confidence intervals ...</code></pre>
-<pre><code># # A tibble: 4 x 7
-#   term           estimate  std.error statistic    p.value    conf.low  conf.high
-#   &lt;chr&gt;             &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;
-# 1 (Intercept) -4.583      1.095        -4.186  0.00002845 NA          NA        
-# 2 y1           0.002919   0.001520      1.920  0.05486    NA          NA        
-# 3 y2           0.3495     0.4371        0.7997 0.4239     NA          NA        
-# 4 y3           0.00005335 0.00004049    1.317  0.1877     -0.00002932  0.0001370</code></pre>
+<pre><code># # A tibble: 4 x 8
+#   effect term       estimate  std.error statistic   p.value   conf.low conf.high
+#   &lt;chr&gt;  &lt;chr&gt;         &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;
+# 1 fixed  (Interc~  -4.583e+0 1.095        -4.186   2.845e-5  NA        NA       
+# 2 fixed  y1         2.919e-3 0.001520      1.920   5.486e-2  NA        NA       
+# 3 fixed  y2         3.495e-1 0.4371        0.7997  4.239e-1  NA        NA       
+# 4 fixed  y3         5.335e-5 0.00004049    1.317   1.877e-1  -2.932e-5  1.370e-4</code></pre>
 </div>
 </div>
 <div id="further-important-work" class="section level1">
@@ -241,7 +241,7 @@ coef_unst</code></pre>
 <pre class="r"><code>library(lme4) # v. 1.1-23
 suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.0
 library(purrr) # 0.3.4
-library(broom) # 0.5.6
+library(broom.mixed) # 0.2.6
 
 glimpse(cbpp)
 
@@ -299,7 +299,7 @@ coef_unst = coef_st %&gt;%
      inner_join(., sd_all, by = c(&quot;term&quot; = &quot;ind&quot;) ) %&gt;%
      mutate_at( .vars = vars(estimate, conf.low, conf.high), 
                 .funs = list(~round( ./sd, 4) ) ) %&gt;%
-     select(-(std.error:p.value), -sd)
+     select(-effect, -(std.error:p.value), -sd)
 
 coef_unst
 

@@ -1,7 +1,7 @@
 library(lme4) # v. 1.1-23
 suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.0
 library(purrr) # 0.3.4
-library(broom) # 0.5.6
+library(broom.mixed) # 0.2.6
 
 
 glimpse(cbpp)
@@ -70,7 +70,7 @@ coef_unst = coef_st %>%
      inner_join(., sd_all, by = c("term" = "ind") ) %>%
      mutate_at( .vars = vars(estimate, conf.low, conf.high), 
                 .funs = list(~round( ./sd, 4) ) ) %>%
-     select(-(std.error:p.value), -sd)
+     select(-effect, -(std.error:p.value), -sd)
 
 coef_unst
 

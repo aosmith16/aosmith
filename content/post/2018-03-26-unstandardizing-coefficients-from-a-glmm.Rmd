@@ -17,7 +17,8 @@ description: "Unstandardizing coefficients in order to interpret them on the ori
 knitr::opts_chunk$set(comment = "#")
 devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
-options(pillar.sigfig = 4) # More #'s in tibble output
+options(pillar.sigfig = 4, # More #'s in tibble output
+        scipen = 999) # No scientific notation
 ```
 
 *This post was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
@@ -36,13 +37,13 @@ render_toc("2018-03-26-unstandardizing-coefficients-from-a-glmm.Rmd")
 
 # R packages
 
-Model fitting will be done via **lme4**.  Data manipulation tools from **dplyr** will be useful for getting results tidied up.  I'll also use helper functions from **purrr** to loop through variables and **broom** for the tidy extraction of fixed-effects coefficients from the model.
+Model fitting will be done via **lme4**.  Data manipulation tools from **dplyr** will be useful for getting results tidied up.  I'll also use helper functions from **purrr** to loop through variables and **broom.mixed** for the tidy extraction of fixed-effects coefficients from mixed models.
 
 ```{r, message = FALSE, warning = FALSE}
 library(lme4) # v. 1.1-23
 suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.0
 library(purrr) # 0.3.4
-library(broom) # 0.5.6
+library(broom.mixed) # 0.2.6
 
 ```
 
@@ -183,7 +184,7 @@ coef_unst = coef_st %>%
      inner_join(., sd_all, by = c("term" = "ind") ) %>%
      mutate_at( .vars = vars(estimate, conf.low, conf.high), 
                 .funs = list(~round( ./sd, 4) ) ) %>%
-     select(-(std.error:p.value), -sd)
+     select(-effect, -(std.error:p.value), -sd)
 
 coef_unst
 
@@ -200,7 +201,7 @@ round( fixef(fit1)[2:4], 4)
 
 Given that the estimates are the same, couldn't we simply go back and fit the unstandardized model and ignore the warning message?  That would be nice, but unfortunately the convergence issues can cause problems when trying to calculate profile likelihood confidence intervals so this simpler approach doesn't always work.  
 
-In this case there are a bunch of warnings (not shown), and the profile likelihood confidence interval limits aren't successfully calculated for some of the coefficients.
+In this case there are a bunch of warnings (not shown), and the profile likelihood confidence interval limits aren't successfully calculated for some of the coefficients. 
 
 ```{r, warning = FALSE}
 tidy(fit1, 
