@@ -20,8 +20,9 @@ description: "The task of fitting many similar models can be automated by loopin
 
 
 
+<p><em>This post was last updated on 2020-07-06.</em></p>
 <p>When we have many similar models to fit, automating at least some portions of the task can be a real time saver. In <a href="https://aosmith.rbind.io/2019/06/24/function-for-model-fitting/">my last post</a> I demonstrated how to make a function for model fitting. Once you have made such a function it’s possible to loop through variable names and fit a model for each one.</p>
-<p>In this post I am specifically focusing on having many response variables with the same explanatory variables, using <code>purrr::map()</code> and friends for the looping.</p>
+<p>In this post I am specifically focusing on having many response variables with the same explanatory variables, using <code>purrr::map()</code> and friends for the looping. However, this same approach can be used for models with varying explanatory variables, etc.</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
@@ -42,10 +43,10 @@ description: "The task of fitting many similar models can be automated by loopin
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
 <p>I’ll be using <strong>purrr</strong> for looping and will make residual plots with <strong>ggplot2</strong> and <strong>patchwork</strong>. I’ll use <strong>broom</strong> to extract tidy results from models.</p>
-<pre class="r"><code>library(purrr) # v. 0.3.2
-library(ggplot2) # v. 3.2.0
-library(patchwork) # v. 0.0.1, github only
-library(broom) # v. 0.5.2</code></pre>
+<pre class="r"><code>library(purrr) # v. 0.3.4
+library(ggplot2) # v. 3.3.2
+library(patchwork) # v. 1.0.0
+library(broom) # v. 0.5.6</code></pre>
 </div>
 <div id="the-dataset" class="section level1">
 <h1>The dataset</h1>
@@ -241,16 +242,16 @@ vars</code></pre>
 <pre class="r"><code>res_anova = map_dfr(models, tidy, conf.int = TRUE, .id = &quot;variable&quot;)
 res_anova</code></pre>
 <pre><code># # A tibble: 6 x 8
-#   variable term    estimate std.error statistic  p.value conf.low conf.high
-#   &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-# 1 resp     (Inter~   10.3       0.260    39.7   3.60e-26   9.80     10.9   
-# 2 resp     groupb    -0.121     0.368    -0.328 7.45e- 1  -0.874     0.632 
-# 3 slp      (Inter~   43.9       2.56     17.2   2.18e-16  38.7      49.2   
-# 4 slp      groupb     4.81      3.62      1.33  1.95e- 1  -2.61     12.2   
-# 5 log_grad (Inter~   -0.423     0.255    -1.66  1.09e- 1  -0.945     0.0997
-# 6 log_grad groupb     0.718     0.361     1.99  5.64e- 2  -0.0208    1.46</code></pre>
+#   variable term        estimate std.error statistic  p.value conf.low conf.high
+#   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+# 1 resp     (Intercept)   10.3       0.260    39.7   3.60e-26   9.80     10.9   
+# 2 resp     groupb        -0.121     0.368    -0.328 7.45e- 1  -0.874     0.632 
+# 3 slp      (Intercept)   43.9       2.56     17.2   2.18e-16  38.7      49.2   
+# 4 slp      groupb         4.81      3.62      1.33  1.95e- 1  -2.61     12.2   
+# 5 log_grad (Intercept)   -0.423     0.255    -1.66  1.09e- 1  -0.945     0.0997
+# 6 log_grad groupb         0.718     0.361     1.99  5.64e- 2  -0.0208    1.46</code></pre>
 <p>The primary interest in this output would be in the <code>groupb</code> row for each variable. Since the output is a data frame (thanks <code>broom::tidy()</code>!) you can use standard data manipulation tools to pull out only rows and columns of interest.</p>
-<p>Other output, like, e.g., estimated marginal means for more complicated models, can be extracted and saved in a similar way.</p>
+<p>Other output, like, e.g., AIC or estimated marginal means for more complicated models, can be extracted and saved in a similar way. Check out <code>broom::glance()</code> for extracting AIC and other overall model results.</p>
 </div>
 <div id="alternative-approach-to-fitting-many-models" class="section level1">
 <h1>Alternative approach to fitting many models</h1>
@@ -260,10 +261,10 @@ res_anova</code></pre>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-07-22-automate-model-fitting-with-loops.R">from here</a>.</p>
-<pre class="r"><code>library(purrr) # v. 0.3.2
-library(ggplot2) # v. 3.2.0
-library(patchwork) # v. 0.0.1, github only
-library(broom) # v. 0.5.2
+<pre class="r"><code>library(purrr) # v. 0.3.4
+library(ggplot2) # v. 3.3.2
+library(patchwork) # v. 1.0.0
+library(broom) # v. 0.5.6
 
 dat = structure(list(group = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 
 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 

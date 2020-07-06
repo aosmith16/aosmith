@@ -33,9 +33,11 @@ dat$grad = with(dat, exp(.25*(group == "b") + rnorm(30, mean = 0, sd = 1 ) ) ) #
 dat = dplyr::mutate_if(dat, is.numeric, round, 2)
 ```
 
+*This post was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
+
 When we have many similar models to fit, automating at least some portions of the task can be a real time saver.  In [my last post](https://aosmith.rbind.io/2019/06/24/function-for-model-fitting/) I demonstrated how to make a function for model fitting.  Once you have made such a function it's possible to loop through variable names and fit a model for each one.  
 
-In this post I am specifically focusing on having many response variables with the same explanatory variables, using `purrr::map()` and friends for the looping.
+In this post I am specifically focusing on having many response variables with the same explanatory variables, using `purrr::map()` and friends for the looping.  However, this same approach can be used for models with varying explanatory variables, etc.
 
 ## Table of Contents
 
@@ -49,10 +51,10 @@ render_toc(input)
 I'll be using **purrr** for looping and will make residual plots with **ggplot2** and **patchwork**.  I'll use **broom** to extract tidy results from models.
 
 ```{r, message = FALSE, warning = FALSE}
-library(purrr) # v. 0.3.2
-library(ggplot2) # v. 3.2.0
-library(patchwork) # v. 0.0.1, github only
-library(broom) # v. 0.5.2
+library(purrr) # v. 0.3.4
+library(ggplot2) # v. 3.3.2
+library(patchwork) # v. 1.0.0
+library(broom) # v. 0.5.6
 
 ```
 
@@ -242,7 +244,7 @@ res_anova
 
 The primary interest in this output would be in the `groupb` row for each variable.   Since the output is a data frame (thanks `broom::tidy()`!) you can use standard data manipulation tools to pull out only rows and columns of interest.
 
-Other output, like, e.g., estimated marginal means for more complicated models, can be extracted and saved in a similar way.
+Other output, like, e.g., AIC or estimated marginal means for more complicated models, can be extracted and saved in a similar way.  Check out `broom::glance()` for extracting AIC and other overall model results.
 
 # Alternative approach to fitting many models
 

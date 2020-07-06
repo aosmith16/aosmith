@@ -1,7 +1,7 @@
-library(purrr) # v. 0.3.2
-library(ggplot2) # v. 3.2.0
-library(patchwork) # v. 0.0.1, github only
-library(broom) # v. 0.5.2
+library(purrr) # v. 0.3.4
+library(ggplot2) # v. 3.3.2
+library(patchwork) # v. 1.0.0
+library(broom) # v. 0.5.6
 
 
 dat = structure(list(group = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 

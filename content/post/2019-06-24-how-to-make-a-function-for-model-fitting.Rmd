@@ -26,7 +26,7 @@ A first step when working towards a more automated process for fitting many mode
 
 I will be making residuals plots with **ggplot2** today so will load it here.
 
-```{r packages}
+```{r packages, warning = FALSE, message = FALSE}
 library(ggplot2) # v.3.2.0
 
 ```
@@ -219,7 +219,7 @@ mpgfit[[3]]
 
 # Next step: looping
 
-This post focused on using `paste()` and `as.formula()` for building model formula and then making user-defined functions for interactive use.  When working with many models we'd likely want to automate the process more by using some sort of looping.  I'll write a follow-up post on looping through variables and fitting models with the `map` family of functions from package **purrr**.  
+This post focused on using `paste()` and `as.formula()` for building model formula and then making user-defined functions for interactive use.  When working with many models we'd likely want to automate the process more by using some sort of looping.  I wrote a follow-up post on looping through variables and fitting models with the `map` family of functions from package **purrr**, which you can see [here](https://aosmith.rbind.io/2019/07/22/automate-model-fitting-with-loops/).
 
 # Just the code, please
 
