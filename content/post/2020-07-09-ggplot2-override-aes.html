@@ -1,0 +1,289 @@
+---
+title: Controlling legend appearance in ggplot2 with override.aes
+author: Ariel Muldoon
+date: '2020-07-09'
+slug: ggplot2-override-aes
+categories:
+  - r
+tags:
+  - ggplot2
+description: Changing the legend appearance without changing the plot appearance can be done using the override.aes argument in guide_legend().  I go through four plotting examples to demonstrate how it can be used.
+draft: FALSE
+---
+
+
+
+<p>In <strong>ggplot2</strong>, aesthetics and their <code>scale_*()</code> functions change both the plot appearance and the plot legend appearance simultaneously. The <code>override.aes</code> argument in <code>guide_legend()</code> allows the user to change only the legend appearance without affecting the rest of the plot. This is useful for making the legend more readable or for creating certain types of combined legends.</p>
+<p>In this post I’ll first introduce <code>override.aes</code> with a basic example and then go through three additional plotting scenarios to how other instances where <code>override.aes</code> comes in handy.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#introducing-override.aes">Introducing override.aes</a>
+<ul>
+<li><a href="#adding-a-guides-layer">Adding a guides() layer</a></li>
+<li><a href="#using-the-guide-argument-in-scale_">Using the guide argument in scale_*()</a></li>
+<li><a href="#changing-multiple-aesthetic-parameters">Changing multiple aesthetic parameters</a></li>
+</ul></li>
+<li><a href="#suppress-aesthetics-from-part-of-the-legend">Suppress aesthetics from part of the legend</a></li>
+<li><a href="#combining-legends-from-two-layers">Combining legends from two layers</a></li>
+<li><a href="#controlling-the-appearance-of-multiple-legends">Controlling the appearance of multiple legends</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="r-packages" class="section level1">
+<h1>R packages</h1>
+<p>The only package I’ll use in this post is <strong>ggplot2</strong> for plotting.</p>
+<pre class="r"><code>library(ggplot2) # v. 3.3.2</code></pre>
+</div>
+<div id="introducing-override.aes" class="section level1">
+<h1>Introducing override.aes</h1>
+<p>A basic reason to change the legend appearance without changing the plot is to make the legend more readable.</p>
+<p>For example, I’ll start with a scatterplot using the <code>diamonds</code> dataset. This is a large dataset, so after mapping <code>color</code> to the <code>cut</code> variable I set <code>alpha</code> to increase the transparency and <code>size</code> to reduce the size of points in the plot.</p>
+<p>You can see this impacts the way the points are shown in both the plot and the legend.</p>
+<pre class="r"><code>ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1)</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/firstplot-1.png" width="672" /></p>
+<div id="adding-a-guides-layer" class="section level2">
+<h2>Adding a guides() layer</h2>
+<p>Making the points small and transparent may be desirable when plotting many points, but it also makes the legend more difficult to read. This is a case where I’d want to make the legend more readable by increasing the point size and/or reducing the point transparency.</p>
+<p>One way to do this is by adding a <code>guides()</code> layer. The <code>guides()</code> function uses scale name-guide pairs. I am going to change the legend for the <code>color</code> scale, so I’ll use <code>color = guide_legend()</code> as the scale name-guide pair.</p>
+<p><code>override.aes</code> is an argument within <code>guide_legend()</code>, so if you’re looking for more background you can start at <code>?guide_legend</code>. The <code>override.aes</code> argument takes a list of aesthetic parameters that will <em>override</em> the default legend appearance.</p>
+<p>To increase the <code>size</code> of the points in the <code>color</code> legend of my plot, the layer I’ll add will look like:</p>
+<pre class="r"><code>guides(color = guide_legend(override.aes = list(size = 3) ) )</code></pre>
+<p>Adding this layer to the initial plot, you can see how the points in the legend get larger while the points in the plot remain unchanged.</p>
+<pre class="r"><code>ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1) +
+     guides(color = guide_legend(override.aes = list(size = 3) ) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/firstplot2-1.png" width="672" /></p>
+</div>
+<div id="using-the-guide-argument-in-scale_" class="section level2">
+<h2>Using the guide argument in scale_*()</h2>
+<p>If I am going to change my default colors with a <code>scale_color_*()</code> function in addition to overriding the legend appearance, I can use the <code>guide</code> argument there instead of adding a separate <code>guides()</code> layer. The <code>guide</code> argument is part of all scale functions.</p>
+<p>For example, say I am already using <code>scale_color_viridis_d()</code> to change the default color palette of the whole plot (i.e., plot and legend). I can use the same <code>guide_legend()</code> code from above for the <code>guide</code> argument to change the size of the points in the legend.</p>
+<pre class="r"><code>ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1) +
+     scale_color_viridis_d(option = &quot;magma&quot;,
+                           guide = guide_legend(override.aes = list(size = 3) ) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/firstplot3-1.png" width="672" /></p>
+</div>
+<div id="changing-multiple-aesthetic-parameters" class="section level2">
+<h2>Changing multiple aesthetic parameters</h2>
+<p>You can control multiple aesthetic parameters at once by adding them to the list passed to <code>override.aes</code>. If I want to increase the point size as well as remove the point transparency in the legend, I can change both <code>size</code> and <code>alpha</code>.</p>
+<pre class="r"><code>ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1) +
+     scale_color_viridis_d(option = &quot;magma&quot;,
+                           guide = guide_legend(override.aes = list(size = 3,
+                                                                    alpha = 1) ) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/firstplot4-1.png" width="672" /></p>
+</div>
+</div>
+<div id="suppress-aesthetics-from-part-of-the-legend" class="section level1">
+<h1>Suppress aesthetics from part of the legend</h1>
+<p>Removing aesthetic for only some parts of the legend is another use for <code>override.aes</code>. For example, this can be useful when different layers are based on a different number of levels for the same grouping factor.</p>
+<p>The following example is based on <a href="https://stackoverflow.com/questions/59548358/r-ggplot2-in-the-legend-how-do-i-hide-unused-colors-from-one-geom-while-show">this Stack Overflow question</a>. The <code>points</code> data has information from all three groups of the <code>id</code> variable but the rectangle, based on the <code>box</code> dataset, is for only a single group.</p>
+<pre class="r"><code>points = structure(list(x = c(5L, 10L, 7L, 9L, 86L, 46L, 22L, 94L, 21L, 
+6L, 24L, 3L), y = c(51L, 54L, 50L, 60L, 97L, 74L, 59L, 68L, 45L, 
+56L, 25L, 70L), id = c(&quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, 
+&quot;c&quot;, &quot;c&quot;, &quot;c&quot;, &quot;c&quot;)), row.names = c(NA, -12L), class = &quot;data.frame&quot;)
+
+head(points)</code></pre>
+<pre><code>#    x  y id
+# 1  5 51  a
+# 2 10 54  a
+# 3  7 50  a
+# 4  9 60  a
+# 5 86 97  b
+# 6 46 74  b</code></pre>
+<pre class="r"><code>box = data.frame(left = 1, right = 10, bottom = 50, top = 60, id = &quot;a&quot;)
+box</code></pre>
+<pre><code>#   left right bottom top id
+# 1    1    10     50  60  a</code></pre>
+<p>Here’s what the initial plot looks like, mapping <code>color</code> to the <code>id</code> variable. Note that the colored outlines, representing the rectangle layer, are present for every group in the legend even though there is a rectangle for only one of the groups present in the plot.</p>
+<pre class="r"><code>ggplot(data = points, aes(color = id) ) +
+     geom_point(aes(x = x, y = y), size = 4) +
+     geom_rect(data = box, aes(xmin = left,
+                               xmax = right,
+                               ymin = 50,
+                               ymax = top),
+               fill = NA, size = 1)</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/secondplot-1.png" width="672" /></p>
+<p>In this case, I want to remove the outlines for the second and third legend key boxes so the legend matches what is in the plot. The legend outlines are based on the <code>linetype</code> aesthetic. Suppressing these lines can be done with <code>override.aes</code>, setting the line types to <code>0</code> in order to remove them.</p>
+<p>Note that I have to list the line type for every group, not just the groups I want to remove. I keep the line for the first group solid via <code>1</code>.</p>
+<pre class="r"><code>ggplot(data = points, aes(color = id) ) +
+     geom_point(aes(x = x, y = y), size = 4) +
+     geom_rect(data = box, aes(xmin = left,
+                               xmax = right,
+                               ymin = 50,
+                               ymax = top),
+               fill = NA, size = 1) +
+     guides(color = guide_legend(override.aes = list(linetype = c(1, 0, 0) ) ) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/secondplot2-1.png" width="672" /></p>
+</div>
+<div id="combining-legends-from-two-layers" class="section level1">
+<h1>Combining legends from two layers</h1>
+<p>In the next example I’ll show how <code>override.aes</code> can be useful when creating a legend based on multiple layers and want distinct symbols in each legend key box.</p>
+<p>There are situations where we want to add a legend to identify different elements of the plot, such as indicating the plotted line is a fitted line or that points are means. This can be done by mapping aesthetics to constants to make a manual legend and then manipulating the symbols shown in the legend via <code>override.aes</code>. I wrote about making manual legends in <a href="https://aosmith.rbind.io/2018/07/19/manual-legends-ggplot2/">an earlier blog post</a>.</p>
+<p>The plot below shows observed values and a fitted line per group based on <code>color</code>.</p>
+<pre class="r"><code>ggplot(data = mtcars, aes(x = mpg, y = wt, color = factor(am) ) ) +
+     geom_point(size = 3) +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE)</code></pre>
+<pre><code># `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/thirdplot-1.png" width="672" /></p>
+<p>I’m going to leave the <code>color</code> legend alone but I want to add a second legend to indicate that the points are observed values and the lines are fitted lines. I’ll use the <code>alpha</code> aesthetic for this. Using an aesthetic that you haven’t used already and affects both layers is a trick that often comes in handy when adding an extra legend like I’m doing here.</p>
+<p>I don’t actually want <code>alpha</code> to affect the plot appearance, so I also add <code>scale_alpha_manual()</code> to make sure both layers stay opaque by setting the <code>values</code> for both groups to 1. I also remove the legend name and set the order of the <code>breaks</code> so the <code>Observed</code> group is listed first in the new legend.</p>
+<pre class="r"><code>ggplot(data = mtcars, aes(x = mpg, y = wt, color = factor(am) ) ) +
+     geom_point(aes(alpha = &quot;Observed&quot;), size = 3) +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(alpha = &quot;Fitted&quot;) ) +
+     scale_alpha_manual(name = NULL,
+                        values = c(1, 1),
+                        breaks = c(&quot;Observed&quot;, &quot;Fitted&quot;) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/thirdplot2-1.png" width="672" /></p>
+<p>Now I have a new legend to work with. However, the legend has both the point and the line symbol in all legend key boxes. I need to override the current legend so the <code>Observed</code> legend key box contains only a point symbol and the <code>Fitted</code> legend key box has only a line symbol. This is where <code>override.aes</code> comes in.</p>
+<p>Here’s what I’ll do: I’ll change the <code>linetype</code> to <code>0</code> for the first key box but leave it as <code>1</code> for the second. I’ll use shape <code>16</code> (a solid circle) as the <code>shape</code> for the first key box but remove the point all together in the second key box with <code>NA</code>. I’m also going to make sure all elements are black via <code>color</code>. (<em>If you need to know codes for shapes and line types see <a href="http://www.cookbook-r.com/Graphs/Shapes_and_line_types/">here</a>.</em>)</p>
+<p>I use <code>linetype</code>, <code>shape</code>, and <code>color</code> in the <code>override.aes</code> list within <code>scale_alpha_manual()</code>.</p>
+<pre class="r"><code>ggplot(data = mtcars, aes(x = mpg, y = wt, color = factor(am) ) ) +
+     geom_point(aes(alpha = &quot;Observed&quot;), size = 3) +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(alpha = &quot;Fitted&quot;) ) +
+     scale_alpha_manual(name = NULL,
+                        values = c(1, 1),
+                        breaks = c(&quot;Observed&quot;, &quot;Fitted&quot;),
+                        guide = guide_legend(override.aes = list(linetype = c(0, 1),
+                                                                  shape = c(16, NA),
+                                                                  color = &quot;black&quot;) ) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/thirdplot3-1.png" width="672" /></p>
+</div>
+<div id="controlling-the-appearance-of-multiple-legends" class="section level1">
+<h1>Controlling the appearance of multiple legends</h1>
+<p>The final example for <code>override.aes</code> may seem a little esoteric, but it has come up for me in the past. Say I want to make a scatterplot with the <code>fill</code> and <code>shape</code> aesthetics mapped to two different factors. I use <code>fill</code> instead of <code>color</code> so the points have an outline. Having an outline around the points can matter if, e.g., you have a white plot background and wanted the points to be black and white as <a href="https://stackoverflow.com/questions/44765946/r-ggplot2-plot-geom-point-with-black-and-white-without-using-shape">in this question</a>.</p>
+<p>This is the dataset I’ll use in this plot example, where the two factors are named <code>g1</code> and <code>g2</code>.</p>
+<pre class="r"><code>dat = structure(list(g1 = structure(c(1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L, 
+1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L), class = &quot;factor&quot;, .Label = c(&quot;High&quot;, 
+&quot;Low&quot;)), g2 = structure(c(1L, 1L, 2L, 2L, 1L, 1L, 2L, 2L, 1L, 
+1L, 2L, 2L, 1L, 1L, 2L, 2L), class = &quot;factor&quot;, .Label = c(&quot;Control&quot;, 
+&quot;Treatment&quot;)), x = c(0.42, 0.39, 0.56, 0.59, 0.17, 0.95, 0.85, 
+0.25, 0.31, 0.75, 0.58, 0.9, 0.6, 0.86, 0.61, 0.61), y = c(-1.4, 
+3.6, 1.1, -0.1, 0.5, 0, -1.8, 0.8, -1.1, -0.6, 0.2, 0.3, 1.1, 
+1.6, 0.9, -0.6)), class = &quot;data.frame&quot;, row.names = c(NA, -16L
+))
+
+head(dat)</code></pre>
+<pre><code>#     g1        g2    x    y
+# 1 High   Control 0.42 -1.4
+# 2  Low   Control 0.39  3.6
+# 3 High Treatment 0.56  1.1
+# 4  Low Treatment 0.59 -0.1
+# 5 High   Control 0.17  0.5
+# 6  Low   Control 0.95  0.0</code></pre>
+<p>I set the colors for the <code>fill</code> in <code>scale_fill_manual()</code> and choose <em>fillable</em> shapes in <code>scale_shape_manual()</code>. Fillable shapes are shapes 21 through 25.</p>
+<pre class="r"><code>ggplot(data = dat, aes(x = x, y = y, fill = g1, shape = g2) ) +
+     geom_point(size = 5) +
+     scale_fill_manual(values = c(&quot;#002F70&quot;, &quot;#EDB4B5&quot;) ) +
+     scale_shape_manual(values = c(21, 24) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/fourthplot-1.png" width="672" /></p>
+<p>The plots itself shows the fill colors and shapes, but you can some issues in the legends. The fill colors don’t show up in the <code>g1</code> legend at all. This is because the default shape in the legend isn’t a fillable shape. In addition, the <code>g2</code> legend shows unfilled points and I think it would look better if the points were filled.</p>
+<p>I can address both these issues via <code>override.aes</code>. I’ll change the point shape in the <code>fill</code> legend to shape 21 and the fill color in the <code>shape</code> legend to black within a <code>guides()</code> layer. This code gives you a chance to see how you can use use multiple scale name-guide pairs within the same <code>guides()</code> layer.</p>
+<pre class="r"><code>ggplot(data = dat, aes(x = x, y = y, fill = g1, shape = g2) ) +
+     geom_point(size = 5) +
+     scale_fill_manual(values = c(&quot;#002F70&quot;, &quot;#EDB4B5&quot;) ) +
+     scale_shape_manual(values = c(21, 24) ) +
+     guides(fill = guide_legend(override.aes = list(shape = 21) ),
+            shape = guide_legend(override.aes = list(fill = &quot;black&quot;) ) )</code></pre>
+<p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/fourthplot2-1.png" width="672" /></p>
+<p>While I’m sure you can come up with additional scenarios, that should give you a taste for when overriding the aesthetics in the legend is useful. 😄</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2020-07-09-ggplot2-override-aes.R">from here</a>.</p>
+<pre class="r"><code>library(ggplot2) # v. 3.3.2
+
+ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1)
+     
+ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1) +
+     guides(color = guide_legend(override.aes = list(size = 3) ) )
+            
+ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1) +
+     scale_color_viridis_d(option = &quot;magma&quot;,
+                           guide = guide_legend(override.aes = list(size = 3) ) )
+
+ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
+     geom_point(alpha = .25, size = 1) +
+     scale_color_viridis_d(option = &quot;magma&quot;,
+                           guide = guide_legend(override.aes = list(size = 3,
+                                                                    alpha = 1) ) )
+
+points = structure(list(x = c(5L, 10L, 7L, 9L, 86L, 46L, 22L, 94L, 21L, 
+6L, 24L, 3L), y = c(51L, 54L, 50L, 60L, 97L, 74L, 59L, 68L, 45L, 
+56L, 25L, 70L), id = c(&quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, 
+&quot;c&quot;, &quot;c&quot;, &quot;c&quot;, &quot;c&quot;)), row.names = c(NA, -12L), class = &quot;data.frame&quot;)
+
+head(points)
+
+box = data.frame(left = 1, right = 10, bottom = 50, top = 60, id = &quot;a&quot;)
+box
+ggplot(data = points, aes(color = id) ) +
+     geom_point(aes(x = x, y = y), size = 4) +
+     geom_rect(data = box, aes(xmin = left,
+                               xmax = right,
+                               ymin = 50,
+                               ymax = top),
+               fill = NA, size = 1)
+
+ggplot(data = points, aes(color = id) ) +
+     geom_point(aes(x = x, y = y), size = 4) +
+     geom_rect(data = box, aes(xmin = left,
+                               xmax = right,
+                               ymin = 50,
+                               ymax = top),
+               fill = NA, size = 1) +
+     guides(color = guide_legend(override.aes = list(linetype = c(1, 0, 0) ) ) )
+
+ggplot(data = mtcars, aes(x = mpg, y = wt, color = factor(am) ) ) +
+     geom_point(size = 3) +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE)
+       
+ggplot(data = mtcars, aes(x = mpg, y = wt, color = factor(am) ) ) +
+     geom_point(aes(alpha = &quot;Observed&quot;), size = 3) +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(alpha = &quot;Fitted&quot;) ) +
+     scale_alpha_manual(name = NULL,
+                        values = c(1, 1),
+                        breaks = c(&quot;Observed&quot;, &quot;Fitted&quot;) )
+                        
+
+ggplot(data = mtcars, aes(x = mpg, y = wt, color = factor(am) ) ) +
+     geom_point(aes(alpha = &quot;Observed&quot;), size = 3) +
+     geom_smooth(method = &quot;lm&quot;, se = FALSE, aes(alpha = &quot;Fitted&quot;) ) +
+     scale_alpha_manual(name = NULL,
+                        values = c(1, 1),
+                        breaks = c(&quot;Observed&quot;, &quot;Fitted&quot;),
+                        guide = guide_legend(override.aes = list(linetype = c(0, 1),
+                                                                  shape = c(16, NA),
+                                                                  color = &quot;black&quot;) ) )
+
+dat = structure(list(g1 = structure(c(1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L, 
+1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L), class = &quot;factor&quot;, .Label = c(&quot;High&quot;, 
+&quot;Low&quot;)), g2 = structure(c(1L, 1L, 2L, 2L, 1L, 1L, 2L, 2L, 1L, 
+1L, 2L, 2L, 1L, 1L, 2L, 2L), class = &quot;factor&quot;, .Label = c(&quot;Control&quot;, 
+&quot;Treatment&quot;)), x = c(0.42, 0.39, 0.56, 0.59, 0.17, 0.95, 0.85, 
+0.25, 0.31, 0.75, 0.58, 0.9, 0.6, 0.86, 0.61, 0.61), y = c(-1.4, 
+3.6, 1.1, -0.1, 0.5, 0, -1.8, 0.8, -1.1, -0.6, 0.2, 0.3, 1.1, 
+1.6, 0.9, -0.6)), class = &quot;data.frame&quot;, row.names = c(NA, -16L
+))
+
+head(dat)
+
+ggplot(data = dat, aes(x = x, y = y, fill = g1, shape = g2) ) +
+     geom_point(size = 5) +
+     scale_fill_manual(values = c(&quot;#002F70&quot;, &quot;#EDB4B5&quot;) ) +
+     scale_shape_manual(values = c(21, 24) )
+
+ggplot(data = dat, aes(x = x, y = y, fill = g1, shape = g2) ) +
+     geom_point(size = 5) +
+     scale_fill_manual(values = c(&quot;#002F70&quot;, &quot;#EDB4B5&quot;) ) +
+     scale_shape_manual(values = c(21, 24) ) +
+     guides(fill = guide_legend(override.aes = list(shape = 21) ),
+            shape = guide_legend(override.aes = list(fill = &quot;black&quot;) ) )</code></pre>
+</div>
