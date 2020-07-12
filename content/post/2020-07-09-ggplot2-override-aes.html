@@ -40,7 +40,7 @@ draft: FALSE
 <h1>Introducing override.aes</h1>
 <p>A basic reason to change the legend appearance without changing the plot is to make the legend more readable.</p>
 <p>For example, I’ll start with a scatterplot using the <code>diamonds</code> dataset. This is a large dataset, so after mapping <code>color</code> to the <code>cut</code> variable I set <code>alpha</code> to increase the transparency and <code>size</code> to reduce the size of points in the plot.</p>
-<p>You can see this impacts the way the points are shown in both the plot and the legend.</p>
+<p>You can see using <code>alpha</code> and <code>size</code> changes the way the points are shown in both the plot and the legend.</p>
 <pre class="r"><code>ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
      geom_point(alpha = .25, size = 1)</code></pre>
 <p><img src="/post/2020-07-09-ggplot2-override-aes_files/figure-html/firstplot-1.png" width="672" /></p>

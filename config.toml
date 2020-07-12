@@ -24,8 +24,8 @@ pluralizeListTitles = false
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 paginate = 20
 math = true
-relativeurls = true
-canonifyurls = true
+# relativeurls = true
+# canonifyurls = true
 
 [taxonomies]
    tag = "tags"

@@ -43,7 +43,7 @@ A basic reason to change the legend appearance without changing the plot is to m
 
 For example, I'll start with a scatterplot using the `diamonds` dataset.  This is a large dataset, so after mapping `color` to the `cut` variable I set `alpha` to increase the transparency and `size` to reduce the size of points in the plot.
 
-You can see this impacts the way the points are shown in both the plot and the legend.
+You can see using `alpha` and `size` changes the way the points are shown in both the plot and the legend.
 
 ```{r firstplot}
 ggplot(data = diamonds, aes(x = carat, y = price, color = cut) ) +
