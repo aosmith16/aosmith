@@ -1,4 +1,4 @@
-library(lme4) # v. 1.1-21
+library(lme4) # v. 1.1-23
 library(purrr) # v. 0.3.4
 library(ggplot2) # v. 3.3.2
 
