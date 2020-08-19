@@ -1,0 +1,373 @@
+---
+title: 'Simulate! Simulate! - Part 4: A binomial generalized linear mixed model'
+author: Ariel Muldoon
+date: '2020-08-20'
+slug: simulate-binomial-glmm
+categories:
+  - r
+  - statistics
+tags:
+  - simulation
+  - glmm
+  - lme4
+description: I walk through an example of simulating data from a binomial generalized linear mixed model with a logit link.  
+draft: TRUE
+---
+
+```{r setup, include = FALSE, message = FALSE, purl = FALSE}
+knitr::opts_chunk$set(comment = "#")
+devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
+                      filename = 'render_toc.R')
+
+# Make first simulated dataset
+set.seed(16)
+n_sites = 10
+dat = tibble::data_frame(site = rep(LETTERS[1:n_sites], each = 2),
+                 plot = paste(site, rep(1:2, times = n_sites), sep = "." ),
+                 treatment = rep( c("treatment", "control"), times = n_sites) )
+site_var = 0.5
+site_eff = rep( rnorm(n = n_sites, mean = 0, sd = sqrt(site_var) ), each = 2)
+dat$num_samp = 50
+
+b0 = 0
+b1 = 1.735
+
+log_odds = with(dat, b0 + b1*(treatment == "treatment") + site_eff)
+prop = plogis(log_odds)
+dat$y = rbinom(n = n_sites*2, size = dat$num_samp, prob = prop)
+```
+
+A post about simulating data from a generalized linear *mixed* model (GLMM), the fourth post in my series about simulations based on linear models, is long overdue.  I decided to demonstrate how to simulate binomial data based on a binomial GLMM with a logit link.  
+
+I find binomial models the most difficult to grok, primarily because the model is on the scale of log odds, inference is based on odds, but the response variable is a *counted proportion*.  I use the term counted proportion to indicate that the proportions are based on discrete counts, the total number of "successes" divided by the total number of trials.  A different distribution (possibly beta) would be needed for continuous proportions, such as total leaf area with lesions.
+
+Since single parameter distributions like the binomial can be over or underdispersed, where the variance in the data is bigger/smaller than the variance defined by the binomial distribution, I thought exploring estimates of dispersion from simulated data that we know comes from a binomial distribution would be interesting.
+
+I will be simulating data "manually".  However, also see the [`simulate()`](https://www.rdocumentation.org/packages/lme4/versions/1.1-23/topics/simulate.merMod) function from package **lme4**.  I find this function particularly useful if I want to simulate data based on a fitted model, but it can also be used in situations where you don't already have data.
+
+## Table of Contents
+
+```{r toc, echo = FALSE, purl = FALSE} 
+input  = knitr::current_input()
+render_toc(input)
+```
+
+# R packages
+
+I'll be fitting binomial GLMM with **lme4**.  I looped through models with **purrr** and plot the distribution of estimated dispersion with **ggplot2**.
+
+```{r, warning = FALSE, message = FALSE}
+library(lme4) # v. 1.1-21
+library(purrr) # v. 0.3.4
+library(ggplot2) # v. 3.3.2
+
+```
+
+# The statistical model
+
+As usual, I'll start by writing out the statistical model using mathematical equations.  If these aren't helpful to you, [jump down to the code](#a-single-simulation-for-a-binomial-glmm).  You may find that writing the code first and coming back to look at the statistical model later is helpful.  
+
+The study design that is the basis of my model has two different sizes of study units.  This is a field experiment example, where multiple sites within a region are selected and then two plots within each site are randomly placed and a treatment assigned ("treatment" or "control").  You can think of "sites" as a blocking variable. The number of surviving plants from some total number planted at an earlier time point is measured in each plot.
+
+I first define a response variable that comes from the binomial distribution.  If you haven't seen this style of statistical model before, [my Poisson GLM post](https://aosmith.rbind.io/2018/07/18/simulate-poisson-edition/#the-statistical-model) goes into slightly more detail.
+
+
+$$y_t \thicksim Binomial(p_t, m_t)$$  
+
++ $y_t$ is the observed number of surviving plants from the total $m_t$ planted for the $t$th plot.  
++ $p_t$ is the unobserved true mean (proportion) of the binomial distribution for the $t$th plot.  
++ $m_t$ is the total number of plants originally planted, also know as the *binomial sample size*.  The binomial sample size can be the same for all plots (likely for experimental data) or vary among plots (more common for observational data).
+
+We assume that the relationship between the *mean* of the response and any explanatory variables is linear on the logit scale, also known as the log odds, and so will use a logit link.  Remember that the odds is $\frac{p}{1-p}$, so $logit(p)$ is the same as $log(\frac{p}{1-p})$. 
+
+The model I define here has a categorical fixed effect with only two levels.
+
+$$logit(p_t) = \beta_0 + \beta_1*I_{(treatment_t=\textit{treatment})} + (b_s)_t$$  
+
++ $\beta_0$ is the log odds of survival when the treatment is *control*.
++ $\beta_1$ is the difference in log odds of survival between the two treatments, *treatment* minus *control*.  
++ The indicator variable, $I_{(treatment_t=\textit{treatment})}$, is 1 when the treatment is *treatment* and 0 otherwise. 
++ $b_s$ is the (random) effect of the $s$th site on the log odds of survival.  $s$ goes from 1 to the total number of sites sampled.  The site-level random effects are assumed to come from an iid normal distribution with a mean of 0 and some shared, site-level variance, $\sigma^2_s$: $b_s \thicksim N(0, \sigma^2_s)$.
+
+If you are newer to generalized linear mixed models you might want to take a moment and note of the absence of epsilon in the linear predictor.
+
+# A single simulation for a binomial GLMM
+
+Here is what the dataset I will create will look like.  I have a variable to represent the sites (`site`) and plots (`plot`) as well as one for the treatments the plot was assigned to (`treatment`).  In addition, `y` is the total number of surviving plants, and `num_samp` is the total number originally planted (50 for all plots in this case).  
+
+Note that `y/num_samp` is the proportion of plants that survived, which is what we are interested in.  In binomial models in R you often use the number of successes and the number of failures (total trials minus the number of successes) as the response variable instead of the actual observed proportion.
+
+```{r datex, echo = FALSE, purl = FALSE}
+dat
+```
+
+I'll start the simulation by setting the seed so the results can be exactly reproduced.  I always do this for testing my methodology prior to performing many simulations.
+
+```{r}
+set.seed(16)
+```
+
+## Defining the difference in treatments
+
+I need to define the "truth" in the simulation by setting all the parameters in the statistical model to a value of my choosing.  I found it a little hard to figure out what the difference between treatments would be on the scale of the log odds, so I thought it worthwhile to discuss my process in a little aside.
+
+I have an easier time thinking about the results in terms of proportions of each treatment, but the model scale is log odds.  I started out by thinking about what I would expect the surviving proportion of plants to be in the control group.  I decided on half surviving, 0.5.  The treatment, if effective, needs to improve survival substantially to be cost effective.  I decided that treatment group should have at least 85% survival (0.85).
+
+The estimate difference from the model will be expressed as odds, so I calculated the odds and then the difference in odds as a ratio based on my chosen proportions per group.
+
+```{r}
+codds = .5/(1 - .5)
+todds = .85/(1 - .85)
+todds/codds
+```
+Since the model is linear on the scale of log odds I took the log of the odds ratio above to figure out the additive difference between treatments on the model scale.
+
+```{r}
+log(todds/codds)
+```
+
+I also need the log odds for the control group, since that is what the intercept, `b0`, represents in my statistical model.  
+
+```{r}
+log(codds)
+```
+
+Based on my thought process above, here are the values I'll use for the "truth" today.  
+  
++ The true log odds for on the control group, `b0`, will be 0  
++ The difference in log odds of the treatment compared to the control, `b`, will be 1.735.
++ The site-level variance ($\sigma^2_s$) will be set at 0.5.
+
+I'll define the number of sites while I'm at it, using 10 sites.  Since I'm working with only 2 treatments, there will be 2 plots per site.  The total number of plots (and so observations) is the number of sites times the number of plots per site: `10*2 = 20`.
+
+```{r}
+b0 = 0
+b1 = 1.735
+site_var = 0.5
+n_sites = 10
+
+```
+
+## Creating the study design variables
+
+Without discussing the code much, since I've gone over code like this in detail in earlier posts, I will create variables from the study design, `site`, `plot`, and `treatment`, using `rep()`.  I'm careful to line things up so there are two unique plots in each site, one for each treatment.  I don't technically need the `plot` variable for the analysis I'm going to do, but I create it to keep myself organized (and to mimic a real dataset `r emo::ji("grin")`).
+
+```{r}
+site = rep(LETTERS[1:n_sites], each = 2)
+plot = paste(site, rep(1:2, times = n_sites), sep = "." )
+treatment = rep( c("treatment", "control"), times = n_sites)
+dat = data.frame(site, plot, treatment)
+dat
+
+```
+## Simulate the random effect
+
+Next I will simulate the site-level random effects.  I defined these as $b_s \thicksim N(0, \sigma^2_s)$, so will randomly draw from a normal distribution with a mean of 0 and a variance of 0.5.  Remember that `rnorm()` in R uses standard deviation, not variance, so I use the square root of `site_var`.  
+
+Since I am using 10 sites I draw 10 values, with each value repeated for each plot in the site.
+
+```{r}
+( site_eff = rep( rnorm(n = n_sites, 
+                        mean = 0, 
+                        sd = sqrt(site_var) ), 
+                  each = 2) )
+
+```
+
+## Calculate log odds
+
+I now have the fixed values of the parameters, the variable `site` to represent the random effect in a model, and the simulated effects of sites drawn from the defined distributions. That's all the pieces I need to calculate the true log odds.
+
+The statistical model
+
+$$logit(p_t) = \beta_0 + \beta_1*I_{(treatment_t=\textit{treatment})} + (b_s)_t$$
+
+is my guide for how to combine these pieces to create the simulated log odds, $logit(p_t)$.  
+
+```{r}
+( log_odds = with(dat, b0 + b1*(treatment == "treatment") + site_eff ) )
+```
+
+## Convert log odds to proportions
+
+I'm getting close to pulling values from the binomial distribution to get my response variable.  Remember that I defined $y_t$ as:
+$$y_t \thicksim Binomial(p_t, m_t)$$
+Right now I've gotten to the point where I have $logit(p_t)$.  To get the true proportions, $p_t$, I need to take the inverse logit of the log odds.  In R, function `plogis()` does the inverse logit for us.
+
+```{r}
+( prop = plogis(log_odds) )
+
+```
+
+I can't forget about $m_t$.  I need to know the binomial sample size for each plot before I can calculate the number of successes based on the total number of trials.  Since my fake study is an experiment I will set this as to be 50 for every plot.
+
+```{r}
+dat$num_samp = 50
+```
+
+I've been in situations where I wanted the binomial sample size to vary per observation.  In that case, you may find `sample()` useful, using the range of binomial sample sizes you are interested in as the first argument.
+
+Here's an example of what that code could look like, allowing the binomial sample size to vary between 40 and 50 for every plot (*not run*).
+
+```{r, eval = FALSE, purl = FALSE}
+num_samp = sample(40:50, size = 20, replace = TRUE)
+```
+
+
+## Generate the response variable
+
+Now that I have a vector of proportions and have set the binomial sample size per plot, I can calculate the number of successes for each true proportion and binomial sample size based on the binomial distribution.  I do this via `rbinom()`.
+
+It is this step where we add "binomial errors" to the proportions to generate a response variable.  The variation for each simulated `y` value is based on the binomial variance.   
+
+The next bit of code is directly based on the distribution defined in the statistical model: $y_t \thicksim Binomial(p_t, m_t)$. I randomly draw 20 values from the binomial distribution, one for each of the 20 proportions stored in `prop`.  I define the binomial sample size in the `size` argument.
+
+```{r}
+( dat$y = rbinom(n = n_sites*2, size = dat$num_samp, prob = prop) )
+
+```
+
+## Fit a model
+
+It's time for model fitting! I can now fit a binomial generalized linear mixed model with a logit link using, e.g., the `glmer()` function from package **lme4**.
+
+```{r}
+mod = glmer(cbind(y, num_samp - y) ~ treatment + (1|site), 
+            data = dat,
+            family = binomial(link = "logit") )
+mod
+
+```
+
+# Make a function for the simulation
+
+A single simulation can help us understand the statistical model, but usually the goal of a simulation is to see how the model behaves over the long run.  To that end I'll make my simulation process into a function. 
+
+In my function I'm going to set all the arguments to the parameter values as I defined them earlier.  I allow some flexibility, though, so the argument values can be changed if I wanted to explore the simulation with, say, a different number of replications or different parameter values.  I do not allow the number of plots to vary in this particular function, since I'm hard-coding in two treatments.
+
+This function returns a linear model fit with `glmer()`.
+
+```{r}
+bin_glmm_fun = function(n_sites = 10,
+                        b0 = 0,
+                        b1 = 1.735,
+                        num_samp = 50,
+                        site_var = 0.5) {
+     site = rep(LETTERS[1:n_sites], each = 2)
+     plot = paste(site, rep(1:2, times = n_sites), sep = "." )
+     treatment = rep( c("treatment", "control"), times = n_sites)
+     dat = data.frame(site, plot, treatment)           
+     
+     site_eff = rep( rnorm(n = n_sites, mean = 0, sd = sqrt(site_var) ), each = 2)
+     
+     log_odds = with(dat, b0 + b1*(treatment == "treatment") + site_eff)
+     prop = plogis(log_odds)
+     dat$num_samp = num_samp
+     dat$y = rbinom(n = n_sites*2, size = num_samp, prob = prop)
+     
+     glmer(cbind(y, num_samp - y) ~ treatment + (1|site),
+           data = dat,
+           family = binomial(link = "logit") )
+}
+
+
+```
+
+I test the function, using the same `seed`, to make sure things are working as expected and that I get the same results as above.  I do, and everything looks good.
+
+```{r}
+set.seed(16)
+bin_glmm_fun()
+
+```
+
+# Repeat the simulation many times
+
+Now that I have a working function to simulate data and fit the model it's time to do the simulation many times.  The model from each individual simulation is saved to allow exploration of long run model performance.
+
+This is a task for `replicate()`, which repeatedly calls a function and saves the output.  When using `simplify = FALSE` the output is a list, which is convenient for going through to extract elements from the models later.  I'll re-run the simulation 1000 times.  This can take awhile to run if your model is complicated. 
+
+I print the output of the 100th list element.
+
+```{r, warning = FALSE, message = FALSE}
+sims = replicate(1000, bin_glmm_fun(), simplify = FALSE )
+sims[[100]]
+
+```
+# Extract results from the binomial GLMM
+
+After running all the models we can extract whatever we are interested in to explore the long run behavior. As I was planning this post, I started wondering what the estimate of dispersion would look like from a binomial GLMM that was not over or underdispersed by definition.
+
+With some caveats, which you can read more about in the [GLMM FAQ](https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#overdispersion), the sum of the squared Pearson residuals divided by the residual degrees of freedom is an estimate of over/underdispersion.  Since my binomial sample sizes are fairly large and my proportions not too extreme this seems OK to use in the scenario I've set up here.
+
+I made a function to calculate this.
+
+```{r}
+overdisp_fun = function(model) {
+     sum( residuals(model, type = "pearson")^2)/df.residual(model)
+}
+overdisp_fun(mod)
+
+```
+
+# Explore estimated over/underdispersion
+
+I want to look at the distribution of dispersion estimates from the 1000 models.  This involves looping through the models and using `overdisp_fun()` to extract the estimated dispersion from each one.  I put the result in a data.frame since I'll be plotting the result with **ggplot2**.  I use **purrr** helper function `map_dfr()` for the looping.
+
+```{r}
+alldisp = map_dfr(sims, ~data.frame(disp = overdisp_fun(.x) ) )
+
+```
+
+Here's the plot of the resulting distribution.  I put a vertical line at 1, since values above 1 indicate overdispersion and below 1 indicate underdispersion. 
+
+```{r}
+ggplot(alldisp, aes(x = disp) ) +
+     geom_histogram(fill = "blue", 
+                    alpha = .25, 
+                    bins = 100) +
+     geom_vline(xintercept = 1) +
+     scale_x_continuous(breaks = seq(0, 2, by = 0.2) ) +
+     theme_bw(base_size = 14) +
+     labs(x = "Disperson",
+          y = "Count")
+
+```
+I'm not sure what to think of this yet, but I am pretty fascinated by this result.  Only ~7% of models show any overdispersion.
+
+```{r}
+mean(alldisp$disp > 1)
+```
+And hardly any (<0.05%) estimate overdispersion greater than 1.5, which is a high enough value that we would like be concerned that our results were anti-conservative if this were an analysis of a real dataset.
+
+```{r}
+mean(alldisp$disp > 1.5)
+```
+For this scenario, at least, I learned that it is rare to observe substantial overdispersion when the model isn't overdispersed.  That seems useful.
+
+I don't know why so many models show substantial underdispersion, though.  Maybe the method for calculating overdispersion doesn't work well for underdispersion?  I'm not sure.  
+
+When checking a real model we'd be using additional tools to help check model fit beyond the estimated dispersion.  I highly recommend package **DHARMa** for checking model fit for GLMM's (although I'm not exactly a fan of all the p-values `r emo::ji("stuck_out_tongue_winking_eye")`).
+
+Happy simulating!
+
+
+# Just the code, please
+
+```{r getlabels, echo = FALSE, purl = FALSE}
+labs = knitr::all_labels()
+labs = labs[!labs %in% c("setup", "toc", "getlabels", "allcode", "makescript")]
+```
+
+```{r makescript, include = FALSE, purl = FALSE}
+options(knitr.duplicate.label = "allow") # Needed to purl like this
+input  = knitr::current_input()  # filename of input document
+scriptpath = paste(tools::file_path_sans_ext(input), "R", sep = ".")
+output = here::here("static", "script", scriptpath)
+knitr::purl(input, output, documentation = 0, quiet = TRUE)
+```
+
+Here's the code without all the discussion.  Copy and paste the code below or you can download an R script of uncommented code [from here](`r paste0("/script/", scriptpath)`).
+
+```{r allcode, ref.label = labs, eval = FALSE, purl = FALSE}
+```

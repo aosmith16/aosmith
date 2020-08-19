@@ -112,7 +112,7 @@ I need to create a `stand` variable, containing unique names for the five sample
 ( stand = rep(LETTERS[1:nstand], each = nplot) )
 ```
 
-I can make a `plot` variable, as well, although it's not needed for modelling since we have a single value per plot.  It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I'm a big believer in giving plots unique names.  I'll name plots uniquely using lowercase letters.  There are a total of 20 plots.
+I can make a `plot` variable, as well, although it's not needed for modeling since we have a single value per plot.  It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I'm a big believer in giving plots unique names.  I'll name plots uniquely using lowercase letters.  There are a total of 20 plots.
 
 ```{r}
 ( plot = letters[1:(nstand*nplot)] )
@@ -141,7 +141,7 @@ I make 20 draws from this distribution, one for every plot/observation.
 
 ```
 
-I'm going to put all of these variables in a dataset together.  This helps me keep things organized for modelling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect.  This becomes clear when you peruse the 20-row dataset shown below.
+I'm going to put all of these variables in a dataset together.  This helps me keep things organized for modeling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect.  This becomes clear when you peruse the 20-row dataset shown below.
 
 ```{r}
 ( dat = data.frame(stand, standeff, plot, ploteff) )
@@ -161,7 +161,7 @@ is my guide for how to combine these pieces to create the simulated response var
 
 ```
 
-It's time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer()` function from package **lme4**.
+Now that I have successfully created the dataset I showed you at the start of this section, it's time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer()` function from package **lme4**.
 
 ```{r, warning = FALSE, message = FALSE}
 library(lme4) # v. 1.1-21
@@ -333,7 +333,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
 
 Here are some additional descriptive statistics of the distribution of variances in each group to complement the info in the plot.
 
-```{r}
+```{r, message = FALSE}
 stand_vars %>%
      group_by(stand_num) %>%
      summarise_at("estimate", 

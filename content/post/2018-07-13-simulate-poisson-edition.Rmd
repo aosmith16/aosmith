@@ -39,7 +39,7 @@ render_toc("2018-07-13-simulate-poisson-edition.Rmd")
 
 # The statistical model
 
-Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#simulation-code)
+Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data.  It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light `r emo::ji("grin")`) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts.  But if you're at a place where you find looking at these equations makes your eyes glaze over, [jump down to the code](#code-for-a-single-simulation).
 
 The statistical model for generalized linear model looks pretty different than the statistical model of the very special case when we assume normality.  Since so many of us (like me!) learned that special case first, this different approach takes some getting used to.  
 
@@ -58,9 +58,9 @@ The model I define here is a quadratic model for a single, continuous explanator
 
 $$log(\lambda_t) = \beta_0 + \beta_1*x_t + \beta_2*x^2_t$$  
 
-+ $x_t$ is the recorded value of the $t$th observation of the continuous explanatory variable  
-+ $x^2_t$ is the square of $x_t$  
-+ $\beta_0$, $\beta_1$, and $\beta_2$ are parameters (intercepts and slope coefficients) of the linear model  
++ $x_t$ is the recorded value of the $t$th observation of the continuous explanatory variable.   
++ $x^2_t$ is the square of $x_t$.  
++ $\beta_0$, $\beta_1$, and $\beta_2$ are parameters (intercepts and slope coefficients) of the linear model.  
 
 If you are new to generalized linear models you might want to take a moment and note of the absence of epsilon in the linear predictor.
 
@@ -68,7 +68,7 @@ Notice we can calculate the mean on the original scale instead of the log scale 
 
 $$\lambda_t = exp(\beta_0 + \beta_1*x_t + \beta_2*x^2_t)$$
 
-# Simulation code
+# Code for a single simulation
 
 The first thing I will do in this simulation is define my true parameter values.  I'm simulating a relationship between x and y that is similar to the student's results so I'll set the intercept and the linear coefficient ($\beta_0$ and $\beta_1$, respectively) both to 0.5 and the quadratic coefficient ($\beta_2$) to 5.   
 

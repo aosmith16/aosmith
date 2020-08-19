@@ -25,14 +25,14 @@ description: "Extending my simulation examples into the world of generalized lin
 <h2>Table of Contents</h2>
 <ul>
 <li><a href="#the-statistical-model">The statistical model</a></li>
-<li><a href="#simulation-code">Simulation code</a></li>
+<li><a href="#code-for-a-single-simulation">Code for a single simulation</a></li>
 <li><a href="#results">Results!</a></li>
 <li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
 <div id="the-statistical-model" class="section level1">
 <h1>The statistical model</h1>
-<p>Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data. It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light 😁) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts. But if you’re at a place where you find looking at these equations makes your eyes glaze over, <a href="#simulation-code">jump down to the code</a></p>
+<p>Even though what I did was a single iteration simulation, I think it is still useful to write out the statistical model I used for building the simulated data. It has been the combination of seeing the equations and then doing simulations (and then seeing the equations in a new light 😁) that has really helped me understand generalized linear (mixed) models and so I like to include the models explicitly in these posts. But if you’re at a place where you find looking at these equations makes your eyes glaze over, <a href="#code-for-a-single-simulation">jump down to the code</a>.</p>
 <p>The statistical model for generalized linear model looks pretty different than the statistical model of the very special case when we assume normality. Since so many of us (like me!) learned that special case first, this different approach takes some getting used to.</p>
 <p>Instead of defining the distribution of the <em>errors</em> we’ll now directly define the distribution of the response variable. (<em>For a more formal coverage of the statistical model for generalized linear (mixed) models see Stroup’s <a href="http://lira.pro.br/wordpress/wp-content/uploads/2015/06/stroup-2015.pdf">Rethinking the Analysis of Non-Normal Data in Plant and Soil Science</a>.</em>)</p>
 <p>I’m going to use a Poisson generalized linear model for my simulation, so the response variable will be discrete counts. In my statistical model I first define a response variable that comes from the Poisson distribution.</p>
@@ -46,18 +46,18 @@ description: "Extending my simulation examples into the world of generalized lin
 <p>The model I define here is a quadratic model for a single, continuous explanatory variable.</p>
 <p><span class="math display">\[log(\lambda_t) = \beta_0 + \beta_1*x_t + \beta_2*x^2_t\]</span></p>
 <ul>
-<li><span class="math inline">\(x_t\)</span> is the recorded value of the <span class="math inline">\(t\)</span>th observation of the continuous explanatory variable<br />
+<li><span class="math inline">\(x_t\)</span> is the recorded value of the <span class="math inline">\(t\)</span>th observation of the continuous explanatory variable.<br />
 </li>
-<li><span class="math inline">\(x^2_t\)</span> is the square of <span class="math inline">\(x_t\)</span><br />
+<li><span class="math inline">\(x^2_t\)</span> is the square of <span class="math inline">\(x_t\)</span>.<br />
 </li>
-<li><span class="math inline">\(\beta_0\)</span>, <span class="math inline">\(\beta_1\)</span>, and <span class="math inline">\(\beta_2\)</span> are parameters (intercepts and slope coefficients) of the linear model</li>
+<li><span class="math inline">\(\beta_0\)</span>, <span class="math inline">\(\beta_1\)</span>, and <span class="math inline">\(\beta_2\)</span> are parameters (intercepts and slope coefficients) of the linear model.</li>
 </ul>
 <p>If you are new to generalized linear models you might want to take a moment and note of the absence of epsilon in the linear predictor.</p>
 <p>Notice we can calculate the mean on the original scale instead of the log scale by exponentiating both sides of the above equation. This will be important when we get to writing code to simulate data.</p>
 <p><span class="math display">\[\lambda_t = exp(\beta_0 + \beta_1*x_t + \beta_2*x^2_t)\]</span></p>
 </div>
-<div id="simulation-code" class="section level1">
-<h1>Simulation code</h1>
+<div id="code-for-a-single-simulation" class="section level1">
+<h1>Code for a single simulation</h1>
 <p>The first thing I will do in this simulation is define my true parameter values. I’m simulating a relationship between x and y that is similar to the student’s results so I’ll set the intercept and the linear coefficient (<span class="math inline">\(\beta_0\)</span> and <span class="math inline">\(\beta_1\)</span>, respectively) both to 0.5 and the quadratic coefficient (<span class="math inline">\(\beta_2\)</span>) to 5.</p>
 <pre class="r"><code>b0 = .5
 b1 = .5

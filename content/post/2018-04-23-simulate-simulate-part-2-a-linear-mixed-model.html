@@ -96,7 +96,7 @@ sd = 1</code></pre>
 <pre class="r"><code>( stand = rep(LETTERS[1:nstand], each = nplot) )</code></pre>
 <pre><code>#  [1] &quot;A&quot; &quot;A&quot; &quot;A&quot; &quot;A&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; &quot;B&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;C&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;D&quot; &quot;E&quot; &quot;E&quot; &quot;E&quot;
 # [20] &quot;E&quot;</code></pre>
-<p>I can make a <code>plot</code> variable, as well, although it’s not needed for modelling since we have a single value per plot. It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I’m a big believer in giving plots unique names. I’ll name plots uniquely using lowercase letters. There are a total of 20 plots.</p>
+<p>I can make a <code>plot</code> variable, as well, although it’s not needed for modeling since we have a single value per plot. It is fairly common to give plots the same name in each stand (i.e., plots are named 1-4 in each stand), but I’m a big believer in giving plots unique names. I’ll name plots uniquely using lowercase letters. There are a total of 20 plots.</p>
 <pre class="r"><code>( plot = letters[1:(nstand*nplot)] )</code></pre>
 <pre><code>#  [1] &quot;a&quot; &quot;b&quot; &quot;c&quot; &quot;d&quot; &quot;e&quot; &quot;f&quot; &quot;g&quot; &quot;h&quot; &quot;i&quot; &quot;j&quot; &quot;k&quot; &quot;l&quot; &quot;m&quot; &quot;n&quot; &quot;o&quot; &quot;p&quot; &quot;q&quot; &quot;r&quot; &quot;s&quot;
 # [20] &quot;t&quot;</code></pre>
@@ -117,7 +117,7 @@ sd = 1</code></pre>
 #  [7]  0.11193337 -0.74603732  1.65821366  0.72172057 -1.66308050  0.57590953
 # [13]  0.47276012 -0.54273166  1.12768707 -1.64779762 -0.31417395 -0.18268157
 # [19]  1.47047849 -0.86589878</code></pre>
-<p>I’m going to put all of these variables in a dataset together. This helps me keep things organized for modelling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect. This becomes clear when you peruse the 20-row dataset shown below.</p>
+<p>I’m going to put all of these variables in a dataset together. This helps me keep things organized for modeling but, more importantly for learning how to do simulations, I think this helps demonstrate how every stand has an overall effect (repeated for every observation in that stand) and every plot has a unique effect. This becomes clear when you peruse the 20-row dataset shown below.</p>
 <pre class="r"><code>( dat = data.frame(stand, standeff, plot, ploteff) )</code></pre>
 <pre><code>#    stand   standeff plot     ploteff
 # 1      A  0.9528268    a -0.46841204
@@ -148,7 +148,7 @@ sd = 1</code></pre>
 <pre><code>#  [1] 10.484415  9.946876 11.016389 11.977799 10.322382 11.596422  9.861173
 #  [8]  9.003203 13.850646 12.914153 10.529352 12.768342  7.584302  6.568810
 # [15]  8.239229  5.463744 11.981485 12.112977 13.766137 11.429760</code></pre>
-<p>It’s time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the <code>lmer()</code> function from package <strong>lme4</strong>.</p>
+<p>Now that I have successfully created the dataset I showed you at the start of this section, it’s time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the <code>lmer()</code> function from package <strong>lme4</strong>.</p>
 <pre class="r"><code>library(lme4) # v. 1.1-21</code></pre>
 <p>The results for the estimated overall mean and standard deviations of random effects in this model look pretty similar to my defined parameter values.</p>
 <pre class="r"><code>fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
