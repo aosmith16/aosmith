@@ -1,0 +1,396 @@
+---
+title: Handling errors using purrr's possibly() and safely()
+author: Ariel Muldoon
+date: '2020-08-31'
+slug: handling-errors
+categories:
+  - r
+tags:
+  - loops
+  - purrr
+  - functions
+description: Errors can lead to problems when using loops for repetitive tasks like fitting many models or simulating data.  In this post I show how to use purrr::possibly() and purrr:safely() to handle errors as well as purrr:quietly() for capturing warnings and messages.
+draft: TRUE
+---
+
+
+
+<p>One topic I haven’t discussed in my previous posts about automating tasks with loops or doing simulations is how to deal with errors. If we haven’t anticipated errors, suddenly getting one can bring a <code>map()</code> or <code>lapply()</code> loop to a screeching halt with no output to show for the time spent. When your task is time-consuming, this can feel pretty frustrating, since the whole process has to be restarted.</p>
+<p>How to deal with errors? Using functions <code>try()</code> or <code>tryCatch()</code> when building a function is the traditional way to catch and address potential errors. I’ve struggled to remember how these work, though, and functions <code>possibly()</code> and <code>safely()</code> from package <strong>purrr</strong> are convenient alternatives that I find a little easier to use.</p>
+<p>In this post I’ll show examples on how to use these two functions for handling errors. I’ll finish by demonstrating the use of their sister function <code>quietly()</code> to capture other types of output, such as warnings and messages.</p>
+<div id="table-of-contents" class="section level2">
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#r-packages">R packages</a></li>
+<li><a href="#using-possibly-to-return-values-instead-of-errors">Using possibly() to return values instead of errors</a>
+<ul>
+<li><a href="#wrapping-a-function-with-possibly">Wrapping a function with possibly()</a></li>
+<li><a href="#finding-the-groups-with-errors">Finding the groups with errors</a></li>
+</ul></li>
+<li><a href="#using-safely-to-capture-results-and-errors">Using safely() to capture results and errors</a>
+<ul>
+<li><a href="#exploring-the-errors">Exploring the errors</a></li>
+<li><a href="#extracting-results">Extracting results</a></li>
+</ul></li>
+<li><a href="#using-quietly-to-capture-messages">Using quietly() to capture messages</a></li>
+<li><a href="#just-the-code-please">Just the code, please</a></li>
+</ul>
+</div>
+<div id="r-packages" class="section level1">
+<h1>R packages</h1>
+<p>The functions I’m highlighting today are from package <strong>purrr</strong>. I’ll also use <strong>lme4</strong> for fitting simulated data to linear mixed models.</p>
+<pre class="r"><code>library(purrr) # v. 0.3.4
+library(lme4) # v. 1.1-23</code></pre>
+</div>
+<div id="using-possibly-to-return-values-instead-of-errors" class="section level1">
+<h1>Using possibly() to return values instead of errors</h1>
+<p>When doing a repetitive task like fitting many models with a <code>map()</code> loop, an error in one of the models will shut down the whole process. We can anticipate this issue and bypass it by defining a value to return when a model errors out via <code>possibly()</code>.</p>
+<p>I created the very small dataset below to demonstrate the problem. The goal is to fit a linear model of <code>y</code> vs <code>x</code> for each <code>group</code>, <em>a</em> and <em>b</em>. I made exactly two groups here so it’s easy to see what goes wrong and why. Usually we have many more groups, and so potential problems are harder to spot.</p>
+<pre class="r"><code>dat = structure(list(group = c(&quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;), 
+                     x = c(&quot;A&quot;, &quot;A&quot;, &quot;A&quot;, &quot;B&quot;, &quot;B&quot;, &quot;B&quot;, &quot;A&quot;, &quot;A&quot;, &quot;A&quot;), 
+                     y = c(10.9, 11.1, 10.5, 9.7, 10.5, 10.9, 13, 9.9, 10.3)), 
+                class = &quot;data.frame&quot;, 
+                row.names = c(NA, -9L))
+dat</code></pre>
+<pre><code>#   group x    y
+# 1     a A 10.9
+# 2     a A 11.1
+# 3     a A 10.5
+# 4     a B  9.7
+# 5     a B 10.5
+# 6     a B 10.9
+# 7     b A 13.0
+# 8     b A  9.9
+# 9     b A 10.3</code></pre>
+<p>I’ll first split the dataset by <code>group</code> to get a list of data.frames to loop through.</p>
+<pre class="r"><code>dat_split = split(dat, dat$group)</code></pre>
+<p>Then I’ll loop through each dataset and fit a linear model with <code>lm()</code>. Instead of getting output, though, I get an error.</p>
+<pre class="r"><code>map(dat_split, ~lm(y ~ x, data = .x) )</code></pre>
+<pre><code># Error in `contrasts&lt;-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]): contrasts can be applied only to factors with 2 or more levels</code></pre>
+<p>What’s going on? If you look at the dataset again, you’ll see that <code>x</code> from group <em>b</em> contains only a single value. Once you know that you can see the error actually is telling use what the problem is.</p>
+<p>Model <em>a</em> fits fine, since <code>x</code> has two values.</p>
+<pre class="r"><code>lm(y ~ x, data = dat, subset = group == &quot;a&quot;)</code></pre>
+<pre><code># 
+# Call:
+# lm(formula = y ~ x, data = dat, subset = group == &quot;a&quot;)
+# 
+# Coefficients:
+# (Intercept)           xB  
+#     10.8333      -0.4667</code></pre>
+<p>It is the <em>b</em> model that fails.</p>
+<pre class="r"><code>lm(y ~ x, data = dat, subset = group == &quot;b&quot;)</code></pre>
+<pre><code># Error in `contrasts&lt;-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]): contrasts can be applied only to factors with 2 or more levels</code></pre>
+<p>You can picture that if you had many groups, the problem of only having a single value in some groups could be easy to miss. Luckily we can use <code>possibly()</code> to go through all groups regardless of errors. This allows us to find and explore problem groups.</p>
+<div id="wrapping-a-function-with-possibly" class="section level2">
+<h2>Wrapping a function with possibly()</h2>
+<p>The <code>possibly()</code> function is a <em>wrapper</em> function. It wraps around an existing function. The key argument is <code>otherwise</code>. In <code>otherwise</code> we define what value to return if we get an error in the wrapped function.</p>
+<p>I make a new function called <code>posslm1()</code>, that wraps <code>lm()</code> and returns <code>"Error"</code> if an error occurs when fitting the model.</p>
+<pre class="r"><code>posslm1 = possibly(.f = lm, otherwise = &quot;Error&quot;)</code></pre>
+<p>I’ll use this new function in my model fitting loop. You can see that loop now finishes, and model <em>b</em> contains the string “Error” instead of a model.</p>
+<pre class="r"><code>map(dat_split, ~posslm1(y ~ x, data = .x) )</code></pre>
+<pre><code># $a
+# 
+# Call:
+# .f(formula = ..1, data = ..2)
+# 
+# Coefficients:
+# (Intercept)           xB  
+#     10.8333      -0.4667  
+# 
+# 
+# $b
+# [1] &quot;Error&quot;</code></pre>
+<p>Here’s another example of <code>possibly()</code>, this time using <code>otherwise = NULL</code>. Depending on what we plan to do with the output, using <code>NULL</code> or <code>NA</code> as the return value is not uncommon when using <code>possibly()</code>. I use <code>NULL</code> here so I can demonstrate some additional options when exploring the output.</p>
+<p>Now group <em>b</em> is <code>NULL</code> in the output.</p>
+<pre class="r"><code>posslm2 = possibly(.f = lm, otherwise = NULL)
+( mods = map(dat_split, ~posslm2(y ~ x, data = .x) ) )</code></pre>
+<pre><code># $a
+# 
+# Call:
+# .f(formula = ..1, data = ..2)
+# 
+# Coefficients:
+# (Intercept)           xB  
+#     10.8333      -0.4667  
+# 
+# 
+# $b
+# NULL</code></pre>
+</div>
+<div id="finding-the-groups-with-errors" class="section level2">
+<h2>Finding the groups with errors</h2>
+<p>One possible goal of returning a value whenever there is an error is to find which groups have problems. That allows us to go back and examine those groups more closely to see if there is a solution.</p>
+<p>For example, we can use <code>purrr::keep()</code> to keep only the results that are <code>NULL</code>.</p>
+<pre class="r"><code>mods %&gt;%
+     keep(~is.null(.x) )</code></pre>
+<pre><code># $b
+# NULL</code></pre>
+<p>I can then pull out the names for the groups that had errors. This is a reason I like that <code>split()</code> returns named lists.</p>
+<pre class="r"><code>group_errs = mods %&gt;%
+     keep(~is.null(.x) ) %&gt;%
+     names()
+group_errs</code></pre>
+<pre><code># [1] &quot;b&quot;</code></pre>
+<p>Once I have the names of the groups with errors, I can pull any problematic groups out of the original dataset or the split list to examine them more closely. (I use <code>%in%</code> here in case <code>group_errs</code> is a vector.)</p>
+<pre class="r"><code>dat[dat$group %in% group_errs, ]</code></pre>
+<pre><code>#   group x    y
+# 7     b A 13.0
+# 8     b A  9.9
+# 9     b A 10.3</code></pre>
+<pre class="r"><code>dat_split[group_errs]</code></pre>
+<pre><code># $b
+#   group x    y
+# 7     b A 13.0
+# 8     b A  9.9
+# 9     b A 10.3</code></pre>
+</div>
+<div id="using-compact-to-remove-empty-elements" class="section level2">
+<h2>Using compact() to remove empty elements</h2>
+<p>There may be a point where you decide the the models with errors shouldn’t be used in further analysis. In that case, if all the groups with errors are <code>NULL</code>, you can use <code>purrr::compact()</code> to remove the empty elements from the list. This can make subsequent loops to get output more straightforward in some cases.</p>
+<pre class="r"><code>compact(mods)</code></pre>
+<pre><code># $a
+# 
+# Call:
+# .f(formula = ..1, data = ..2)
+# 
+# Coefficients:
+# (Intercept)           xB  
+#     10.8333      -0.4667</code></pre>
+</div>
+</div>
+<div id="using-safely-to-capture-results-and-errors" class="section level1">
+<h1>Using safely() to capture results and errors</h1>
+<p>Rather than replacing the errors with values, <code>safely()</code> returns both the results and the errors in a list.</p>
+<p>This function is also a wrapper function. It defaults to using <code>otherwise = NULL</code>, and I generally haven’t had reason to change away from that default.</p>
+<p>Here’s an example, wrapping <code>lm()</code> in <code>safely()</code> and then using the resulting function <code>safelm()</code> to fit the models.</p>
+<pre class="r"><code>safelm = safely(.f = lm)
+mods2 = map(dat_split, ~safelm(y ~ x, data = .x) )</code></pre>
+<p>The output for each group is now a list with two elements, one for results (if there was no error) and the other for the error (if there was).</p>
+<p>Here’s what this looks like for model <em>a</em>, which doesn’t have an error. It has a result but no error.</p>
+<pre class="r"><code>mods2[[1]]</code></pre>
+<pre><code># $result
+# 
+# Call:
+# .f(formula = ..1, data = ..2)
+# 
+# Coefficients:
+# (Intercept)           xB  
+#     10.8333      -0.4667  
+# 
+# 
+# $error
+# NULL</code></pre>
+<p>Model <em>b</em> didn’t work, of course, so the results are <code>NULL</code> but the error was captured in <code>error</code>.</p>
+<pre class="r"><code>mods2[[2]]</code></pre>
+<pre><code># $result
+# NULL
+# 
+# $error
+# &lt;simpleError in `contrasts&lt;-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]): contrasts can be applied only to factors with 2 or more levels&gt;</code></pre>
+<div id="exploring-the-errors" class="section level2">
+<h2>Exploring the errors</h2>
+<p>One reason to save the errors is so we can take a look at what the errors are for each group. This is most useful with informative errors like this one.</p>
+<p>Errors can be extracted with a <code>map()</code> loop, pulling out the “error” element from each group.</p>
+<pre class="r"><code>map(mods2, &quot;error&quot;)</code></pre>
+<pre><code># $a
+# NULL
+# 
+# $b
+# &lt;simpleError in `contrasts&lt;-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]): contrasts can be applied only to factors with 2 or more levels&gt;</code></pre>
+</div>
+<div id="extracting-results" class="section level2">
+<h2>Extracting results</h2>
+<p>Results can be extracted similarly, and, if relevant, <code>NULL</code> results can be removed via <code>compact()</code>.</p>
+<pre class="r"><code>mods2 %&gt;%
+     map(&quot;result&quot;) %&gt;%
+     compact()</code></pre>
+<pre><code># $a
+# 
+# Call:
+# .f(formula = ..1, data = ..2)
+# 
+# Coefficients:
+# (Intercept)           xB  
+#     10.8333      -0.4667</code></pre>
+</div>
+</div>
+<div id="using-quietly-to-capture-messages" class="section level1">
+<h1>Using quietly() to capture messages</h1>
+<p>The <code>quietly()</code> function doesn’t handle errors, but does capture other types of output such as warnings and messages in addition to the results. This is useful for seeing what kinds of warnings come up when doing simulations, for example.</p>
+<p>A few years ago I wrote a post showing a simulation for a linear mixed model. I use the following function, which I pulled from <a href="https://aosmith.rbind.io/2018/04/23/simulate-simulate-part-2/">that earlier post</a>.</p>
+<pre class="r"><code>twolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 1, sigma = 1) {
+     standeff = rep( rnorm(nstand, 0, sigma_s), each = nplot)
+     stand = rep(LETTERS[1:nstand], each = nplot)
+     ploteff = rnorm(nstand*nplot, 0, sigma)
+     resp = mu + standeff + ploteff
+     dat = data.frame(stand, resp)
+     lmer(resp ~ 1 + (1|stand), data = dat)
+}</code></pre>
+<p>One thing I skipped discussing in that post were the messages returned for some simulations. However, I can certainly picture scenarios where it would be interesting and important to capture warnings and messages to see, e.g., how often they occur when we know the data comes from the model.</p>
+<p>Here I’ll set the seed so the results are reproducible and then run the function 10 times. You see I get two messages, indicating that two of the ten models returned a message. In this case, the message indicates that the random effect variance is estimated to be exactly 0.</p>
+<pre class="r"><code>set.seed(16)
+sims = replicate(10, twolevel_fun(), simplify = FALSE )</code></pre>
+<pre><code># boundary (singular) fit: see ?isSingular
+# boundary (singular) fit: see ?isSingular</code></pre>
+<p>It turns out that the second model is one with a message. You can see at the bottom of the output below that there is 1 lme4 warning.</p>
+<pre class="r"><code>sims[[2]]</code></pre>
+<pre><code># Linear mixed model fit by REML [&#39;lmerMod&#39;]
+# Formula: resp ~ 1 + (1 | stand)
+#    Data: dat
+# REML criterion at convergence: 45.8277
+# Random effects:
+#  Groups   Name        Std.Dev.
+#  stand    (Intercept) 0.0000  
+#  Residual             0.7469  
+# Number of obs: 20, groups:  stand, 5
+# Fixed Effects:
+# (Intercept)  
+#       10.92  
+# convergence code 0; 0 optimizer warnings; 1 lme4 warnings</code></pre>
+<p>The <strong>lme4</strong> package stores warnings and messages in the model object, so I can pull the message out of the object from there.</p>
+<pre class="r"><code>sims[[2]]@optinfo$conv$lme4</code></pre>
+<pre><code># $messages
+# [1] &quot;boundary (singular) fit: see ?isSingular&quot;</code></pre>
+<p>But I think <code>quietly()</code> is more convenient for this task. This is another wrapper function, and I’m going to wrap it around <code>lmer()</code>. I do this because I’m focusing specifically on messages that happen when I fit the model. However, I could have wrapped <code>twolevel_fun()</code> and capture any output from the entire simulation process.</p>
+<p>I use my new function <code>qlmer()</code> inside my simulation function.</p>
+<pre class="r"><code>qlmer = quietly(.f = lmer)
+qtwolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 1, sigma = 1) {
+     standeff = rep( rnorm(nstand, 0, sigma_s), each = nplot)
+     stand = rep(LETTERS[1:nstand], each = nplot)
+     ploteff = rnorm(nstand*nplot, 0, sigma)
+     resp = mu + standeff + ploteff
+     dat = data.frame(stand, resp)
+     qlmer(resp ~ 1 + (1|stand), data = dat)
+}</code></pre>
+<p>I set the seed back to 16 and then run the function 10 times so we can take a look at what the output from the quiet function looks like. Note the function is considered <em>quiet</em> because the messages are captured in the output instead of printed.</p>
+<p>Quiet functions return lists with 4 elements, including the results, any printed output, warnings, and messages. You can see this for the second model here.</p>
+<pre class="r"><code>set.seed(16)
+sims2 = replicate(10, qtwolevel_fun(), simplify = FALSE)
+sims2[[2]]</code></pre>
+<pre><code># $result
+# Linear mixed model fit by REML [&#39;lmerMod&#39;]
+# Formula: resp ~ 1 + (1 | stand)
+#    Data: ..2
+# REML criterion at convergence: 45.8277
+# Random effects:
+#  Groups   Name        Std.Dev.
+#  stand    (Intercept) 0.0000  
+#  Residual             0.7469  
+# Number of obs: 20, groups:  stand, 5
+# Fixed Effects:
+# (Intercept)  
+#       10.92  
+# convergence code 0; 0 optimizer warnings; 1 lme4 warnings 
+# 
+# $output
+# [1] &quot;&quot;
+# 
+# $warnings
+# character(0)
+# 
+# $messages
+# [1] &quot;boundary (singular) fit: see ?isSingular\n&quot;</code></pre>
+<p>In a simulation setting, I think seeing how many times different messages and warnings come up could be pretty interesting. It might inform how problematic a message is. If a message is common in simulation we may feel more confident that such a message from a model fit to our real data is not a big issue.</p>
+<p>For example, I could pull out all the <code>messages</code> and then put the results into a vector with <code>unlist()</code>.</p>
+<pre class="r"><code>sims2 %&gt;%
+     map(&quot;messages&quot;) %&gt;% 
+     unlist()</code></pre>
+<pre><code># [1] &quot;boundary (singular) fit: see ?isSingular\n&quot;
+# [2] &quot;boundary (singular) fit: see ?isSingular\n&quot;</code></pre>
+<p>If I wanted to extract multiple parts of the output, such as keeping both messages and warnings, I can use the extract brackets in <code>map()</code>.</p>
+<p>These results don’t look much different compared to the output above since there are no warnings in my example. However, note the result are now in a named vector so I can keep track of which are <code>messages</code> and which are <code>warnings</code>.</p>
+<pre class="r"><code>sims2 %&gt;%
+     map(`[`, c(&quot;messages&quot;, &quot;warnings&quot;) ) %&gt;%
+     unlist()</code></pre>
+<pre><code>#                                     messages 
+# &quot;boundary (singular) fit: see ?isSingular\n&quot; 
+#                                     messages 
+# &quot;boundary (singular) fit: see ?isSingular\n&quot;</code></pre>
+<p>I showed only fairly simple uses of these three functions. However, you certainly may find yourself using them for more complex tasks. For example, I’ve been in situations in the past where I wanted to keep only models that didn’t have errors for parametric bootstrap confidence intervals. If they had existed at the time, I could have used <code>possibly()</code> or <code>safely()</code> in a <code>while()</code> loop, where the bootstrap data would be redrawn until a model fits without error. Very useful! 😉</p>
+</div>
+<div id="just-the-code-please" class="section level1">
+<h1>Just the code, please</h1>
+<p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2020-08-31-handling-errors.R">from here</a>.</p>
+<pre class="r"><code>library(purrr) # v. 0.3.4
+library(lme4) # v. 1.1-23
+
+dat = structure(list(group = c(&quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;), 
+                     x = c(&quot;A&quot;, &quot;A&quot;, &quot;A&quot;, &quot;B&quot;, &quot;B&quot;, &quot;B&quot;, &quot;A&quot;, &quot;A&quot;, &quot;A&quot;), 
+                     y = c(10.9, 11.1, 10.5, 9.7, 10.5, 10.9, 13, 9.9, 10.3)), 
+                class = &quot;data.frame&quot;, 
+                row.names = c(NA, -9L))
+dat
+
+dat_split = split(dat, dat$group)
+map(dat_split, ~lm(y ~ x, data = .x) )
+
+lm(y ~ x, data = dat, subset = group == &quot;a&quot;)
+lm(y ~ x, data = dat, subset = group == &quot;b&quot;)
+
+posslm1 = possibly(.f = lm, otherwise = &quot;Error&quot;)
+map(dat_split, ~posslm1(y ~ x, data = .x) )
+
+posslm2 = possibly(.f = lm, otherwise = NULL)
+( mods = map(dat_split, ~posslm2(y ~ x, data = .x) ) )
+
+mods %&gt;%
+     keep(~is.null(.x) )
+
+group_errs = mods %&gt;%
+     keep(~is.null(.x) ) %&gt;%
+     names()
+group_errs
+
+dat[dat$group %in% group_errs, ]
+
+dat_split[group_errs]
+
+compact(mods)
+
+safelm = safely(.f = lm)
+mods2 = map(dat_split, ~safelm(y ~ x, data = .x) )
+mods2[[1]]
+mods2[[2]]
+
+map(mods2, &quot;error&quot;)
+
+mods2 %&gt;%
+     map(&quot;result&quot;) %&gt;%
+     compact()
+
+twolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 1, sigma = 1) {
+     standeff = rep( rnorm(nstand, 0, sigma_s), each = nplot)
+     stand = rep(LETTERS[1:nstand], each = nplot)
+     ploteff = rnorm(nstand*nplot, 0, sigma)
+     resp = mu + standeff + ploteff
+     dat = data.frame(stand, resp)
+     lmer(resp ~ 1 + (1|stand), data = dat)
+}
+
+set.seed(16)
+sims = replicate(10, twolevel_fun(), simplify = FALSE )
+sims[[2]]
+sims[[2]]@optinfo$conv$lme4
+
+qlmer = quietly(.f = lmer)
+qtwolevel_fun = function(nstand = 5, nplot = 4, mu = 10, sigma_s = 1, sigma = 1) {
+     standeff = rep( rnorm(nstand, 0, sigma_s), each = nplot)
+     stand = rep(LETTERS[1:nstand], each = nplot)
+     ploteff = rnorm(nstand*nplot, 0, sigma)
+     resp = mu + standeff + ploteff
+     dat = data.frame(stand, resp)
+     qlmer(resp ~ 1 + (1|stand), data = dat)
+}
+
+set.seed(16)
+sims2 = replicate(10, qtwolevel_fun(), simplify = FALSE)
+sims2[[2]]
+
+sims2 %&gt;%
+     map(&quot;messages&quot;) %&gt;% 
+     unlist()
+
+sims2 %&gt;%
+     map(`[`, c(&quot;messages&quot;, &quot;warnings&quot;) ) %&gt;%
+     unlist()</code></pre>
+</div>
