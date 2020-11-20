@@ -188,6 +188,10 @@ math = true
 #    width     = ""
 #    alt       = ""
 
+# Customize copyright value "© 2017 <CUSTOMIZATION>. All Rights Reserved"
+  [params.footer]
+    copyright = "Ariel Muldoon <a href=\"https://creativecommons.org/licenses/by-sa/4.0/\">CC BY-SA 4.0</a>"
+
 [params.postAmount]
 # Sets the number of recent posts to show in the sidebar. The default value is 5.
     sidebar = 5
