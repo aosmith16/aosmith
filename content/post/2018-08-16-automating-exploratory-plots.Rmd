@@ -19,6 +19,8 @@ devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
 ```
 
+*This post was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
+
 When you have a lot of variables and need to make a lot exploratory plots it's usually worthwhile to automate the process in R instead of manually copying and pasting code for every plot.  However, the coding approach needed to automate plots can look pretty daunting to a beginner R user.  It can look so daunting, in fact, that it can appear easier to manually make the plots (like in Excel) rather than using R at all.  
 
 Unfortunately making plots manually can backfire.  The efficiency of using a software program you already know is quickly out-weighed by being unable to easily reproduce the plots when needed.  I know I invariably have to re-make even exploratory plots, and it'd be a bummer if I had to remake them all manually rather than re-running some code.
@@ -38,8 +40,8 @@ render_toc("2018-08-16-automating-exploratory-plots.Rmd")
 I'll be plotting with **ggplot2** and looping with **purrr**.  I'll also be using package **cowplot** later to combine individual plots into one, but will use the package functions via `cowplot::` instead of loading the package.
 
 ```{r}
-library(ggplot2) # v. 3.2.0
-library(purrr) # v. 0.3.2
+library(ggplot2) # v. 3.3.2
+library(purrr) # v. 0.3.4
 
 ```
 
@@ -103,9 +105,7 @@ scatter_fun = function(x, y) {
      ggplot(dat, aes(x = .data[[x]], y = .data[[y]]) ) +
           geom_point() +
           geom_smooth(method = "loess", se = FALSE, color = "grey74") +
-          theme_bw() +
-          labs(x = x,
-               y = y)
+          theme_bw()
 }
 
 ```
@@ -125,7 +125,7 @@ scatter_fun = function(x, y) {
 Here's an example of the function output, passing in `x` and `y` as strings.  
 
 ```{r}
-scatter_fun("lat", "elev")
+scatter_fun(x = "lat", y = "elev")
 
 ```
 
@@ -151,6 +151,8 @@ elev_plots
 # Looping through both vectors
 
 For only a few response variables we could easily copy and paste the code above, changing the hard-coded response variable each time.  This process can get burdensome if there are a lot of response variables, though. 
+
+## Using a nested loop
 
 Another option is to loop through both vectors of variables and make all the plots at once.  Because we want a plot for each combination of variables, this is a job for a *nested* loop.  This means one `map()` loop will be nested inside another.  I will refer to the first `map()` loop as the *outer* loop and the second one as the *inner* loop.
 
@@ -184,6 +186,32 @@ I find the names convenient, but you can also extract plots via position.  Here'
 
 ```{r}
 all_plots[[3]][[3]]
+
+```
+
+## Combining variables for a single loop
+
+Since nested loops can be complicated, another option is to create all combinations of the two input vectors and then loop through those in a single loop.  This can be done, for example, using `tidyr::expand_grid()`.  The main thing I like about `tidyr::expand_grid()` over `expand.grid()` from base R is the order of the output.  Both put the results into a dataset (data.frame or tibble).
+
+Here's how that would look, putting the response variables first to match the output order above.  I'm using **tidyr** version 1.1.2 here.
+
+```{r}
+resp_expl = tidyr::expand_grid(response, expl)
+resp_expl
+
+```
+
+I can now use `pmap()` from **purrr** to loop through the rows of this tibble.  I have to be careful with my argument order, though, since I have the y variable first in the tibble but it is the second argument in my function.
+
+```{r}
+allplots2 = pmap(resp_expl, ~scatter_fun(x = .y, y = .x) )
+```
+
+I'm not going to print them here, but one minor downside of this approach is that only the first variable name is carried along to the output list.  If I wanted to save these plots separately and use both the response and explanatory variable in the file name I'd need to create the file names based on `resp_expl`.  I won't show this in the next section on saving plots, so here is a quick example of creating basic file names based on both variables.
+
+```{r}
+allplots2_names = pmap(resp_expl, ~paste0(.x, "_", .y, ".png"))
+allplots2_names[1:2]
 
 ```
 
@@ -260,7 +288,7 @@ walk2(plotnames, flatten(all_plots), ~ggsave(filename = .x, plot = .y,
 
 Another way to get a set of plots together is to combine them into one plot.  How useful this is will depend on how many plots you have per set.  This option is a lot like faceting, except we didn't reshape our dataset to allow the use faceting.  
 
-I like the **cowplot** function `plot_grid()` for combining multiple plots into one.  A list of plots can be passed via the `plotlist` argument.
+I like the package **cowplot** function `plot_grid()` for quickly combining multiple plots into one.  A list of plots can be passed via the `plotlist` argument.
 
 Here's what that looks like for the first response variable, `elev`.
 

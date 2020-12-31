@@ -1,5 +1,5 @@
-library(ggplot2) # v. 3.2.0
-library(purrr) # v. 0.3.2
+library(ggplot2) # v. 3.3.2
+library(purrr) # v. 0.3.4
 
 
 set.seed(16)
@@ -29,9 +29,7 @@ scatter_fun = function(x, y) {
      ggplot(dat, aes(x = .data[[x]], y = .data[[y]]) ) +
           geom_point() +
           geom_smooth(method = "loess", se = FALSE, color = "grey74") +
-          theme_bw() +
-          labs(x = x,
-               y = y)
+          theme_bw()
 }
 
 
@@ -43,7 +41,7 @@ scatter_fun = function(x, y) {
 # }
 # 
 
-scatter_fun("lat", "elev")
+scatter_fun(x = "lat", y = "elev")
 
 
 elev_plots = map(expl, ~scatter_fun(.x, "elev") )
@@ -60,6 +58,16 @@ all_plots$grad[1:2]
 all_plots$grad$long
 
 all_plots[[3]][[3]]
+
+
+resp_expl = tidyr::expand_grid(response, expl)
+resp_expl
+
+
+allplots2 = pmap(resp_expl, ~scatter_fun(x = .y, y = .x) )
+
+allplots2_names = pmap(resp_expl, ~paste0(.x, "_", .y, ".png"))
+allplots2_names[1:2]
 
 
 # pdf("all_scatterplots.pdf")
