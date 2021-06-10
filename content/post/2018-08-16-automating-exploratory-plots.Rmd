@@ -27,7 +27,7 @@ Unfortunately making plots manually can backfire.  The efficiency of using a sof
 
 So while I often assure students working under time constraints that it is perfectly OK to use software they already know rather than spending the time to learn how to do something in R, making many plots is a special case.  To get them started I will provide students who need to automate plotting in R some example code (with explanation).  
 
-This post is based on an example I was working on recently, which involves plotting bivariate relationships between many continuous variables.
+This post is based on an example that involves plotting bivariate relationships between many continuous variables.
 
 ## Table of Contents
 
@@ -40,7 +40,7 @@ render_toc("2018-08-16-automating-exploratory-plots.Rmd")
 I'll be plotting with **ggplot2** and looping with **purrr**.  I'll also be using package **cowplot** later to combine individual plots into one, but will use the package functions via `cowplot::` instead of loading the package.
 
 ```{r}
-library(ggplot2) # v. 3.3.2
+library(ggplot2) # v. 3.3.3
 library(purrr) # v. 0.3.4
 
 ```
@@ -156,15 +156,26 @@ For only a few response variables we could easily copy and paste the code above,
 
 Another option is to loop through both vectors of variables and make all the plots at once.  Because we want a plot for each combination of variables, this is a job for a *nested* loop.  This means one `map()` loop will be nested inside another.  I will refer to the first `map()` loop as the *outer* loop and the second one as the *inner* loop.
 
-I'm going to have the response variables in the outer loop and the explanatory variables in the inner loop.  That way I can graph all of the explanatory variables for each response variable before moving on to the next response variable.  This puts the output, a nested list, in a logical order.
+I'm going to run through the response variables in the outer loop and the explanatory variables in the inner loop.  That way I can graph all of the explanatory variables for each response variable before moving on to the next response variable.  This puts the output, a nested list, in a logical order.
 
-A nested loop involves more complicated code, of course..  For example, it took some effort for me to wrap my head around how to refer to the list element from the outer loop within the inner loop when using the `map()` formula coding.  I found the answers/comments to [this question](https://stackoverflow.com/questions/48847613/purrr-map-equivalent-of-nested-for-loop) on Stack Overflow to be helpful.  Note that one approach is to avoid the formula coding all together and use anonymous functions for either or both the inner and outer loops.
+A nested loop involves more complicated code.  It took some effort for me to wrap my head around how to refer to the list element from the outer loop within the inner loop when using the `map()` formula coding with the tilde (`~`).  I found the answers/comments to [this question](https://stackoverflow.com/questions/48847613/purrr-map-equivalent-of-nested-for-loop) on Stack Overflow to be helpful.  
 
-Since my scatterplot function is so simple I ended up using formula coding for the outer loop and the function as is in the inner loop.  The inner list elements are fed to the first argument of `scatter_fun()` by default, which works out great since the first argument is the `x` variable and the inner loop loops through the explanatory variables.  The `.x` then refers to the outer list elements (the response variable names), and is passed to the `y` argument of the function in the inner loop.
+Since my scatterplot function is so simple I ended up using formula coding for the outer loop and the function as-is in the inner loop.  The inner list elements are fed to the first argument of `scatter_fun()` by default, which works out great since the first argument is the `x` variable and the inner loop loops through the explanatory variables.  The `.x` then refers to the outer list elements (the response variable names), and is passed to the `y` argument of the function in the inner loop.
 
 ```{r}
 all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )
+
+```
+
+To be honest, I think it is fairly hard to follow what the above code is doing. And I've found it difficult to use such an approach if adding additional nested loops.  At the end of the day, using anonymous functions involves more code but the results may be easier to understand.  Well, as easy to follow as nested loops ever are. `r emo::ji("stuck_out_tongue_winking_eye")` Here's the same plots using anonymous functions in each `map()` loop.
+
+```{r, eval = FALSE}
+all_plots2 = map(response, function(resp) {
+     map(expl, function(expl) {
+          scatter_fun(x = expl, y = resp)
+     })
+})
 
 ```
 

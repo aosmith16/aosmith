@@ -1,4 +1,4 @@
-library(ggplot2) # v. 3.3.2
+library(ggplot2) # v. 3.3.3
 library(purrr) # v. 0.3.4
 
 
@@ -52,6 +52,13 @@ elev_plots
 all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )
 
+
+# all_plots2 = map(response, function(resp) {
+#      map(expl, function(expl) {
+#           scatter_fun(x = expl, y = resp)
+#      })
+# })
+# 
 
 all_plots$grad[1:2]
 

@@ -14,15 +14,13 @@ description: "In this post I show an example of how to automate the process of m
 ---
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
-<link href="/rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
-<script src="/rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
 
 
-<p><em>This post was last updated on 2020-12-31.</em></p>
+<p><em>This post was last updated on 2021-06-10.</em></p>
 <p>When you have a lot of variables and need to make a lot exploratory plots it’s usually worthwhile to automate the process in R instead of manually copying and pasting code for every plot. However, the coding approach needed to automate plots can look pretty daunting to a beginner R user. It can look so daunting, in fact, that it can appear easier to manually make the plots (like in Excel) rather than using R at all.</p>
 <p>Unfortunately making plots manually can backfire. The efficiency of using a software program you already know is quickly out-weighed by being unable to easily reproduce the plots when needed. I know I invariably have to re-make even exploratory plots, and it’d be a bummer if I had to remake them all manually rather than re-running some code.</p>
 <p>So while I often assure students working under time constraints that it is perfectly OK to use software they already know rather than spending the time to learn how to do something in R, making many plots is a special case. To get them started I will provide students who need to automate plotting in R some example code (with explanation).</p>
-<p>This post is based on an example I was working on recently, which involves plotting bivariate relationships between many continuous variables.</p>
+<p>This post is based on an example that involves plotting bivariate relationships between many continuous variables.</p>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
@@ -48,7 +46,7 @@ description: "In this post I show an example of how to automate the process of m
 <div id="load-r-packages" class="section level1">
 <h1>Load R packages</h1>
 <p>I’ll be plotting with <strong>ggplot2</strong> and looping with <strong>purrr</strong>. I’ll also be using package <strong>cowplot</strong> later to combine individual plots into one, but will use the package functions via <code>cowplot::</code> instead of loading the package.</p>
-<pre class="r"><code>library(ggplot2) # v. 3.3.2
+<pre class="r"><code>library(ggplot2) # v. 3.3.3
 library(purrr) # v. 0.3.4</code></pre>
 </div>
 <div id="the-set-up" class="section level1">
@@ -136,29 +134,35 @@ expl</code></pre>
 <div id="using-a-nested-loop" class="section level2">
 <h2>Using a nested loop</h2>
 <p>Another option is to loop through both vectors of variables and make all the plots at once. Because we want a plot for each combination of variables, this is a job for a <em>nested</em> loop. This means one <code>map()</code> loop will be nested inside another. I will refer to the first <code>map()</code> loop as the <em>outer</em> loop and the second one as the <em>inner</em> loop.</p>
-<p>I’m going to have the response variables in the outer loop and the explanatory variables in the inner loop. That way I can graph all of the explanatory variables for each response variable before moving on to the next response variable. This puts the output, a nested list, in a logical order.</p>
-<p>A nested loop involves more complicated code, of course.. For example, it took some effort for me to wrap my head around how to refer to the list element from the outer loop within the inner loop when using the <code>map()</code> formula coding. I found the answers/comments to <a href="https://stackoverflow.com/questions/48847613/purrr-map-equivalent-of-nested-for-loop">this question</a> on Stack Overflow to be helpful. Note that one approach is to avoid the formula coding all together and use anonymous functions for either or both the inner and outer loops.</p>
-<p>Since my scatterplot function is so simple I ended up using formula coding for the outer loop and the function as is in the inner loop. The inner list elements are fed to the first argument of <code>scatter_fun()</code> by default, which works out great since the first argument is the <code>x</code> variable and the inner loop loops through the explanatory variables. The <code>.x</code> then refers to the outer list elements (the response variable names), and is passed to the <code>y</code> argument of the function in the inner loop.</p>
+<p>I’m going to run through the response variables in the outer loop and the explanatory variables in the inner loop. That way I can graph all of the explanatory variables for each response variable before moving on to the next response variable. This puts the output, a nested list, in a logical order.</p>
+<p>A nested loop involves more complicated code. It took some effort for me to wrap my head around how to refer to the list element from the outer loop within the inner loop when using the <code>map()</code> formula coding with the tilde (<code>~</code>). I found the answers/comments to <a href="https://stackoverflow.com/questions/48847613/purrr-map-equivalent-of-nested-for-loop">this question</a> on Stack Overflow to be helpful.</p>
+<p>Since my scatterplot function is so simple I ended up using formula coding for the outer loop and the function as-is in the inner loop. The inner list elements are fed to the first argument of <code>scatter_fun()</code> by default, which works out great since the first argument is the <code>x</code> variable and the inner loop loops through the explanatory variables. The <code>.x</code> then refers to the outer list elements (the response variable names), and is passed to the <code>y</code> argument of the function in the inner loop.</p>
 <pre class="r"><code>all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )</code></pre>
+<p>To be honest, I think it is fairly hard to follow what the above code is doing. And I’ve found it difficult to use such an approach if adding additional nested loops. At the end of the day, using anonymous functions involves more code but the results may be easier to understand. Well, as easy to follow as nested loops ever are. 😜 Here’s the same plots using anonymous functions in each <code>map()</code> loop.</p>
+<pre class="r"><code>all_plots2 = map(response, function(resp) {
+     map(expl, function(expl) {
+          scatter_fun(x = expl, y = resp)
+     })
+})</code></pre>
 <p>The output is a list of lists. Each sublist contains all the plots for a single response variable. Because I set the names for both vectors of variable names, the inner and outer lists both have names. These names can be used to pull out individual plots.</p>
 <p>For example, if I want to see all the plots for the <code>grad</code> response variable I can print that sublist by name. (I’m going to display only two of four <code>grad</code> plots here to save space.)</p>
 <pre class="r"><code>all_plots$grad[1:2]</code></pre>
 <pre><code># $slp</code></pre>
 <pre><code># `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <pre><code># 
 # $lat</code></pre>
 <pre><code># `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-12-2.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-13-2.png" width="672" /></p>
 <p>If I want to print a single plot, I can first extract one of the sublists using an outer list name and then extract the individual plot via an inner list name.</p>
 <pre class="r"><code>all_plots$grad$long</code></pre>
 <pre><code># `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <p>I find the names convenient, but you can also extract plots via position. Here’s the same graph, the third element of the third list.</p>
 <pre class="r"><code>all_plots[[3]][[3]]</code></pre>
 <pre><code># `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
 <div id="combining-variables-for-a-single-loop" class="section level2">
 <h2>Combining variables for a single loop</h2>
@@ -274,24 +278,24 @@ plotnames</code></pre>
 <p>I like the package <strong>cowplot</strong> function <code>plot_grid()</code> for quickly combining multiple plots into one. A list of plots can be passed via the <code>plotlist</code> argument.</p>
 <p>Here’s what that looks like for the first response variable, <code>elev</code>.</p>
 <pre class="r"><code>cowplot::plot_grid(plotlist = all_plots[[1]])</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-23-1.png" width="672" /></p>
 <p>We can use a loop to combine the plots for each response variable sublist. The result could then be saved using any of the approaches shown above. If you have many subplots per combined plot you likely will want to save the plots at a larger size so the individual plots can be clearly seen.</p>
 <pre class="r"><code>response_plots = map(all_plots, ~cowplot::plot_grid(plotlist = .x))
 response_plots</code></pre>
 <pre><code># $elev</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-23-1.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-24-1.png" width="672" /></p>
 <pre><code># 
 # $resp</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-23-2.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-24-2.png" width="672" /></p>
 <pre><code># 
 # $grad</code></pre>
-<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-23-3.png" width="672" /></p>
+<p><img src="/post/2018-08-16-automating-exploratory-plots_files/figure-html/unnamed-chunk-24-3.png" width="672" /></p>
 </div>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2018-08-16-automating-exploratory-plots.R">from here</a>.</p>
-<pre class="r"><code>library(ggplot2) # v. 3.3.2
+<pre class="r"><code>library(ggplot2) # v. 3.3.3
 library(purrr) # v. 0.3.4
 
 set.seed(16)
@@ -334,6 +338,12 @@ elev_plots
 
 all_plots = map(response,
                 ~map(expl, scatter_fun, y = .x) )
+
+all_plots2 = map(response, function(resp) {
+     map(expl, function(expl) {
+          scatter_fun(x = expl, y = resp)
+     })
+})
 
 all_plots$grad[1:2]
 all_plots$grad$long
