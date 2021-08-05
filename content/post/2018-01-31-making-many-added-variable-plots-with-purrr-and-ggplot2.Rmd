@@ -19,6 +19,8 @@ devtools::source_gist("2500a85297b742c6f2fb3a14549f5851",
                       filename = 'render_toc.R')
 ```
 
+*This post was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
+
 Last week two of my consulting meetings ended up on the same topic:  making added variable plots.
 
 In both cases, the student had a linear model of some flavor that had several continuous explanatory variables.  They wanted to plot the estimated relationship between each variable in the model and the response.  This could easily lead to a lot of copying and pasting of code, since they want to do the same thing for every explanatory variable in the model.  I worked up some example code showing an approach on how one might automate the task in R with functions and loops, and thought I'd generalize it for a blog post.
@@ -42,10 +44,10 @@ When making an added variable plot, it is fairly standard to make the prediction
 The main workhorses I'm using today is **purrr** for looping through variables/lists and **ggplot2** for plotting.  I also use helper functions from **dplyr** for data manipulation and **broom** for getting the model predictions and standard errors.
 
 ```{r, warning = FALSE, message = FALSE}
-library(dplyr) # v. 0.8.0
-library(ggplot2) # v. 3.2.0
-library(purrr) # v. 0.3.1
-library(broom) # v. 0.5.1
+library(dplyr) # v. 1.0.7
+library(ggplot2) # v. 3.3.5
+library(purrr) # v. 0.3.4
+library(broom) # v. 0.7.9
 
 ```
 
@@ -78,7 +80,11 @@ I could write out a vector of variable names to loop through manually, but I pre
 
 The first step in making an added variable plot manually is to create the dataset to use for calculating model predictions. This dataset will contain the observed data for the explanatory variable of interest (aka the *focus* variable) with all other variables fixed to their medians.  
 
-Below is a function for doing this task.  The function takes a dataset, a vector of all the variables in the model (as strings), and the name of the focus variable (as a string).  The **dplyr** `*_at()` functions can take strings as input, so I use `summarise_at()` to calculate the medians of the non-focus variables.  I bind the summary values to the focus variable data from the original dataset with `cbind()`, since `cbind()` allows recycling.
+Below is a function for doing this task:  
+
+- The function takes a dataset, a vector of all the variables in the model (as strings), and the name of the focus variable (as a string).  
+- The **dplyr** `*_at()` functions can take strings as input, so I use `summarise_at()` to calculate the medians of the non-focus variables.  
+- I bind the summary values to the focus variable data from the original dataset with `cbind()`, since `cbind()` allows recycling to repeat the single values for the whole length of the focus variable.  
 
 ```{r}
 preddat_fun = function(data, allvars, var) {
@@ -115,13 +121,22 @@ str(pred_dats)
 
 Once the prediction datasets are created, the predictions can be calculated from the model and added to each dataset.  I do this on the model scale, since I want to make confidence intervals with the standard errors prior to back-transforming.
 
-The `augment()` function from **broom** works with a variety of model objects, including *lm* and *glm* objects.  It can take new datasets for prediction via the "newdata" argument.  I use it here to add both the prediction and the standard errors of the predictions to each dataset.
+The `augment()` function from **broom** works with a variety of model objects, including *lm* and *glm* objects.  It can take new datasets for prediction via the `newdata` argument.  
 
-I do this task by looping through the prediction datasets with `map()`, first to add the predictions via `augment()` and then to calculate approximate confidence intervals.  Since my response was on the log scale, I also back-transform the predictions and confidence interval limits to the original data scale.  This step isn't needed for a model without a transformation or link function.
+This is what the first six lines of output look like for one prediction dataset. Note I get standard errors for each predicting using the `se_fit` argument. I'll use these to build confidence intervals.
+
+```{r}
+head( augment(fit1, newdata = pred_dats[[1]], se_fit = TRUE))
+
+```
+
+To do this for every variable, I'll loop through the prediction datasets with `map()`. I first to add the predictions via `augment()` and then to calculate approximate confidence intervals.  
+
+Since my response was on the log scale, I back-transform the predictions and confidence interval limits to the original data scale in this step.  This step isn't needed for a model without a transformation or link function.
 
 ```{r}
 preds = pred_dats %>%
-     map(~augment(fit1, newdata = .x) ) %>%
+     map(~augment(fit1, newdata = .x, se_fit = TRUE) ) %>%
      map(~mutate(.x, 
                  lower = exp(.fitted - 2*.se.fit),
                  upper = exp(.fitted + 2*.se.fit),
@@ -155,7 +170,7 @@ ggplot(data = preds$disp, aes(x = disp, y = pred) ) +
 
 # Build a plotting function
 
-Once I've worked out what one plot should look like I can make function for making plots.  This is a reasonable approach for when making many plots that all look basically the same.  
+Once I've worked out what one plot should look like I can make function for making all the plots.  This is a reasonable approach for when making many plots that all look basically the same.  
 
 One problem I anticipated running into when automating the plotting is with the x axis labels.  The variable names in the dataset aren't very nice looking.  If I want the x axis labels to be more polished in the plots I'll need replacement labels.  I decided to make a vector of nicer labels, one label for each focus variable.  This vector needs to be the same length and in the same order as the vector of variable names and the list of prediction datasets so each plot gets the correct new axis label.
 
@@ -208,9 +223,9 @@ all_plots
 
 The plots can be printed all at once as above or individually using indexes or list names, using code such as `all_plots[[1]]` or `all_plots$disp`.  Plots can also be saved for use outside of R.  I show some examples of how to do this in a [different post](https://aosmith.rbind.io/2018/08/20/automating-exploratory-plots/#saving-the-plots).
 
-It might be nice to combine these individual plots into a single multi-plot.  A faceted plot would be an option, but the approach I've done here in its current form isn't a great one for faceting (although I'm sure it could be modified with that in mind).  
+It might be nice to combine these individual plots into a single multi-plot.  A faceted plot would be an option, but the approach I've done here in its current form isn't a great one for faceting.  
 
-The individual plots can be combined into a single figure via function from the **cowplot** package, though, without too much trouble.  Note that **cowplot** was opinionated about the theme in the past, which is why I use it without loading it here.
+The individual plots can be combined into a single figure via function from the **cowplot** package, though, without too much trouble.  Also see package **patchwork**.
 
 The `plot_grid()` function can take a list of plots, which is what I have.  It has a variety of options you might want to explore for getting the plots stitched together nicely.
 

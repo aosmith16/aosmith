@@ -1,7 +1,7 @@
-library(dplyr) # v. 0.8.0
-library(ggplot2) # v. 3.2.0
-library(purrr) # v. 0.3.1
-library(broom) # v. 0.5.1
+library(dplyr) # v. 1.0.7
+library(ggplot2) # v. 3.3.5
+library(purrr) # v. 0.3.4
+library(broom) # v. 0.7.9
 
 
 fit1 = lm( log(mpg) ~ disp + hp + drat + wt, data = mtcars)
@@ -28,8 +28,11 @@ pred_dats = mod_vars %>%
 str(pred_dats)
 
 
+head( augment(fit1, newdata = pred_dats[[1]], se_fit = TRUE))
+
+
 preds = pred_dats %>%
-     map(~augment(fit1, newdata = .x) ) %>%
+     map(~augment(fit1, newdata = .x, se_fit = TRUE) ) %>%
      map(~mutate(.x, 
                  lower = exp(.fitted - 2*.se.fit),
                  upper = exp(.fitted + 2*.se.fit),
