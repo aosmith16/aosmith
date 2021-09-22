@@ -1,5 +1,5 @@
-library(emmeans) # v. 1.3.3
-library(magrittr) # v. 1.5
+library(emmeans) # v. 1.5.5-1
+library(magrittr) # v. 2.0.1
 
 
 dat = structure(list(f1 = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 

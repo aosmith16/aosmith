@@ -14,9 +14,10 @@ draft: FALSE
 description: "Post hoc comparisons are made easy in package emmeans.  This post goes through some of the basics for those just getting started with the package."
 ---
 
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
-<p>Package <strong>emmeans</strong> (formerly known as <strong>lsmeans</strong>) is enormously useful for folks wanting to do post hoc comparisons among groups after fitting a model. It has a very thorough set of vignettes (see the vignette topics <a href="https://cran.r-project.org/web/packages/emmeans/vignettes/basics.html#more">here</a>), is very flexible with a ton of options, and works out of the box with a lot of different model objects (and can be extended to others 👍).</p>
+<p>Package <strong>emmeans</strong> (formerly known as <strong>lsmeans</strong>) is enormously useful for folks wanting to do post hoc comparisons among groups after fitting a model. It has a very thorough set of vignettes (see the vignette topics <a href="https://cran.r-project.org/web/packages/emmeans/vignettes/basics.html#contents">here</a>), is very flexible with a ton of options, and works out of the box with a lot of different model objects (and can be extended to others 👍).</p>
 <p>I’ve started recommending <strong>emmeans</strong> all the time to students fitting models in R. However, I’ve found that often times students struggle a bit to get started using the package, possibly due to the sheer amount of flexibility and information in the vignettes.</p>
 <p>I’ve put together some basic examples for using <strong>emmeans</strong>, meant to be a complement to the vignettes. Specifically this post will demonstrate a few of the built-in options for some standard post hoc comparisons; I will write a separate post about custom comparisons in <strong>emmeans</strong>.</p>
 <p><em>Disclaimer: This post is about using a package in R and so unfortunately does not focus on appropriate statistical practice for model fitting and post hoc comparisons.</em></p>
@@ -41,8 +42,8 @@ description: "Post hoc comparisons are made easy in package emmeans.  This post 
 <div id="r-packages" class="section level1">
 <h1>R packages</h1>
 <p>I will load <strong>magrittr</strong> for the pipe in addition to <strong>emmeans</strong>.</p>
-<pre class="r"><code>library(emmeans) # v. 1.3.3
-library(magrittr) # v. 1.5</code></pre>
+<pre class="r"><code>library(emmeans) # v. 1.5.5-1
+library(magrittr) # v. 2.0.1</code></pre>
 </div>
 <div id="the-dataset-and-model" class="section level1">
 <h1>The dataset and model</h1>
@@ -92,12 +93,12 @@ str(dat)</code></pre>
 <p>The <code>emmeans()</code> package automatically adjusts for multiple comparisons. Since we did all pairwise comparisons the package used a Tukey adjustment. <a href="#changing-the-multiple-comparisons-adjustment">The type of adjustment can be changed</a>.</p>
 <pre class="r"><code>emm1$contrasts</code></pre>
 <pre><code>#  contrast  estimate    SE df t.ratio p.value
-#  a,1 - c,1    0.671 0.629 16  1.065  0.7146 
-#  a,1 - a,c    1.847 0.629 16  2.934  0.0434 
-#  a,1 - c,c   -0.766 0.629 16 -1.217  0.6253 
-#  c,1 - a,c    1.176 0.629 16  1.869  0.2795 
-#  c,1 - c,c   -1.437 0.629 16 -2.283  0.1438 
-#  a,c - c,c   -2.613 0.629 16 -4.152  0.0038 
+#  a 1 - c 1    0.671 0.629 16  1.065  0.7146 
+#  a 1 - a c    1.847 0.629 16  2.934  0.0434 
+#  a 1 - c c   -0.766 0.629 16 -1.217  0.6253 
+#  c 1 - a c    1.176 0.629 16  1.869  0.2795 
+#  c 1 - c c   -1.437 0.629 16 -2.283  0.1438 
+#  a c - c c   -2.613 0.629 16 -4.152  0.0038 
 # 
 # Results are given on the log (not the response) scale. 
 # P value adjustment: tukey method for comparing a family of 4 estimates</code></pre>
@@ -120,12 +121,12 @@ str(dat)</code></pre>
 # 
 # $contrasts
 #  contrast   ratio     SE df t.ratio p.value
-#  a,1 / c,1 1.9553 1.2306 16  1.065  0.7146 
-#  a,1 / a,c 6.3396 3.9900 16  2.934  0.0434 
-#  a,1 / c,c 0.4648 0.2926 16 -1.217  0.6253 
-#  c,1 / a,c 3.2422 2.0406 16  1.869  0.2795 
-#  c,1 / c,c 0.2377 0.1496 16 -2.283  0.1438 
-#  a,c / c,c 0.0733 0.0461 16 -4.152  0.0038 
+#  a 1 / c 1 1.9553 1.2306 16  1.065  0.7146 
+#  a 1 / a c 6.3396 3.9900 16  2.934  0.0434 
+#  a 1 / c c 0.4648 0.2926 16 -1.217  0.6253 
+#  c 1 / a c 3.2422 2.0406 16  1.869  0.2795 
+#  c 1 / c c 0.2377 0.1496 16 -2.283  0.1438 
+#  a c / c c 0.0733 0.0461 16 -4.152  0.0038 
 # 
 # P value adjustment: tukey method for comparing a family of 4 estimates 
 # Tests are performed on the log scale</code></pre>
@@ -148,12 +149,12 @@ emm1.1</code></pre>
 # 
 # $contrasts
 #  contrast   ratio     SE df t.ratio p.value
-#  a,1 / c,1 1.9553 1.2306 16  1.065  0.3025 
-#  a,1 / a,c 6.3396 3.9900 16  2.934  0.0097 
-#  a,1 / c,c 0.4648 0.2926 16 -1.217  0.2412 
-#  c,1 / a,c 3.2422 2.0406 16  1.869  0.0801 
-#  c,1 / c,c 0.2377 0.1496 16 -2.283  0.0365 
-#  a,c / c,c 0.0733 0.0461 16 -4.152  0.0008 
+#  a 1 / c 1 1.9553 1.2306 16  1.065  0.3025 
+#  a 1 / a c 6.3396 3.9900 16  2.934  0.0097 
+#  a 1 / c c 0.4648 0.2926 16 -1.217  0.2412 
+#  c 1 / a c 3.2422 2.0406 16  1.869  0.0801 
+#  c 1 / c c 0.2377 0.1496 16 -2.283  0.0365 
+#  a c / c c 0.0733 0.0461 16 -4.152  0.0008 
 # 
 # Tests are performed on the log scale</code></pre>
 </div>
@@ -163,12 +164,12 @@ emm1.1</code></pre>
 <pre class="r"><code>emm1.1$contrasts %&gt;%
      confint()</code></pre>
 <pre><code>#  contrast   ratio     SE df lower.CL upper.CL
-#  a,1 / c,1 1.9553 1.2306 16   0.5150    7.424
-#  a,1 / a,c 6.3396 3.9900 16   1.6696   24.072
-#  a,1 / c,c 0.4648 0.2926 16   0.1224    1.765
-#  c,1 / a,c 3.2422 2.0406 16   0.8539   12.311
-#  c,1 / c,c 0.2377 0.1496 16   0.0626    0.903
-#  a,c / c,c 0.0733 0.0461 16   0.0193    0.278
+#  a 1 / c 1 1.9553 1.2306 16   0.5150    7.424
+#  a 1 / a c 6.3396 3.9900 16   1.6696   24.072
+#  a 1 / c c 0.4648 0.2926 16   0.1224    1.765
+#  c 1 / a c 3.2422 2.0406 16   0.8539   12.311
+#  c 1 / c c 0.2377 0.1496 16   0.0626    0.903
+#  a c / c c 0.0733 0.0461 16   0.0193    0.278
 # 
 # Confidence level used: 0.95 
 # Intervals are back-transformed from the log scale</code></pre>
@@ -176,12 +177,12 @@ emm1.1</code></pre>
 <pre class="r"><code>emm1.1$contrasts %&gt;%
      summary(infer = TRUE)</code></pre>
 <pre><code>#  contrast   ratio     SE df lower.CL upper.CL t.ratio p.value
-#  a,1 / c,1 1.9553 1.2306 16   0.5150    7.424  1.065  0.3025 
-#  a,1 / a,c 6.3396 3.9900 16   1.6696   24.072  2.934  0.0097 
-#  a,1 / c,c 0.4648 0.2926 16   0.1224    1.765 -1.217  0.2412 
-#  c,1 / a,c 3.2422 2.0406 16   0.8539   12.311  1.869  0.0801 
-#  c,1 / c,c 0.2377 0.1496 16   0.0626    0.903 -2.283  0.0365 
-#  a,c / c,c 0.0733 0.0461 16   0.0193    0.278 -4.152  0.0008 
+#  a 1 / c 1 1.9553 1.2306 16   0.5150    7.424  1.065  0.3025 
+#  a 1 / a c 6.3396 3.9900 16   1.6696   24.072  2.934  0.0097 
+#  a 1 / c c 0.4648 0.2926 16   0.1224    1.765 -1.217  0.2412 
+#  c 1 / a c 3.2422 2.0406 16   0.8539   12.311  1.869  0.0801 
+#  c 1 / c c 0.2377 0.1496 16   0.0626    0.903 -2.283  0.0365 
+#  a c / c c 0.0733 0.0461 16   0.0193    0.278 -4.152  0.0008 
 # 
 # Confidence level used: 0.95 
 # Intervals are back-transformed from the log scale 
@@ -197,12 +198,12 @@ emm1.1</code></pre>
 
 emm1.1_contrasts</code></pre>
 <pre><code>#    contrast      ratio         SE df   lower.CL   upper.CL
-# 1 a,1 / c,1 1.95530312 1.23062914 16 0.51495216  7.4243989
-# 2 a,1 / a,c 6.33957277 3.99000180 16 1.66960135 24.0717240
-# 3 a,1 / c,c 0.46482555 0.29255202 16 0.12241730  1.7649695
-# 4 c,1 / a,c 3.24224552 2.04060525 16 0.85388364 12.3109935
-# 5 c,1 / c,c 0.23772557 0.14961978 16 0.06260784  0.9026577
-# 6 a,c / c,c 0.07332127 0.04614696 16 0.01931002  0.2784051</code></pre>
+# 1 a 1 / c 1 1.95530312 1.23062914 16 0.51495216  7.4243989
+# 2 a 1 / a c 6.33957277 3.99000180 16 1.66960135 24.0717240
+# 3 a 1 / c c 0.46482555 0.29255202 16 0.12241730  1.7649695
+# 4 c 1 / a c 3.24224552 2.04060525 16 0.85388364 12.3109935
+# 5 c 1 / c c 0.23772557 0.14961978 16 0.06260784  0.9026577
+# 6 a c / c c 0.07332127 0.04614696 16 0.01931002  0.2784051</code></pre>
 <p>If needed, the estimated marginal means can also be put into a data.frame.</p>
 <pre class="r"><code>emm1.1$emmeans %&gt;%
      as.data.frame()</code></pre>
@@ -295,9 +296,9 @@ emm2</code></pre>
 # 
 # $contrasts
 #  contrast  estimate    SE df t.ratio p.value
-#  c,1 - a,1   -0.671 0.629 16 -1.065  0.5857 
-#  a,c - a,1   -1.847 0.629 16 -2.934  0.0262 
-#  c,c - a,1    0.766 0.629 16  1.217  0.4947 
+#  c 1 - a 1   -0.671 0.629 16 -1.065  0.5857 
+#  a c - a 1   -1.847 0.629 16 -2.934  0.0262 
+#  c c - a 1    0.766 0.629 16  1.217  0.4947 
 # 
 # Results are given on the log (not the response) scale. 
 # P value adjustment: dunnettx method for 3 tests</code></pre>
@@ -315,9 +316,9 @@ emm2</code></pre>
 # 
 # $contrasts
 #  contrast  estimate    SE df t.ratio p.value
-#  a,1 - c,c   -0.766 0.629 16 -1.217  0.4947 
-#  c,1 - c,c   -1.437 0.629 16 -2.283  0.0935 
-#  a,c - c,c   -2.613 0.629 16 -4.152  0.0021 
+#  a 1 - c c   -0.766 0.629 16 -1.217  0.4947 
+#  c 1 - c c   -1.437 0.629 16 -2.283  0.0935 
+#  a c - c c   -2.613 0.629 16 -4.152  0.0021 
 # 
 # Results are given on the log (not the response) scale. 
 # P value adjustment: dunnettx method for 3 tests</code></pre>
@@ -336,9 +337,9 @@ emm2</code></pre>
 # 
 # $contrasts
 #  contrast  estimate    SE df t.ratio p.value
-#  a,1 - c,1    0.671 0.629 16  1.065  0.5857 
-#  a,c - c,1   -1.176 0.629 16 -1.869  0.1937 
-#  c,c - c,1    1.437 0.629 16  2.283  0.0935 
+#  a 1 - c 1    0.671 0.629 16  1.065  0.5857 
+#  a c - c 1   -1.176 0.629 16 -1.869  0.1937 
+#  c c - c 1    1.437 0.629 16  2.283  0.0935 
 # 
 # Results are given on the log (not the response) scale. 
 # P value adjustment: dunnettx method for 3 tests</code></pre>
@@ -356,9 +357,9 @@ emm2</code></pre>
 # 
 # $contrasts
 #  contrast  estimate    SE df t.ratio p.value
-#  c,1 - a,1   -0.671 0.629 16 -1.065  0.5857 
-#  c,1 - a,c    1.176 0.629 16  1.869  0.1937 
-#  c,1 - c,c   -1.437 0.629 16 -2.283  0.0935 
+#  c 1 - a 1   -0.671 0.629 16 -1.065  0.5857 
+#  c 1 - a c    1.176 0.629 16  1.869  0.1937 
+#  c 1 - c c   -1.437 0.629 16 -2.283  0.0935 
 # 
 # Results are given on the log (not the response) scale. 
 # P value adjustment: dunnettx method for 3 tests</code></pre>
@@ -382,21 +383,21 @@ emm3</code></pre>
 <p>We can use <code>adjust</code> in <code>contrast()</code> to change the multiple comparisons adjustment.</p>
 <pre class="r"><code>contrast(emm3, method = &quot;pairwise&quot;, adjust = &quot;none&quot;)</code></pre>
 <pre><code>#  contrast   ratio     SE df t.ratio p.value
-#  a,1 / c,1 1.9553 1.2306 16  1.065  0.3025 
-#  a,1 / a,c 6.3396 3.9900 16  2.934  0.0097 
-#  a,1 / c,c 0.4648 0.2926 16 -1.217  0.2412 
-#  c,1 / a,c 3.2422 2.0406 16  1.869  0.0801 
-#  c,1 / c,c 0.2377 0.1496 16 -2.283  0.0365 
-#  a,c / c,c 0.0733 0.0461 16 -4.152  0.0008 
+#  a 1 / c 1 1.9553 1.2306 16  1.065  0.3025 
+#  a 1 / a c 6.3396 3.9900 16  2.934  0.0097 
+#  a 1 / c c 0.4648 0.2926 16 -1.217  0.2412 
+#  c 1 / a c 3.2422 2.0406 16  1.869  0.0801 
+#  c 1 / c c 0.2377 0.1496 16 -2.283  0.0365 
+#  a c / c c 0.0733 0.0461 16 -4.152  0.0008 
 # 
 # Tests are performed on the log scale</code></pre>
-<p>We can follow the <code>contrast()</code> argument with <code>summary()</code> or <code>confint()</code> and then put the results into a data.frame for plotting/saving. Again, I think the real strength of <code>contrast()</code> comes when we want custom comparisons, and I’ll demonstrate these in my next post.</p>
+<p>We can follow the <code>contrast()</code> argument with <code>summary()</code> or <code>confint()</code> and then put the results into a data.frame for plotting/saving. Again, I think the real strength of <code>contrast()</code> comes when we want custom comparisons, and I’ll demonstrate these in my <a href="https://aosmith.rbind.io/2019/04/15/custom-contrasts-emmeans/">next post</a>.</p>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-03-25-getting-started-with-emmeans.R">from here</a>.</p>
-<pre class="r"><code>library(emmeans) # v. 1.3.3
-library(magrittr) # v. 1.5
+<pre class="r"><code>library(emmeans) # v. 1.5.5-1
+library(magrittr) # v. 2.0.1
 
 dat = structure(list(f1 = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c(&quot;a&quot;, 

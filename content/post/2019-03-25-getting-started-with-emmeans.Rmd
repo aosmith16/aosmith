@@ -33,7 +33,7 @@ y = with(dat, 0 +
 dat$resp = round(exp(y), 1)
 ```
 
-Package **emmeans** (formerly known as **lsmeans**) is enormously useful for folks wanting to do post hoc comparisons among groups after fitting a model.  It has a very thorough set of vignettes (see the vignette topics [here](https://cran.r-project.org/web/packages/emmeans/vignettes/basics.html#more)), is very flexible with a ton of options, and works out of the box with a lot of different model objects (and can be extended to others `r emo::ji("+1")`).  
+Package **emmeans** (formerly known as **lsmeans**) is enormously useful for folks wanting to do post hoc comparisons among groups after fitting a model.  It has a very thorough set of vignettes (see the vignette topics [here](https://cran.r-project.org/web/packages/emmeans/vignettes/basics.html#contents)), is very flexible with a ton of options, and works out of the box with a lot of different model objects (and can be extended to others `r emo::ji("+1")`).  
 
 I've started recommending **emmeans** all the time to students fitting models in R.  However, I've found that often times students struggle a bit to get started using the package, possibly due to the sheer amount of flexibility and information in the vignettes.  
 
@@ -52,8 +52,8 @@ render_toc("2019-03-25-getting-started-with-emmeans.Rmd")
 I will load **magrittr** for the pipe in addition to **emmeans**.
 
 ```{r}
-library(emmeans) # v. 1.3.3
-library(magrittr) # v. 1.5
+library(emmeans) # v. 1.5.5-1
+library(magrittr) # v. 2.0.1
 
 ```
 
@@ -285,7 +285,7 @@ contrast(emm3, method = "pairwise", adjust = "none")
 
 ```
 
-We can follow the `contrast()` argument with `summary()` or `confint()` and then put the results into a data.frame for plotting/saving.  Again, I think the real strength of `contrast()` comes when we want custom comparisons, and I'll demonstrate these in my next post.
+We can follow the `contrast()` argument with `summary()` or `confint()` and then put the results into a data.frame for plotting/saving.  Again, I think the real strength of `contrast()` comes when we want custom comparisons, and I'll demonstrate these in my [next post](https://aosmith.rbind.io/2019/04/15/custom-contrasts-emmeans/).
 
 # Just the code, please
 
