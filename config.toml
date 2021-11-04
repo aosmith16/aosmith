@@ -11,8 +11,7 @@
 # But if you want to add local images, you can put your images directly in `source/assets/images` folder
 # For developpers, if you modify this theme, put your images in `source/images` folder and
 # use grunt task `build` to synchronize assets
-
-baseurl = "https://aosmith.rbind.io/"
+baseURL = "https://aosmith.rbind.io/"
 # languageCode = "en-us"
 title = "Very statisticious"
 theme = "hugo-tranquilpeak-theme"
@@ -21,9 +20,9 @@ preserveTaxonomyNames = true
 disqusShortname = "aosmith-rbind-io"
 googleAnalytics = ""
 pluralizeListTitles = false
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 paginate = 20
 math = true
+ignoreFiles = ["\\\\.Rmd$", "\\\\.Rmarkdown$", "_cache$"]
 # relativeurls = true
 # canonifyurls = true
 
@@ -51,7 +50,6 @@ math = true
   # googlePlus = "+ThibaudLepretre"
 
 [params]
-
   navbarTitle          = "Very statisticious"
   # Customize date format use to render blog post date, categories and other
   # You must use date format used by Go Time package https://golang.org/pkg/time/

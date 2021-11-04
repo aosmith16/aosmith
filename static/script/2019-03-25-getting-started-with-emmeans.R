@@ -1,14 +1,15 @@
-library(emmeans) # v. 1.5.5-1
+library(emmeans) # v. 1.7.0
 library(magrittr) # v. 2.0.1
 
 
-dat = structure(list(f1 = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
-1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("a", 
-"c"), class = "factor"), f2 = structure(c(1L, 2L, 1L, 2L, 1L, 
-2L, 1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L, 1L, 2L), .Label = c("1", 
-"c"), class = "factor"), resp = c(1.6, 0.3, 3, 0.1, 3.2, 0.2, 
-0.4, 0.4, 2.8, 0.7, 3.8, 3, 0.3, 14.3, 1.2, 0.5, 1.1, 4.4, 0.4, 
-8.4)), row.names = c(NA, -20L), class = "data.frame")
+dat = data.frame(resp = c(1.6,0.3,3,0.1,3.2,0.2,0.4,0.4,2.8,
+                          0.7,3.8,3,0.3,14.3,1.2,0.5,1.1,4.4,0.4,8.4),
+                 f1 = factor(c("a","a","a","a","a",
+                               "a","a","a","a","a","c","c","c","c","c",
+                               "c","c","c","c","c")),
+                 f2 = factor(c("1","c","1","c","1",
+                               "c","1","c","1","c","1","c","1","c","1",
+                               "c","1","c","1","c")))
 
 str(dat)
 
@@ -39,13 +40,6 @@ emm1.1$contrasts %>%
      summary(infer = TRUE)
 
 
-emm1.1_contrasts = emm1.1$contrasts %>%
-     confint() %>%
-     as.data.frame()
-
-emm1.1_contrasts
-
-
 emm1.1$emmeans %>%
      as.data.frame()
 
@@ -55,7 +49,7 @@ emm2
 
 
 emm2$contrasts %>%
-     rbind()
+     rbind() 
 
 
 emmeans(fit1, specs = pairwise ~ f1)

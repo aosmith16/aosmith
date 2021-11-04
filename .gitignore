@@ -3,9 +3,11 @@
 .RData
 .Ruserdata
 .Rprofile
-blogdown
+/blogdown
 Thumbs.db
-public/
+/public/
 aosmith.Rproj
 .httr-oauth
 bash.exe.stackdump
+.DS_Store
+/resources/
