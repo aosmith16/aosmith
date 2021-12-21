@@ -24,7 +24,7 @@ sd = 1
 ( dat$resp = with(dat, mu + standeff + ploteff ) )
 
 
-library(lme4) # v. 1.1-21
+library(lme4) # v. 1.1-27.1
 
 
 fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
@@ -49,7 +49,7 @@ sims = replicate(100, twolevel_fun(), simplify = FALSE )
 sims[[100]]
 
 
-library(broom) # v. 0.5.6
+library(broom.mixed) # v. 0.2.7
 tidy(fit1)
 
 
@@ -59,9 +59,9 @@ tidy(fit1, effects = "fixed")
 tidy(fit1, effects = "ran_pars", scales = "vcov")
 
 
-library(purrr) # v. 0.3.3
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
-library(ggplot2) # v. 3.2.1
+library(purrr) # v. 0.3.4
+suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.7
+library(ggplot2) # v. 3.3.5
 
 
 stand_sims = c(5, 20, 100) %>%

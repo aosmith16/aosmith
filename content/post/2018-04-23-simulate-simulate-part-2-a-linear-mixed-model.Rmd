@@ -35,6 +35,8 @@ dat = data.frame(stand, standeff, plot, ploteff)
 dat$resp = with(dat, mu + standeff + ploteff )
 ```
 
+*This post was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
+
 I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation.  I've seen instances where residual autocorrelation isn't detectable when I *know* it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance.  Such results are often due to small sample sizes, which even in this era of big data still isn't so unusual in ecology.  I've found exploring the effect of sample size on statistical results to be quite eye-opening `r emo::ji("eye")`.
 
 In [my first simulation post](https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/) I showed how to simulate data for a basic linear model. Today I'll be talking about how to simulate data for a linear mixed model. So I'm still working with normally distributed residuals but will add an additional level of variation.
@@ -164,7 +166,7 @@ is my guide for how to combine these pieces to create the simulated response var
 Now that I have successfully created the dataset I showed you at the start of this section, it's time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the `lmer()` function from package **lme4**.
 
 ```{r, warning = FALSE, message = FALSE}
-library(lme4) # v. 1.1-21
+library(lme4) # v. 1.1-27.1
 
 ```
 
@@ -218,12 +220,12 @@ sims[[100]]
 
 # Extract results from the linear mixed model
 
-After running all the models we will want to extract whatever we are interested in. The `tidy()` function from package **broom** can be used to conveniently extract both fixed and random effects.
+After running all the models we will want to extract whatever we are interested in. The `tidy()` function from package **broom.mixed** can be used to conveniently extract both fixed and random effects.
 
-Below is an example on the practice model.  You'll notice there are no p-values for fixed effects.  If those are desired and the degrees of freedom can be calculated, see packages **lmerTest** and [**broom.mixed**](https://github.com/bbolker/broom.mixed).
+Below is an example on the practice model.  You'll notice there are no p-values for fixed effects.  If those are desired and the degrees of freedom can be calculated, see packages **lmerTest** and the `ddf.method` argument in `tidy()`.
 
 ```{r, message = FALSE, warning = FALSE}
-library(broom) # v. 0.5.6
+library(broom.mixed) # v. 0.2.7
 tidy(fit1)
 
 ```
@@ -249,9 +251,9 @@ Today I'll look at how well we estimate variances of random effects for differen
 I'm going to load some helper packages for this, including **purrr** for looping, **dplyr** for data manipulation tasks, and **ggplot2** for plotting.
 
 ```{r, message = FALSE, warning = FALSE}
-library(purrr) # v. 0.3.3
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
-library(ggplot2) # v. 3.2.1
+library(purrr) # v. 0.3.4
+suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.7
+library(ggplot2) # v. 3.3.5
 
 ```
 
@@ -287,7 +289,7 @@ ggplot(stand_vars, aes(x = estimate) ) +
 
 ```
 
-Whoops, I need to get my factor levels in order.
+Whoops, I need to get my factor levels in order. I'll use package **forcats** for this.
 
 ```{r}
 stand_vars = mutate(stand_vars, stand_num = forcats::fct_inorder(stand_num) )

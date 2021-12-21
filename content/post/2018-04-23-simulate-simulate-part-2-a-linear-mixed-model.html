@@ -14,8 +14,10 @@ draft: FALSE
 description: "In my second simulation example I show how to simulate data from a basic two-level hierarchical design.  I go on to explore how well the random effects variance component is estimated for different sample sizes."
 ---
 
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
+<p><em>This post was last updated on 2021-12-21.</em></p>
 <p>I feel like I learn something every time start simulating new data to update an assignment or exploring a question from a client via simulation. I’ve seen instances where residual autocorrelation isn’t detectable when I <em>know</em> it exists (because I simulated it) or I have skewed residuals and/or unequal variances when I simulated residuals from a normal distribution with a single variance. Such results are often due to small sample sizes, which even in this era of big data still isn’t so unusual in ecology. I’ve found exploring the effect of sample size on statistical results to be quite eye-opening 👁.</p>
 <p>In <a href="https://aosmith.rbind.io/2018/01/09/simulate-simulate-part1/">my first simulation post</a> I showed how to simulate data for a basic linear model. Today I’ll be talking about how to simulate data for a linear mixed model. So I’m still working with normally distributed residuals but will add an additional level of variation.</p>
 <div id="table-of-contents" class="section level2">
@@ -149,7 +151,7 @@ sd = 1</code></pre>
 #  [8]  9.003203 13.850646 12.914153 10.529352 12.768342  7.584302  6.568810
 # [15]  8.239229  5.463744 11.981485 12.112977 13.766137 11.429760</code></pre>
 <p>Now that I have successfully created the dataset I showed you at the start of this section, it’s time for model fitting! I can fit a model with two sources of variation (stand and plot) with, e.g., the <code>lmer()</code> function from package <strong>lme4</strong>.</p>
-<pre class="r"><code>library(lme4) # v. 1.1-21</code></pre>
+<pre class="r"><code>library(lme4) # v. 1.1-27.1</code></pre>
 <p>The results for the estimated overall mean and standard deviations of random effects in this model look pretty similar to my defined parameter values.</p>
 <pre class="r"><code>fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
 fit1</code></pre>
@@ -216,37 +218,37 @@ sims[[100]]</code></pre>
 </div>
 <div id="extract-results-from-the-linear-mixed-model" class="section level1">
 <h1>Extract results from the linear mixed model</h1>
-<p>After running all the models we will want to extract whatever we are interested in. The <code>tidy()</code> function from package <strong>broom</strong> can be used to conveniently extract both fixed and random effects.</p>
-<p>Below is an example on the practice model. You’ll notice there are no p-values for fixed effects. If those are desired and the degrees of freedom can be calculated, see packages <strong>lmerTest</strong> and <a href="https://github.com/bbolker/broom.mixed"><strong>broom.mixed</strong></a>.</p>
-<pre class="r"><code>library(broom) # v. 0.5.6
+<p>After running all the models we will want to extract whatever we are interested in. The <code>tidy()</code> function from package <strong>broom.mixed</strong> can be used to conveniently extract both fixed and random effects.</p>
+<p>Below is an example on the practice model. You’ll notice there are no p-values for fixed effects. If those are desired and the degrees of freedom can be calculated, see packages <strong>lmerTest</strong> and the <code>ddf.method</code> argument in <code>tidy()</code>.</p>
+<pre class="r"><code>library(broom.mixed) # v. 0.2.7
 tidy(fit1)</code></pre>
-<pre><code># # A tibble: 3 x 5
-#   term                    estimate std.error statistic group   
-#   &lt;chr&gt;                      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;   
-# 1 (Intercept)                10.6       1.00      10.5 fixed   
-# 2 sd_(Intercept).stand        2.17     NA         NA   stand   
-# 3 sd_Observation.Residual     1.13     NA         NA   Residual</code></pre>
+<pre><code># # A tibble: 3 x 6
+#   effect   group    term            estimate std.error statistic
+#   &lt;chr&gt;    &lt;chr&gt;    &lt;chr&gt;              &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+# 1 fixed    &lt;NA&gt;     (Intercept)        10.6       1.00      10.5
+# 2 ran_pars stand    sd__(Intercept)     2.17     NA         NA  
+# 3 ran_pars Residual sd__Observation     1.13     NA         NA</code></pre>
 <p>If we want to extract only the fixed effects:</p>
 <pre class="r"><code>tidy(fit1, effects = &quot;fixed&quot;)</code></pre>
-<pre><code># # A tibble: 1 x 4
-#   term        estimate std.error statistic
-#   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
-# 1 (Intercept)     10.6      1.00      10.5</code></pre>
+<pre><code># # A tibble: 1 x 5
+#   effect term        estimate std.error statistic
+#   &lt;chr&gt;  &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+# 1 fixed  (Intercept)     10.6      1.00      10.5</code></pre>
 <p>And for the random effects, which can be pulled out as variances via <code>scales</code> instead of the default standard deviations:</p>
 <pre class="r"><code>tidy(fit1, effects = &quot;ran_pars&quot;, scales = &quot;vcov&quot;)</code></pre>
-<pre><code># # A tibble: 2 x 3
-#   term                     group    estimate
-#   &lt;chr&gt;                    &lt;chr&gt;       &lt;dbl&gt;
-# 1 var_(Intercept).stand    stand        4.70
-# 2 var_Observation.Residual Residual     1.28</code></pre>
+<pre><code># # A tibble: 2 x 4
+#   effect   group    term             estimate
+#   &lt;chr&gt;    &lt;chr&gt;    &lt;chr&gt;               &lt;dbl&gt;
+# 1 ran_pars stand    var__(Intercept)     4.70
+# 2 ran_pars Residual var__Observation     1.28</code></pre>
 </div>
 <div id="explore-the-effect-of-sample-size-on-variance-estimation" class="section level1">
 <h1>Explore the effect of sample size on variance estimation</h1>
 <p>Today I’ll look at how well we estimate variances of random effects for different samples sizes. I’ll simulate data for sampling 5 stands, 20 stands, and 100 stands.</p>
 <p>I’m going to load some helper packages for this, including <strong>purrr</strong> for looping, <strong>dplyr</strong> for data manipulation tasks, and <strong>ggplot2</strong> for plotting.</p>
-<pre class="r"><code>library(purrr) # v. 0.3.3
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
-library(ggplot2) # v. 3.2.1</code></pre>
+<pre class="r"><code>library(purrr) # v. 0.3.4
+suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.7
+library(ggplot2) # v. 3.3.5</code></pre>
 <p>I’m going to loop through a vector of the three stand sample sizes and then simulate data and fit a model 1000 times for each one. I’m using <strong>purrr</strong> functions for this, and I end up with a list of lists (1000 models for each sample size). It takes a minute or two to fit the 3000 models. I’m ignoring all warning messages (but this isn’t always a good idea).</p>
 <pre class="r"><code>stand_sims = c(5, 20, 100) %&gt;%
      set_names() %&gt;%
@@ -258,22 +260,22 @@ library(ggplot2) # v. 3.2.1</code></pre>
      map_dfr(bind_rows, .id = &quot;stand_num&quot;) %&gt;%
      filter(group == &quot;stand&quot;)
 head(stand_vars)</code></pre>
-<pre><code># # A tibble: 6 x 4
-#   stand_num term                  group estimate
-#   &lt;chr&gt;     &lt;chr&gt;                 &lt;chr&gt;    &lt;dbl&gt;
-# 1 5         var_(Intercept).stand stand     2.53
-# 2 5         var_(Intercept).stand stand     7.70
-# 3 5         var_(Intercept).stand stand     4.19
-# 4 5         var_(Intercept).stand stand     3.28
-# 5 5         var_(Intercept).stand stand    12.9 
-# 6 5         var_(Intercept).stand stand     4.62</code></pre>
+<pre><code># # A tibble: 6 x 5
+#   stand_num effect   group term             estimate
+#   &lt;chr&gt;     &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt;               &lt;dbl&gt;
+# 1 5         ran_pars stand var__(Intercept)     2.53
+# 2 5         ran_pars stand var__(Intercept)     7.70
+# 3 5         ran_pars stand var__(Intercept)     4.19
+# 4 5         ran_pars stand var__(Intercept)     3.28
+# 5 5         ran_pars stand var__(Intercept)    12.9 
+# 6 5         ran_pars stand var__(Intercept)     4.62</code></pre>
 <p>Let’s take a look at the distributions of the variances for each sample size via density plots. We know the true variance is 4, so I’ll add a vertical line at 4.</p>
 <pre class="r"><code>ggplot(stand_vars, aes(x = estimate) ) +
      geom_density(fill = &quot;blue&quot;, alpha = .25) +
      facet_wrap(~stand_num) +
      geom_vline(xintercept = 4)</code></pre>
 <p><img src="/post/2018-04-23-simulate-simulate-part-2-a-linear-mixed-model_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
-<p>Whoops, I need to get my factor levels in order.</p>
+<p>Whoops, I need to get my factor levels in order. I’ll use package <strong>forcats</strong> for this.</p>
 <pre class="r"><code>stand_vars = mutate(stand_vars, stand_num = forcats::fct_inorder(stand_num) )</code></pre>
 <p>I’ll also add some clearer labels for the facets.</p>
 <pre class="r"><code>add_prefix = function(string) {
@@ -408,7 +410,7 @@ sd = 1
 
 ( dat$resp = with(dat, mu + standeff + ploteff ) )
 
-library(lme4) # v. 1.1-21
+library(lme4) # v. 1.1-27.1
 
 fit1 = lmer(resp ~ 1 + (1|stand), data = dat)
 fit1
@@ -428,16 +430,16 @@ twolevel_fun()
 sims = replicate(100, twolevel_fun(), simplify = FALSE )
 sims[[100]]
 
-library(broom) # v. 0.5.6
+library(broom.mixed) # v. 0.2.7
 tidy(fit1)
 
 tidy(fit1, effects = &quot;fixed&quot;)
 
 tidy(fit1, effects = &quot;ran_pars&quot;, scales = &quot;vcov&quot;)
 
-library(purrr) # v. 0.3.3
-suppressPackageStartupMessages( library(dplyr) ) # v. 0.8.3
-library(ggplot2) # v. 3.2.1
+library(purrr) # v. 0.3.4
+suppressPackageStartupMessages( library(dplyr) ) # v. 1.0.7
+library(ggplot2) # v. 3.3.5
 
 stand_sims = c(5, 20, 100) %&gt;%
      set_names() %&gt;%
