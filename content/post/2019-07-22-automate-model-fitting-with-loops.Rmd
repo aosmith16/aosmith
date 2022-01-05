@@ -52,9 +52,9 @@ I'll be using **purrr** for looping and will make residual plots with **ggplot2*
 
 ```{r, message = FALSE, warning = FALSE}
 library(purrr) # v. 0.3.4
-library(ggplot2) # v. 3.3.2
-library(patchwork) # v. 1.0.0
-library(broom) # v. 0.5.6
+library(ggplot2) # v. 3.3.5
+library(patchwork) # v. 1.1.1
+library(broom) # v. 0.7.10
 
 ```
 
@@ -85,12 +85,12 @@ head(dat)
 
 The analysis in the example I'm using today amounts to a two-sample t-test.  I will fit this as a linear model with `lm()`.
 
-Since the response variable needs to vary among models but the dataset and explanatory variable do not, my function will have a single argument for setting the response variable.  Building the model formula in my function `ttest_fun()` relies on `paste()` and `as.formula()`.
+Since the response variable needs to vary among models but the dataset and explanatory variable do not, my function will have a single argument for setting the response variable.  Building the model formula in my function `ttest_fun()` relies on `reformulate()`.
 
 ```{r}
 ttest_fun = function(response) {
-  form = paste(response, "~ group")
-  lm(as.formula(form), data = dat)
+  form = reformulate("group", response = response)
+  lm(form, data = dat)
 }
 ```
 

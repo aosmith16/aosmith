@@ -1,7 +1,7 @@
 library(purrr) # v. 0.3.4
-library(ggplot2) # v. 3.3.2
-library(patchwork) # v. 1.0.0
-library(broom) # v. 0.5.6
+library(ggplot2) # v. 3.3.5
+library(patchwork) # v. 1.1.1
+library(broom) # v. 0.7.10
 
 
 dat = structure(list(group = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 
@@ -22,8 +22,8 @@ head(dat)
 
 
 ttest_fun = function(response) {
-  form = paste(response, "~ group")
-  lm(as.formula(form), data = dat)
+  form = reformulate("group", response = response)
+  lm(form, data = dat)
 }
 
 ttest_fun(response = "resp")

@@ -14,16 +14,18 @@ draft: FALSE
 description: "In this post I discuss how to construct the formula that can be passed to model fitting functions like lm(). I then demonstrate how to use this within a user-created function in order to streamline the process of fitting many similar models."
 ---
 
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
+<p><em>This post was last updated on 2022-01-05.</em></p>
 <p>I worked with several students over the last few months who were fitting many linear models, all with the same basic structure but different response variables. They were struggling to find an efficient way to do this in R while still taking the time to check model assumptions.</p>
-<p>A first step when working towards a more automated process for fitting many models is to learn how to build model formulas with <code>paste()</code> and <code>as.formula()</code>. Once we learn how to build model formulas we can create functions to streamline the model fitting process.</p>
+<p>A first step when working towards a more automated process for fitting many models is to learn how to build model formulas using <code>reformulate()</code> or with <code>paste()</code> and <code>as.formula()</code>. Once we learn how to build model formulas we can create functions to streamline the model fitting process.</p>
 <p>I will be making residuals plots with <strong>ggplot2</strong> today so will load it here.</p>
 <pre class="r"><code>library(ggplot2) # v.3.2.0</code></pre>
 <div id="table-of-contents" class="section level2">
 <h2>Table of Contents</h2>
 <ul>
-<li><a href="#building-a-formula-with-paste-and-as.formula">Building a formula with paste() and as.formula()</a></li>
+<li><a href="#building-a-formula-with-reformulate">Building a formula with reformulate()</a></li>
 <li><a href="#using-a-constructed-formula-in-lm">Using a constructed formula in lm()</a></li>
 <li><a href="#making-a-function-for-model-fitting">Making a function for model fitting</a></li>
 <li><a href="#using-bare-names-instead-of-strings-i.e.-non-standard-evaluation">Using bare names instead of strings (i.e., non-standard evaluation)</a></li>
@@ -34,26 +36,25 @@ description: "In this post I discuss how to construct the formula that can be pa
 <li><a href="#just-the-code-please">Just the code, please</a></li>
 </ul>
 </div>
-<div id="building-a-formula-with-paste-and-as.formula" class="section level1">
-<h1>Building a formula with paste() and as.formula()</h1>
+<div id="building-a-formula-with-reformulate" class="section level1">
+<h1>Building a formula with reformulate()</h1>
 <p>Model formula of the form <code>y ~ x</code> can be built based on variable names passed as <em>character strings</em>. A character string means the variable name will have quotes around it.</p>
-<p>The function <code>paste()</code> is great for the job of concatenating strings together. (Also see <code>glue::glue()</code>.)</p>
-<p>Here is an example, using <code>mpg</code> as the response variable and <code>am</code> as the explanatory variable. These need to be separated by a tilde, <code>~</code>. In this example I paste the character string <code>"mpg"</code> to the character string <code>"~ am"</code>.</p>
-<p>The output of this is the formula as a string. You can see it is in quotes in the output.</p>
-<pre class="r"><code>paste(&quot;mpg&quot;, &quot;~ am&quot;)</code></pre>
-<pre><code># [1] &quot;mpg ~ am&quot;</code></pre>
-<p>We turn this into a formula ready to be passed to a model function using <code>as.formula()</code>.</p>
+<p>The function <code>reformulate()</code> allows us to pass response and explanatory variables as character strings and returns them as a formula.</p>
+<p>Here is an example, using <code>mpg</code> as the response variable and <code>am</code> as the explanatory variable. Note the explanatory variable is passed to the first argument, <code>termlabels</code>, and the response variable to <code>response</code>.</p>
+<pre class="r"><code>reformulate(termlabels = &quot;am&quot;, response = &quot;mpg&quot;)</code></pre>
+<pre><code># mpg ~ am</code></pre>
+<p>A common alternative to <code>reformulate()</code> is to use <code>paste()</code> with <code>as.formula()</code>. I show this option below, but won’t discuss it more in this post.</p>
 <pre class="r"><code>as.formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) )</code></pre>
 <pre><code># mpg ~ am</code></pre>
 </div>
 <div id="using-a-constructed-formula-in-lm" class="section level1">
 <h1>Using a constructed formula in lm()</h1>
 <p>Once we’ve built the formula we can put it in as the first argument of a model fitting function like <code>lm()</code> in order to fit the model. I’ll be using the <code>mtcars</code> dataset throughout the model fitting examples.</p>
-<p>Since <code>am</code> is a 0/1 variable, this particular analysis is a two-sample t-test with <code>mpg</code> as the response variable.</p>
-<pre class="r"><code>lm( as.formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) ), data = mtcars)</code></pre>
+<p>Since <code>am</code> is a 0/1 variable, this particular analysis is a two-sample t-test with <code>mpg</code> as the response variable. I removed the step of writing out the first argument name to reformulate to save space, knowing that the first argument is always the explanatory variables.</p>
+<pre class="r"><code>lm( reformulate(&quot;am&quot;, response = &quot;mpg&quot;), data = mtcars)</code></pre>
 <pre><code># 
 # Call:
-# lm(formula = as.formula(paste(&quot;mpg&quot;, &quot;~ am&quot;)), data = mtcars)
+# lm(formula = reformulate(&quot;am&quot;, response = &quot;mpg&quot;), data = mtcars)
 # 
 # Coefficients:
 # (Intercept)           am  
@@ -61,17 +62,17 @@ description: "In this post I discuss how to construct the formula that can be pa
 </div>
 <div id="making-a-function-for-model-fitting" class="section level1">
 <h1>Making a function for model fitting</h1>
-<p>This <code>paste()</code> / <code>as.formula()</code> combination is essential for making user-defined model fitting functions.</p>
-<p>For example, say I wanted to do the same t-test with <code>am</code> for many response variables. I could create a function that takes the response variable as an argument and build the model formula within the function with <code>paste()</code> and <code>as.formula()</code>.</p>
+<p>Being able to build a formula is essential for making user-defined model fitting functions.</p>
+<p>For example, say I wanted to do the same t-test with <code>am</code> for many response variables. I could create a function that takes the response variable as an argument and build the model formula within the function with <code>reformulate()</code>.</p>
 <p>The response variable name is passed to the <code>response</code> argument as a character string.</p>
 <pre class="r"><code>lm_fun = function(response) {
-  lm( as.formula( paste(response, &quot;~ am&quot;) ), data = mtcars)
+  lm( reformulate(&quot;am&quot;, response = response), data = mtcars)
 }</code></pre>
 <p>Here are two examples of this function in action, using <code>mpg</code> and then <code>wt</code> as the response variables.</p>
 <pre class="r"><code>lm_fun(response = &quot;mpg&quot;)</code></pre>
 <pre><code># 
 # Call:
-# lm(formula = as.formula(paste(response, &quot;~ am&quot;)), data = mtcars)
+# lm(formula = reformulate(&quot;am&quot;, response = response), data = mtcars)
 # 
 # Coefficients:
 # (Intercept)           am  
@@ -79,7 +80,7 @@ description: "In this post I discuss how to construct the formula that can be pa
 <pre class="r"><code>lm_fun(response = &quot;wt&quot;)</code></pre>
 <pre><code># 
 # Call:
-# lm(formula = as.formula(paste(response, &quot;~ am&quot;)), data = mtcars)
+# lm(formula = reformulate(&quot;am&quot;, response = response), data = mtcars)
 # 
 # Coefficients:
 # (Intercept)           am  
@@ -91,36 +92,32 @@ description: "In this post I discuss how to construct the formula that can be pa
 <p>We can use some <code>deparse()</code>/<code>substitute()</code> magic in the function for this. Those two functions will turn bare names into strings within the function rather than having the user pass strings directly.</p>
 <pre class="r"><code>lm_fun2 = function(response) {
   resp = deparse( substitute( response) )
-  lm( as.formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+  lm( reformulate(&quot;am&quot;, response = resp), data = mtcars)
 }</code></pre>
 <p>Here’s an example of this function in action. Note the use of the bare column name for the response variable.</p>
 <pre class="r"><code>lm_fun2(response = mpg)</code></pre>
 <pre><code># 
 # Call:
-# lm(formula = as.formula(paste(resp, &quot;~ am&quot;)), data = mtcars)
+# lm(formula = reformulate(&quot;am&quot;, response = resp), data = mtcars)
 # 
 # Coefficients:
 # (Intercept)           am  
 #      17.147        7.245</code></pre>
-<p>You can see that one thing that happens when using <code>as.formula()</code> like this is that the formula in the model output shows the formula-building code instead of the actual variables used in the model.</p>
+<p>You can see that one thing that happens when using <code>reformulate()</code> like this is that the formula in the model output shows the formula-building code instead of the actual variables used in the model.</p>
 <pre><code>Call:  
-lm(formula = as.formula(paste(response, &quot;~ am&quot;)), data = mtcars)  </code></pre>
+lm(formula = reformulate(&quot;am&quot;, response = resp), data = mtcars) </code></pre>
 <p>While this often won’t matter in practice, there are ways to force the model to show the variables used in the model fitting. See <a href="http://www.win-vector.com/blog/2018/09/r-tip-how-to-pass-a-formula-to-lm/">this blog post</a> for some discussion as well as code for how to do this.</p>
 </div>
 <div id="building-a-formula-with-varying-explanatory-variables" class="section level1">
 <h1>Building a formula with varying explanatory variables</h1>
-<p>The formula building approach can also be used for fitting models where the explanatory variables vary. The explanatory variables should have plus signs between them on the right-hand side of the formula. To get plus signs between a bunch of variables we can use the <code>collapse</code> argument in <code>paste()</code>.</p>
-<p>Here’s an example with a vector of two explanatory variables. Passing a vector of variable names to <code>paste()</code> and using <code>collapse = "+"</code> puts plus signs between the variables.</p>
+<p>The formula building approach can also be used for fitting models where the explanatory variables vary. The explanatory variables should have plus signs between them on the right-hand side of the formula, which we can achieve by passing a vector of character strings to the first argument of <code>reformulate()</code>.</p>
 <pre class="r"><code>expl = c(&quot;am&quot;, &quot;disp&quot;)
-paste(expl, collapse = &quot;+&quot;)</code></pre>
-<pre><code># [1] &quot;am+disp&quot;</code></pre>
-<p>This additional pasting step can then be included within <code>as.formula()</code>.</p>
-<pre class="r"><code>as.formula( paste(&quot;mpg ~&quot;, paste(expl, collapse = &quot;+&quot;) ) )</code></pre>
+reformulate(expl, response = &quot;mpg&quot;)</code></pre>
 <pre><code># mpg ~ am + disp</code></pre>
 <p>Let’s go through an example of using this in a function that can fit a model with different explanatory variables.</p>
-<p>In this function I demonstrate building the formula as a separate step and then passing it to <code>lm()</code>. This can be easier to read compared to building the formula within <code>lm()</code> as a single step like I did earlier.</p>
+<p>In this function I demonstrate building the formula as a separate step and then passing it to <code>lm()</code>. Some find this easier to read compared to building the formula within <code>lm()</code> as a single step like I did earlier.</p>
 <pre class="r"><code>lm_fun_expl = function(expl) {
-  form = as.formula( paste(&quot;mpg ~ &quot;, paste(expl, collapse = &quot;+&quot;) ) )
+  form = reformulate(expl, response = &quot;mpg&quot;)
   lm(form, data = mtcars)
 }</code></pre>
 <p>To use the function we pass a vector of variable names as strings to the <code>expl</code> argument.</p>
@@ -137,9 +134,8 @@ paste(expl, collapse = &quot;+&quot;)</code></pre>
 <h1>The dots for passing many variables to a function</h1>
 <p>Using dots (…) instead of named arguments can allow the user to list the explanatory variables separately instead of in a vector.</p>
 <p>I’ll demonstrate a function using dots to indicate some undefined number of additional arguments for putting as many explanatory variables as desired into the model. I wrap the dots in <code>c()</code> within the function in order to collapse variables together with <code>+</code>.</p>
-<p>Note that if you want non-standard evaluation you could wrap the <code>...</code> in <code>rlang::exprs()</code> within the function and then pass bare variable names.</p>
 <pre class="r"><code>lm_fun_expl2 = function(...) {
-  form = as.formula( paste(&quot;mpg ~ &quot;, paste( c(...), collapse = &quot;+&quot;) ) )
+  form = reformulate(c(...), response = &quot;mpg&quot;)
   lm(form, data = mtcars)
 }</code></pre>
 <p>Now variables are passed individually as strings separated by commas instead of as a vector.</p>
@@ -159,7 +155,7 @@ paste(expl, collapse = &quot;+&quot;)</code></pre>
 <p>The function outputs a list that contains the two residuals plots as well as the overall <span class="math inline">\(F\)</span> tests from the model.</p>
 <pre class="r"><code>lm_modfit = function(response) {
   resp = deparse( substitute( response) )
-  mod = lm( as.formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+  mod = lm( reformulate(&quot;am&quot;, response = resp), data = mtcars)
   resvfit = qplot(x = mod$fit, y = mod$res) + theme_bw()
   resdist = qplot(x = &quot;Residual&quot;, mod$res, geom = &quot;boxplot&quot;) + theme_bw()
   list(resvfit, resdist, anova(mod) )
@@ -186,21 +182,21 @@ mpgfit = lm_modfit(mpg)</code></pre>
 </div>
 <div id="next-step-looping" class="section level1">
 <h1>Next step: looping</h1>
-<p>This post focused on using <code>paste()</code> and <code>as.formula()</code> for building model formula and then making user-defined functions for interactive use. When working with many models we’d likely want to automate the process more by using some sort of looping. I wrote a follow-up post on looping through variables and fitting models with the <code>map</code> family of functions from package <strong>purrr</strong>, which you can see <a href="https://aosmith.rbind.io/2019/07/22/automate-model-fitting-with-loops/">here</a>.</p>
+<p>This post focused on using <code>reformulate()</code> for building model formula and then making user-defined functions for interactive use. When working with many models we’d likely want to automate the process more by using some sort of looping. I wrote a follow-up post on looping through variables and fitting models with the <code>map</code> family of functions from package <strong>purrr</strong>, which you can see <a href="https://aosmith.rbind.io/2019/07/22/automate-model-fitting-with-loops/">here</a>.</p>
 </div>
 <div id="just-the-code-please" class="section level1">
 <h1>Just the code, please</h1>
 <p>Here’s the code without all the discussion. Copy and paste the code below or you can download an R script of uncommented code <a href="/script/2019-06-24-how-to-make-a-function-for-model-fitting.R">from here</a>.</p>
 <pre class="r"><code>library(ggplot2) # v.3.2.0
 
-paste(&quot;mpg&quot;, &quot;~ am&quot;)
+reformulate(termlabels = &quot;am&quot;, response = &quot;mpg&quot;)
 
 as.formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) )
 
-lm( as.formula( paste(&quot;mpg&quot;, &quot;~ am&quot;) ), data = mtcars)
+lm( reformulate(&quot;am&quot;, response = &quot;mpg&quot;), data = mtcars)
 
 lm_fun = function(response) {
-  lm( as.formula( paste(response, &quot;~ am&quot;) ), data = mtcars)
+  lm( reformulate(&quot;am&quot;, response = response), data = mtcars)
 }
 
 lm_fun(response = &quot;mpg&quot;)
@@ -208,24 +204,23 @@ lm_fun(response = &quot;wt&quot;)
 
 lm_fun2 = function(response) {
   resp = deparse( substitute( response) )
-  lm( as.formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+  lm( reformulate(&quot;am&quot;, response = resp), data = mtcars)
 }
 
 lm_fun2(response = mpg)
 
 expl = c(&quot;am&quot;, &quot;disp&quot;)
-paste(expl, collapse = &quot;+&quot;)
+reformulate(expl, response = &quot;mpg&quot;)
 
-as.formula( paste(&quot;mpg ~&quot;, paste(expl, collapse = &quot;+&quot;) ) )
 lm_fun_expl = function(expl) {
-  form = as.formula( paste(&quot;mpg ~ &quot;, paste(expl, collapse = &quot;+&quot;) ) )
+  form = reformulate(expl, response = &quot;mpg&quot;)
   lm(form, data = mtcars)
 }
 
 lm_fun_expl(expl = c(&quot;am&quot;, &quot;disp&quot;) )
 
 lm_fun_expl2 = function(...) {
-  form = as.formula( paste(&quot;mpg ~ &quot;, paste( c(...), collapse = &quot;+&quot;) ) )
+  form = reformulate(c(...), response = &quot;mpg&quot;)
   lm(form, data = mtcars)
 }
 
@@ -233,7 +228,7 @@ lm_fun_expl2(&quot;am&quot;, &quot;disp&quot;)
 
 lm_modfit = function(response) {
   resp = deparse( substitute( response) )
-  mod = lm( as.formula( paste(resp, &quot;~ am&quot;) ), data = mtcars)
+  mod = lm( reformulate(&quot;am&quot;, response = resp), data = mtcars)
   resvfit = qplot(x = mod$fit, y = mod$res) + theme_bw()
   resdist = qplot(x = &quot;Residual&quot;, mod$res, geom = &quot;boxplot&quot;) + theme_bw()
   list(resvfit, resdist, anova(mod) )
